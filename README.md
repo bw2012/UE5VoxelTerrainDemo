@@ -18,7 +18,6 @@ UE5 version: [UE5VoxelTerrain-0.0.28.zip](https://bit.ly/3bjKJca)
 * Up to 65535 terrain materials
 
 # Attention
-* This project uses git submodules. Make sure that project are cloned properly and folder UE5VoxelTerrain/Plugins is not empty.
 * Work in progress. Some features is not finished/buggy/has ugly code/do not meet your expectations.
 
 # Usage
