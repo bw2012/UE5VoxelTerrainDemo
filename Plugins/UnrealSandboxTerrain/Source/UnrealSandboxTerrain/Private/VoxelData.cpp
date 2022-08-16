@@ -99,11 +99,11 @@ FORCEINLINE void TVoxelData::initializeMaterial() {
 }
 
 FORCEINLINE TDensityVal TVoxelData::clcFloatToByte(float v) {
-	return 255 * v;
+	return 255 * v; //TODO separate function
 }
 
 FORCEINLINE float TVoxelData::clcByteToFloat(TDensityVal v) {
-	return (float)v / 255.0f;
+	return (float)v / 255.0f; //TODO separate function
 }
 
 FORCEINLINE void TVoxelData::setDensity(int x, int y, int z, float density) {
@@ -546,20 +546,20 @@ const TSubstanceCacheItem& TSubstanceCache::operator[](std::size_t index) const 
 }
 
 
-FORCEINLINE void vd::tools::unsafe::forceAddToCache(TVoxelData* vd, int x, int y, int z, int lod) {
+void vd::tools::unsafe::forceAddToCache(TVoxelData* vd, int x, int y, int z, int lod) {
 	auto const index = vd->clcLinearIndex(x, y, z);
 	TSubstanceCache& lodCache = vd->substanceCacheLOD[lod];
 	TSubstanceCacheItem* cacheItm = lodCache.emplace();
 	cacheItm->index = index;
 }
 
-FORCEINLINE void vd::tools::unsafe::setDensity(TVoxelData* vd, const TVoxelIndex& vi, float density) {
+void vd::tools::unsafe::setDensity(TVoxelData* vd, const TVoxelIndex& vi, float density) {
 	const int index = vd::tools::clcLinearIndex(vd->num(), vi);
 	vd->density_state = TVoxelDataFillState::MIXED;
 	vd->density_data[index] = vd->clcFloatToByte(density);
 }
 
-FORCEINLINE void vd::tools::makeIndexes(TVoxelIndex(&d)[8], int x, int y, int z, int step) {
+void vd::tools::makeIndexes(TVoxelIndex(&d)[8], int x, int y, int z, int step) {
 	d[0] = TVoxelIndex(x, y + step, z);
 	d[1] = TVoxelIndex(x, y, z);
 	d[2] = TVoxelIndex(x + step, y + step, z);
@@ -570,14 +570,14 @@ FORCEINLINE void vd::tools::makeIndexes(TVoxelIndex(&d)[8], int x, int y, int z,
 	d[7] = TVoxelIndex(x + step, y, z + step);
 }
 
-FORCEINLINE void vd::tools::makeIndexes(TVoxelIndex(&d)[8], const TVoxelIndex& vi, int step) {
+void vd::tools::makeIndexes(TVoxelIndex(&d)[8], const TVoxelIndex& vi, int step) {
 	const int x = vi.X;
 	const int y = vi.Y;
 	const int z = vi.Z;
 	vd::tools::makeIndexes(d, x, y, z, step);
 }
 
-FORCEINLINE unsigned long vd::tools::caseCode(int8 (&corner)[8]) {
+unsigned long vd::tools::caseCode(const int8 (&corner)[8]) {
 	unsigned long caseCode = ((corner[0] >> 7) & 0x01)
 		| ((corner[1] >> 6) & 0x02)
 		| ((corner[2] >> 5) & 0x04)
@@ -590,23 +590,23 @@ FORCEINLINE unsigned long vd::tools::caseCode(int8 (&corner)[8]) {
 	return caseCode;
 }
 
-FORCEINLINE int vd::tools::clcLinearIndex(int n,  int x, int y, int z) {
+int vd::tools::clcLinearIndex(int n,  int x, int y, int z) {
 	return x * n * n + y * n + z;
 };
 
-FORCEINLINE int vd::tools::clcLinearIndex(int n, const TVoxelIndex& vi) {
+int vd::tools::clcLinearIndex(int n, const TVoxelIndex& vi) {
 	return vd::tools::clcLinearIndex(n, vi.X, vi.Y, vi.Z);
 };
 
 
-FORCEINLINE int vd::tools::memory::getVdCount() {
+int vd::tools::memory::getVdCount() {
 	return vd_counter;
 };
 
-FORCEINLINE size_t vd::tools::getCacheSize(const TVoxelData* vd, int lod) {
+size_t vd::tools::getCacheSize(const TVoxelData* vd, int lod) {
 	return vd->substanceCacheLOD[lod].size();
 };
 
-FORCEINLINE const TSubstanceCacheItem& vd::tools::getCacheItmByNumber(const TVoxelData* vd, int lod, int number) {
+const TSubstanceCacheItem& vd::tools::getCacheItmByNumber(const TVoxelData* vd, int lod, int number) {
 	return vd->substanceCacheLOD[lod][number];
 };

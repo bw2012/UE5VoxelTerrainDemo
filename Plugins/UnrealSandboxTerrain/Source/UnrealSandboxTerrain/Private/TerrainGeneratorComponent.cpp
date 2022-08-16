@@ -416,10 +416,8 @@ private:
             for (auto i = 0; i < 8; i++) {
                 const TVoxelIndex& TTT = Tmp[i];
                 int Idx = vd::tools::clcLinearIndex(VoxelData->num(), TTT.X, TTT.Y, TTT.Z);
-
-                int P = Processed[Idx];
                 if (Processed[Idx] == 0x0) {
-                    const float D = Handler(TTT, Idx, VoxelData, LOD);
+                    Handler(TTT, Idx, VoxelData, LOD); 
                     Count++;
                     Processed[Idx] = 0xff;
                 }
@@ -440,9 +438,8 @@ private:
 
 public:
 
-    std::function<float(const TVoxelIndex&, int, TVoxelData*, int)> Handler = nullptr;
+    std::function<void(const TVoxelIndex&, int, TVoxelData*, int)> Handler = nullptr;
     std::function<bool(const TVoxelIndex&, int, int, const TVoxelData*)> CheckVoxel = nullptr;
-    std::function<bool(int)> AllowNoActiveChilds = nullptr;
 
     TPseudoOctree(TVoxelData* Vd) : VoxelData(Vd) {
         int N = Vd->num();
@@ -452,9 +449,8 @@ public:
             Processed[I] = 0x0;
         }
 
-        Handler = [](const TVoxelIndex& V, int Idx, TVoxelData* VoxelData, int LOD) { return 0.f; };
+        Handler = [](const TVoxelIndex& V, int Idx, TVoxelData* VoxelData, int LOD) {  };
         CheckVoxel = [](const TVoxelIndex& V, int S, int LOD, const TVoxelData* VoxelData) { return true;  };
-        AllowNoActiveChilds = [](int LOD) { return true;  };
     };
 
     ~TPseudoOctree() {
@@ -488,15 +484,14 @@ void UTerrainGeneratorComponent::GenerateLandscapeZoneSlight(const TGenerateVdTe
     VoxelData->deinitializeMaterial(DfaultGrassMaterialId);
 
     TPseudoOctree Octree(VoxelData);
-    Octree.Handler = [=] (const TVoxelIndex& V, int Idx, TVoxelData* VoxelData, int LOD){
-        const FVector& LocalPos = VoxelData->voxelIndexToVector(V.X, V.Y, V.Z);
-        const FVector& WorldPos = LocalPos + VoxelData->getOrigin();
-
+    Octree.Handler = [=] (const TVoxelIndex& V, int Idx, TVoxelData* VoxelData, int LOD) {
         if (LOD == 0) {
+            const FVector& LocalPos = VoxelData->voxelIndexToVector(V.X, V.Y, V.Z);
+            const FVector& WorldPos = LocalPos + VoxelData->getOrigin();
             //AsyncTask(ENamedThreads::GameThread, [=]() { DrawDebugPoint(GetWorld(), WorldPos, 3.f, FColor(255, 255, 255, 0), true); });
         }
 
-       return B(V, VoxelData, ChunkData);
+       B(V, VoxelData, ChunkData);
     };
 
     Octree.CheckVoxel = [=](const TVoxelIndex& V, int S, int LOD, const TVoxelData* Vd) {

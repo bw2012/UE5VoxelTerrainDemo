@@ -5,10 +5,14 @@
 #include "EngineMinimal.h"
 #include "VoxelMeshComponent.h"
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
+#include "kvdb.hpp"
 #include "TerrainZoneComponent.generated.h"
 
 
 class ASandboxTerrainController;
+struct TInstanceMeshArray;
+struct FTerrainInstancedMeshType;
+typedef TMap<uint64, TInstanceMeshArray> TInstanceMeshTypeMap;
 
 
 /**

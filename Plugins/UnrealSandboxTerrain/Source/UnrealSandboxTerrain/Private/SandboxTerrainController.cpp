@@ -294,8 +294,6 @@ void RemoveAllChilds(UTerrainZoneComponent* ZoneComponent) {
 }
 
 void ASandboxTerrainController::UnloadFarZones(FVector PlayerLocation, float Radius) {
-	UE_LOG(LogSandboxTerrain, Log, TEXT("UnloadFarZones"));
-
 	double Start = FPlatformTime::Seconds();
 
 	// hard unload far zones
@@ -330,11 +328,11 @@ void ASandboxTerrainController::UnloadFarZones(FVector PlayerLocation, float Rad
 
 	double End = FPlatformTime::Seconds();
 	double Time = (End - Start) * 1000;
-	UE_LOG(LogSandboxTerrain, Log, TEXT("UnloadFarZones --> %f ms"), Time);
+	//UE_LOG(LogSandboxTerrain, Log, TEXT("UnloadFarZones --> %f ms"), Time);
 }
 
 void ASandboxTerrainController::ZoneHardUnload(UTerrainZoneComponent* ZoneComponent, const TVoxelIndex& ZoneIndex) {
-	UE_LOG(LogSandboxTerrain, Log, TEXT("ZoneHardUnload"));
+	//UE_LOG(LogSandboxTerrain, Log, TEXT("ZoneHardUnload"));
 	TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(ZoneIndex);
 	VdInfoPtr->Lock();
 	if (VdInfoPtr->IsSoftUnload()) {
@@ -348,7 +346,7 @@ void ASandboxTerrainController::ZoneHardUnload(UTerrainZoneComponent* ZoneCompon
 }
 
 void ASandboxTerrainController::ZoneSoftUnload(UTerrainZoneComponent* ZoneComponent, const TVoxelIndex& ZoneIndex) {
-	UE_LOG(LogSandboxTerrain, Log, TEXT("ZoneSoftUnload"));
+	//UE_LOG(LogSandboxTerrain, Log, TEXT("ZoneSoftUnload"));
 	TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(ZoneIndex);
 	if (!VdInfoPtr->IsSoftUnload()) {
 		// TODO: lock zone + double check locking

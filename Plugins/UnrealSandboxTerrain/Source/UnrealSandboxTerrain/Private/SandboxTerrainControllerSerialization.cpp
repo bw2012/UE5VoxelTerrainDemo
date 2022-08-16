@@ -1,5 +1,9 @@
 
 #include "SandboxTerrainController.h"
+#include "VoxelMeshData.h"
+#include "Serialization/ArchiveLoadCompressedProxy.h"
+#include "Serialization/ArchiveSaveCompressedProxy.h"
+#include "TerrainZoneComponent.h"
 
 //======================================================================================================================================================================
 // mesh data de/serealization

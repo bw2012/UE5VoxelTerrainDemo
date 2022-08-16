@@ -1,5 +1,8 @@
 
 #include "SandboxTerrainController.h"
+#include "VoxelDataInfo.hpp"
+#include "TerrainZoneComponent.h"
+#include "TerrainData.hpp"
 
 
 struct TZoneEditHandler {

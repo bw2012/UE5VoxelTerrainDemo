@@ -81,7 +81,7 @@ namespace vd {
 
 		void makeIndexes(TVoxelIndex(&d)[8], int x, int y, int z, int step);
 		void makeIndexes(TVoxelIndex(&d)[8], const TVoxelIndex& vi, int step);
-		unsigned long caseCode(int8(&corner)[8]);
+		unsigned long caseCode(const int8(&corner)[8]);
 		int clcLinearIndex(int n, int x, int y, int z);
 		int clcLinearIndex(int n, const TVoxelIndex& vi);
 		size_t getCacheSize(const TVoxelData* vd, int lod);

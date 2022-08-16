@@ -11,6 +11,7 @@
 #include "VoxelMeshComponent.generated.h"
 
 typedef std::shared_ptr<TMeshData> TMeshDataPtr;
+typedef uint8 TTerrainLodMask;
 
 /**
 *
