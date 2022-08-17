@@ -2,7 +2,7 @@
 
 #include "BaseCharacter.h"
 #include "Objects/BaseObject.h"
-//#include "MainPlayerController.h"
+#include "MainPlayerController.h"
 #include "TerrainController.h"
 
 
@@ -185,6 +185,11 @@ void ABaseCharacter::OnFinishPlayMainAttack() {
 }
 
 bool ABaseCharacter::CanMove() {
+	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetController());
+	if (MainPlayerController->HasOpenContainer()) {
+		return false;
+	}
+
 	//if (bIsAttacking) {
 	//	return false;
 	//}

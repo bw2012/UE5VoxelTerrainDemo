@@ -51,6 +51,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	EALSOverlayState InitialOverlayState;
 
+
 	/*
 	void JumpAction(bool bValue);
 
@@ -79,5 +80,9 @@ public:
 		void LookingDirectionAction();
 
 		*/
+
+protected:
+
+	virtual bool CanMove();
 
 };

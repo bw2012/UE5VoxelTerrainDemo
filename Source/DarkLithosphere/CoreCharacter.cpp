@@ -33,12 +33,21 @@ void ACoreCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	//PlayerInputComponent->BindAction("CameraAction", IE_Released, this, &AALSBaseCharacter::CameraReleasedAction);
 }
 
+bool ACoreCharacter::CanMove() {
+	return true;
+}
+
+
 void ACoreCharacter::PlayerForwardMovementInput(float Value) {
-	ForwardMovementAction_Implementation(Value);
+	if (CanMove()) {
+		ForwardMovementAction_Implementation(Value);
+	}
 }
 
 void ACoreCharacter::PlayerRightMovementInput(float Value) {
-	RightMovementAction_Implementation(Value);
+	if (CanMove()) {
+		RightMovementAction_Implementation(Value);
+	}
 }
 
 void ACoreCharacter::PlayerCameraUpInput(float Value) {
@@ -58,7 +67,9 @@ void ACoreCharacter::SprintReleasedAction() {
 }
 
 void ACoreCharacter::JumpPressedAction() {
-	JumpAction_Implementation(true);
+	if (CanMove()) {
+		JumpAction_Implementation(true);
+	}
 }
 
 void ACoreCharacter::JumpReleasedAction() {
@@ -70,10 +81,12 @@ void ACoreCharacter::RagdollPressedAction() {
 }
 
 void ACoreCharacter::CameraPressedAction() {
-	// Switch camera mode
-	if (ViewMode == EALSViewMode::FirstPerson) {
-		SetViewMode(EALSViewMode::ThirdPerson);
-	} else if (ViewMode == EALSViewMode::ThirdPerson) {
-		SetViewMode(EALSViewMode::FirstPerson);
+	if (CanMove()) {
+		// Switch camera mode
+		if (ViewMode == EALSViewMode::FirstPerson) {
+			SetViewMode(EALSViewMode::ThirdPerson);
+		} else if (ViewMode == EALSViewMode::ThirdPerson) {
+			SetViewMode(EALSViewMode::FirstPerson);
+		}
 	}
 }

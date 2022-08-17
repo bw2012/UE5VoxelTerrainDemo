@@ -10,6 +10,10 @@
 
 FString USelectedObjectWidget::GetSandboxSelectedObjectText() {
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
+	if (MainPlayerController->HasOpenContainer()) {
+		return TEXT("");
+	}
+
 	if (MainPlayerController && MainPlayerController->MainPlayerControllerComponent) {
 		FSelectedObject SelectedObject = MainPlayerController->MainPlayerControllerComponent->SelectedObject;
 
@@ -29,6 +33,10 @@ FString USelectedObjectWidget::GetSandboxSelectedObjectText() {
 
 FString USelectedObjectWidget::GetSandboxKeyText() {
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
+	if (MainPlayerController->HasOpenContainer()) {
+		return TEXT("");
+	}
+
 	if (MainPlayerController && MainPlayerController->MainPlayerControllerComponent) {
 		FSelectedObject SelectedObject = MainPlayerController->MainPlayerControllerComponent->SelectedObject;
 

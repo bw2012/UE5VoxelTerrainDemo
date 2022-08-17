@@ -124,7 +124,7 @@ protected:
 
 protected:
 
-	virtual bool CanMove();
+	virtual bool CanMove() override;
 
 	bool PlaySoundCue(USoundCue* SoundCue);
 

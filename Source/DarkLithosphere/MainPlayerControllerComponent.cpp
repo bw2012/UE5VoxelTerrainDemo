@@ -411,8 +411,11 @@ void  UMainPlayerControllerComponent::ToggleActionPlaceObjectToWorld() {
 
 void UMainPlayerControllerComponent::TakeSelectedObjectToInventory() {
 	AMainPlayerController* MainController = (AMainPlayerController*)GetOwner();
-	ALevelController* LevelController = MainController->GetLevelController();
+	if (MainController->HasOpenContainer()) {
+		return;
+	}
 
+	ALevelController* LevelController = MainController->GetLevelController();
 	if (SelectedObject.ObjType == ESelectedObjectType::SandboxObject) {
 		UContainerComponent* Inventory = MainController->GetInventory();
 		if (Inventory != nullptr) {
