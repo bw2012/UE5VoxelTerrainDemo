@@ -50,11 +50,11 @@ void AFurnace::PostLoadProperties() {
 	}
 }
 
-int FindReceipe(const TMap<int, FFurnaceReceipe>& FurnaceReceipMap, int ClassId, int TypeId) {
+int FindReceipe(const TMap<int, FFurnaceReceipe>& FurnaceReceipMap, int ClassId) {
 	for (const auto& Itm : FurnaceReceipMap) {
 		int ReceipeId = Itm.Key;
 		FFurnaceReceipe R = Itm.Value;
-		if (R.RawMatClass == ClassId && R.RawMatType == TypeId) {
+		if (R.RawMatClass == ClassId) {
 			return ReceipeId;
 		}
 	}
@@ -100,7 +100,7 @@ void AFurnace::Tick(float DeltaTime) {
 				if (Stack && Stack->Amount > 0) {
 					auto* Obj = Stack->GetObject();
 					if (Obj) {
-						int ClassId = Obj->GetSandboxClassId();
+						uint64 ClassId = Obj->GetSandboxClassId();
 						if (ClassId == 12 || ClassId == 18) {
 							Container->DecreaseObjectsInContainer(FuelSlot, 1);
 							Lifetime += 10;
@@ -146,10 +146,9 @@ void AFurnace::Tick(float DeltaTime) {
 				if (CurrentReceipeId == 0) {
 					ASandboxObject* RawMatObj = Container->GetAvailableSlotObject(RawMaterialSlot);
 					if (RawMatObj) {
-						int ClassId = RawMatObj->GetSandboxClassId();
-						int TypeId = RawMatObj->GetSandboxTypeId();
-						UE_LOG(LogTemp, Warning, TEXT("FindReceipe: %d %d"), ClassId, TypeId);
-						int ReceipeId = FindReceipe(FurnaceReceipMap, ClassId, TypeId);
+						uint64 ClassId = RawMatObj->GetSandboxClassId();
+						UE_LOG(LogTemp, Warning, TEXT("FindReceipe: %d"), ClassId);
+						int ReceipeId = FindReceipe(FurnaceReceipMap, ClassId);
 						if (ReceipeId > 0) {
 							// start job
 							UE_LOG(LogTemp, Warning, TEXT("ReceipeId: %d "), ReceipeId);
@@ -166,7 +165,7 @@ void AFurnace::Tick(float DeltaTime) {
 
 						ASandboxObject* Product = Container->GetAvailableSlotObject(ProductSlot1);
 						if (Product) {
-							if (Product->GetSandboxClassId() == Receipe.ProductClass && Product->GetSandboxTypeId() == Receipe.ProductType) {
+							if (Product->GetSandboxClassId() == Receipe.ProductClass) {
 								Container->ChangeAmount(ProductSlot1, 1);
 								bSuccess = true;
 							}

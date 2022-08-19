@@ -120,6 +120,8 @@ public:
 
 	void ShowMouseCursor(bool bShowCursor);
 
+	virtual void OnInventoryItemMainAction(int32 SlotId);
+
 private:
 
 	void OnMainActionPressedInternal();

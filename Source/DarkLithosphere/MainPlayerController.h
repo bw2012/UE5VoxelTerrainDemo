@@ -136,6 +136,8 @@ public:
 
 	ALevelController* GetLevelController();
 
+	bool IsGuiMode();
+
 protected:
 
 	virtual void PlayerTick(float DeltaTime) override;
@@ -184,6 +186,8 @@ protected:
 		return nullptr;
 	}
 
+	void OnInventoryItemMainAction(int32 SlotId) override;
+
 private:
 	bool bGuiMode = false;
 
@@ -194,6 +198,8 @@ private:
 	ATerrainController* TerrainController;
 	
 	FTimerHandle Timer;
+
+	ASandboxObject* GetInventoryObject(int32 SlotId);
 
 	ASandboxObject* GetCurrentInventoryObject();
 

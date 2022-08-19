@@ -37,7 +37,7 @@ public:
 
 	virtual FString GetSandboxName();
 
-	virtual int GetSandboxClassId() const;
+	virtual uint64 GetSandboxClassId() const;
 
 	virtual int GetSandboxTypeId() const;
 
@@ -84,5 +84,14 @@ public:
 	virtual void OnPlaceToWorld();
 
 	virtual bool PlaceToWorldClcPosition(const FVector& SourcePos, const FRotator& SourceRotation, const FHitResult& Res, FVector& Location, FRotator& Rotation, bool bFinal = false) const;
+
+};
+
+
+class IWearable {
+
+public:
+
+
 
 };

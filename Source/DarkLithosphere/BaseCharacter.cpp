@@ -186,7 +186,7 @@ void ABaseCharacter::OnFinishPlayMainAttack() {
 
 bool ABaseCharacter::CanMove() {
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetController());
-	if (MainPlayerController->HasOpenContainer()) {
+	if (MainPlayerController->IsGuiMode()) {
 		return false;
 	}
 

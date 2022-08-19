@@ -96,6 +96,7 @@ public:
 
 	FSelectedObject SelectedObject;
 
+	void OnInventoryItemMainAction(int32 SlotId);
 
 private:
 

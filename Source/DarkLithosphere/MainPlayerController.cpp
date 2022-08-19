@@ -13,7 +13,10 @@
 #include "BaseCharacter.h"
 //#include "CoreCharacter.h"
 #include "Objects/MiningTool.h"
+#include "Objects/Clothing.h"
+
 #include "DrawDebugHelpers.h"
+
 
 //#include "SandboxTree.h"
 
@@ -306,10 +309,10 @@ void AMainPlayerController::OnMainActionReleased() {
 	SetDestinationReleased();
 }
 
-ASandboxObject* AMainPlayerController::GetCurrentInventoryObject() {
+ASandboxObject* AMainPlayerController::GetInventoryObject(int32 SlotId) {
 	UContainerComponent* Inventory = GetInventory();
 	if (Inventory != nullptr) {
-		FContainerStack* Stack = Inventory->GetSlot(CurrentInventorySlot);
+		FContainerStack* Stack = Inventory->GetSlot(SlotId);
 		if (Stack != nullptr) {
 			if (Stack->Amount > 0) {
 				TSubclassOf<ASandboxObject>	ObjectClass = Stack->ObjectClass;
@@ -322,6 +325,10 @@ ASandboxObject* AMainPlayerController::GetCurrentInventoryObject() {
 	}
 
 	return nullptr;
+}
+
+ASandboxObject* AMainPlayerController::GetCurrentInventoryObject() {
+	return GetInventoryObject(CurrentInventorySlot);
 }
 
 
@@ -470,7 +477,6 @@ void AMainPlayerController::SetSandboxModeExtId(int Id) {
 	}
 }
 
-
 void AMainPlayerController::TestRemoveSandboxObject() {
 	ADummyPawn* DummyPawn = Cast<ADummyPawn>(GetPawn());
 	if (DummyPawn) {
@@ -484,9 +490,6 @@ void AMainPlayerController::TestRemoveSandboxObject() {
 		if (BaseCharacter->IsDead()) {
 			return;
 		}
-
-
-
 
 		MainPlayerControllerComponent->TakeSelectedObjectToInventory();
 	}
@@ -508,7 +511,6 @@ void AMainPlayerController::SetCurrentInventorySlot(int32 Slot) {
 	MainPlayerControllerComponent->ResetState();
 	MainPlayerControllerComponent->OnSelectCurrentInventorySlot(Slot);
 }
-
 
 void AMainPlayerController::ChangeDummyCameraAltitude(float Val) {
 	ADummyPawn* DummyPawn = Cast<ADummyPawn>(GetPawn());
@@ -561,6 +563,10 @@ void AMainPlayerController::OnDeath() {
 	if (BaseCharacter) {
 		MainPlayerControllerComponent->OnDeath();
 	}
+}
+
+bool AMainPlayerController::IsGuiMode() {
+	return bGuiMode;
 }
 
 void AMainPlayerController::EnableGuiMode() {
@@ -713,4 +719,42 @@ FHitResult AMainPlayerController::TracePlayerActionPoint() {
 
 ALevelController* AMainPlayerController::GetLevelController() {
 	return (ALevelController*)LevelController;
+}
+
+void AMainPlayerController::OnInventoryItemMainAction(int32 SlotId) {
+	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
+	if (BaseCharacter) {
+		ASandboxObject* Obj = GetInventoryObject(SlotId);
+		if (Obj) {
+			const int TypeId = Obj->GetSandboxTypeId();
+			if (TypeId == 500) {
+				AClothing* Clothing = Cast<AClothing>(Obj);
+				if (Clothing) {
+					if (Clothing->SkeletalMesh) {
+						USkeletalMeshComponent* SkeletalMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(BaseCharacter, TEXT("BootsMesh"));
+						if (SkeletalMeshComponent) {
+							UE_LOG(LogTemp, Warning, TEXT("Equip"));
+
+							USkeletalMeshComponent* CharacterMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(BaseCharacter, TEXT("CharacterMesh0"));
+							SkeletalMeshComponent->SetSkeletalMesh(Clothing->SkeletalMesh);
+							SkeletalMeshComponent->SetMasterPoseComponent(CharacterMeshComponent, true);
+
+							if (Clothing->bModifyFootPose) {
+								Clothing->GetFootPose(BaseCharacter->LeftFootRotator, BaseCharacter->RightFootRotator);
+							}
+
+							for (auto& Entry : Clothing->MorphMap) {
+								FString Name = Entry.Key;
+								float Value = Entry.Value;
+
+								UE_LOG(LogTemp, Warning, TEXT("%s %f"), *Name, Value);
+								SkeletalMeshComponent->SetMorphTarget(*Name, Value);
+							}
+
+						}
+					}
+				}
+			}
+		}
+	}
 }

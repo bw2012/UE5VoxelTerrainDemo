@@ -51,6 +51,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "SandboxInventory")
 	UContainerComponent* GetOpenedContainer();
 
+	UFUNCTION(BlueprintCallable, Category = "SandboxInventory")
+	void HandleSlotMainAction(int32 SlotId);
+
 protected:
 	UContainerComponent* GetContainer();
 

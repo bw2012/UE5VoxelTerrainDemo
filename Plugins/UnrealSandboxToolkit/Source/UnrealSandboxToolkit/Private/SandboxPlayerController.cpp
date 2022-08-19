@@ -400,3 +400,7 @@ ASandboxObject* ASandboxPlayerController::GetOpenedObject() {
 void  ASandboxPlayerController::ShowMouseCursor(bool bShowCursor) { 
 	this->bShowMouseCursor = bShowCursor; 
 };
+
+void ASandboxPlayerController::OnInventoryItemMainAction(int32 SlotId) {
+
+}

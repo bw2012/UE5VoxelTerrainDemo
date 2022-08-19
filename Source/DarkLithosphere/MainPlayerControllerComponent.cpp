@@ -304,8 +304,6 @@ bool UMainPlayerControllerComponent::PlaceCurrentObjectToWorld() {
 							return true;
 						}
 					}
-
-
 				}
 			}
 		}
@@ -436,7 +434,6 @@ void UMainPlayerControllerComponent::TakeSelectedObjectToInventory() {
 			}
 		}
 
-
 		MainController->TakeObjectToInventory();
 	}
 
@@ -530,4 +527,8 @@ void UMainPlayerControllerComponent::OnSelectCurrentInventorySlot(int SlotId) {
 
 		BaseCharacter->SelectActiveInventorySlot(SlotId);
 	}
+}
+
+void UMainPlayerControllerComponent::OnInventoryItemMainAction(int32 SlotId) {
+
 }

@@ -57,7 +57,6 @@ FString USandboxObjectContainerCellWidget::SlotGetAmountText(int32 SlotId) {
 	return TEXT("");
 }
 
-
 UContainerComponent* USandboxObjectContainerCellWidget::GetContainer() {
 	if (ContainerId == 0) {
 		APawn* Pawn = GetOwningPlayer()->GetPawn();
@@ -196,7 +195,6 @@ bool USandboxObjectContainerCellWidget::SlotIsEmpty(int32 SlotId) {
 	return false;
 }
 
-
 AActor* USandboxObjectContainerCellWidget::GetOpenedObject() {
 	if (ContainerId == 100) { 
 		ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
@@ -214,4 +212,13 @@ AActor* USandboxObjectContainerCellWidget::GetOpenedObject() {
 
 UContainerComponent* USandboxObjectContainerCellWidget::GetOpenedContainer() {
 	return GetContainer();
+}
+
+void USandboxObjectContainerCellWidget::HandleSlotMainAction(int32 SlotId) {
+	UE_LOG(LogTemp, Log, TEXT("HandleSlotMainAction: %d"), SlotId);
+
+	ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
+	if (SandboxPC) {
+		SandboxPC->OnInventoryItemMainAction(SlotId);
+	}
 }

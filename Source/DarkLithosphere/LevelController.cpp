@@ -31,8 +31,8 @@ void ALevelController::ContainerToJson(const UContainerComponent* Container, TSh
 				FString ClassName = SandboxObject->GetClass()->GetName();
 				JsonWriter->WriteValue("SlotId", SlotId);
 				JsonWriter->WriteValue("Class", ClassName);
-				JsonWriter->WriteValue("ClassId", SandboxObject->GetSandboxClassId());
-				JsonWriter->WriteValue("TypeId", SandboxObject->GetSandboxClassId());
+				JsonWriter->WriteValue("ClassId", (int64)SandboxObject->GetSandboxClassId());
+				JsonWriter->WriteValue("TypeId", SandboxObject->GetSandboxTypeId());
 				JsonWriter->WriteValue("Amount", Stack.Amount);
 
 				JsonWriter->WriteObjectEnd();

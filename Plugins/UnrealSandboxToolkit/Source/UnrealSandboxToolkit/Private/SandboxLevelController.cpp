@@ -69,8 +69,8 @@ void ASandboxLevelController::SaveObject(TSharedRef <TJsonWriter<TCHAR>> JsonWri
 				FString ClassName = SandboxObject->GetClass()->GetName();
 				JsonWriter->WriteValue("SlotId", TmpStack.SlotId);
 				JsonWriter->WriteValue("Class", ClassName);
-				JsonWriter->WriteValue("ClassId", SandboxObject->GetSandboxClassId());
-				JsonWriter->WriteValue("TypeId", SandboxObject->GetSandboxClassId());
+				JsonWriter->WriteValue("ClassId", (int64)SandboxObject->GetSandboxClassId());
+				JsonWriter->WriteValue("TypeId", SandboxObject->GetSandboxTypeId());
 				JsonWriter->WriteValue("Amount", TmpStack.Stack.Amount);
 
 				JsonWriter->WriteObjectEnd();
@@ -197,15 +197,15 @@ void ASandboxLevelController::PrepareMetaData() {
 	ObjectListCopy.Sort([](const TSubclassOf<ASandboxObject>& ip1, const TSubclassOf<ASandboxObject>& ip2) {
 		ASandboxObject* SandboxObject1 = Cast<ASandboxObject>(ip1->ClassDefaultObject);
 		ASandboxObject* SandboxObject2 = Cast<ASandboxObject>(ip2->ClassDefaultObject);
-		int32 ClassId1 = SandboxObject1->GetSandboxClassId();
-		int32 ClassId2 = SandboxObject2->GetSandboxClassId();
+		uint64 ClassId1 = SandboxObject1->GetSandboxClassId();
+		uint64 ClassId2 = SandboxObject2->GetSandboxClassId();
 		return  ClassId1 < ClassId2;
 	});
 
 	for (const TSubclassOf<ASandboxObject>& SandboxObjectSubclass : ObjectListCopy) {
 		//TSubclassOf<ASandboxObject> SandboxObjectSubclass = Elem.Value;
 		ASandboxObject* SandboxObject = Cast<ASandboxObject>(SandboxObjectSubclass->ClassDefaultObject);
-		int32 ClassId = SandboxObject->GetSandboxClassId();
+		uint64 ClassId = SandboxObject->GetSandboxClassId();
 		FString ClassName = SandboxObjectSubclass->ClassDefaultObject->GetClass()->GetName();
 
 		if (ClassId == 0) {

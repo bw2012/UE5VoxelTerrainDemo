@@ -4,11 +4,15 @@
 ACoreCharacter::ACoreCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer) {
 	PrimaryActorTick.bCanEverTick = true;
 	InitialOverlayState = EALSOverlayState::Default;
+	//DefaultFootRotator = FRotator(0, 0, 0); // 0, 20, 10
 }
 
 void ACoreCharacter::BeginPlay() {
 	Super::BeginPlay();
 	SetOverlayState(InitialOverlayState, true);
+
+	LeftFootRotator = DefaultFootRotator; // 55, 5, 10 roll, pitch, yaw Pitch(InF), Yaw(InF), Roll(InF)
+	RightFootRotator = FRotator(-DefaultFootRotator.Pitch, -DefaultFootRotator.Yaw, DefaultFootRotator.Roll);
 }
 
 void ACoreCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent){

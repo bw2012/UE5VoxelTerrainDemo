@@ -51,6 +51,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	EALSOverlayState InitialOverlayState;
 
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	FRotator DefaultFootRotator;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sandbox")
+	FRotator LeftFootRotator;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sandbox")
+	FRotator RightFootRotator;
+
 
 	/*
 	void JumpAction(bool bValue);

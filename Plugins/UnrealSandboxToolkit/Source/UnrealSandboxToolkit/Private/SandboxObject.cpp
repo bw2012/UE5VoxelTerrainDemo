@@ -16,7 +16,7 @@ FString ASandboxObject::GetSandboxName() {
 	return DefaultSandboxObjectName;
 }
 
-int ASandboxObject::GetSandboxClassId() const {
+uint64 ASandboxObject::GetSandboxClassId() const {
 	return SandboxClassId; 
 }
 
