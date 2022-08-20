@@ -13,7 +13,6 @@
 #include "BaseCharacter.h"
 //#include "CoreCharacter.h"
 #include "Objects/MiningTool.h"
-#include "Objects/Clothing.h"
 
 #include "DrawDebugHelpers.h"
 
@@ -721,11 +720,13 @@ ALevelController* AMainPlayerController::GetLevelController() {
 	return (ALevelController*)LevelController;
 }
 
-void AMainPlayerController::OnInventoryItemMainAction(int32 SlotId) {
+void AMainPlayerController::OnContainerMainAction(int32 SlotId, FName ContainerName) {
 	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
 	if (BaseCharacter) {
 		ASandboxObject* Obj = GetInventoryObject(SlotId);
 		if (Obj) {
+
+			/*
 			const int TypeId = Obj->GetSandboxTypeId();
 			if (TypeId == 500) {
 				AClothing* Clothing = Cast<AClothing>(Obj);
@@ -750,11 +751,34 @@ void AMainPlayerController::OnInventoryItemMainAction(int32 SlotId) {
 								UE_LOG(LogTemp, Warning, TEXT("%s %f"), *Name, Value);
 								SkeletalMeshComponent->SetMorphTarget(*Name, Value);
 							}
-
 						}
 					}
 				}
 			}
+			*/
 		}
 	}
+}
+
+void AMainPlayerController::OnContainerDropSuccess(int32 SlotId, FName SourceName, FName TargetName) {
+	if (SourceName == TEXT("Equipment") || TargetName == TEXT("Equipment")) {
+		ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
+		if (BaseCharacter) {
+			BaseCharacter->RebuildEquipment();
+		}
+	}
+}
+
+bool AMainPlayerController::OnContainerDropCheck(int32 SlotId, FName ContainerName, ASandboxObject* Obj) {
+	if (ContainerName == TEXT("Equipment")) {
+		if (Obj->GetSandboxTypeId() == 500) {
+			return true;
+		} 
+
+		// TODO
+
+		return false;
+	}
+
+	return true;
 }

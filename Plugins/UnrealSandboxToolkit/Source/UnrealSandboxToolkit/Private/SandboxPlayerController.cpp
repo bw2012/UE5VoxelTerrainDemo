@@ -288,20 +288,24 @@ void ASandboxPlayerController::SelectActionObject(AActor* Actor) {
 	}
 }
 
-UContainerComponent* ASandboxPlayerController::GetInventory() {
+UContainerComponent* ASandboxPlayerController::GetContainerByName(FName ContainerName) {
 	APawn* PlayerPawn = GetPawn();
 	if (PlayerPawn) {
 		TArray<UContainerComponent*> Components;
 		PlayerPawn->GetComponents<UContainerComponent>(Components);
 
 		for (UContainerComponent* Container : Components) {
-			if (Container->GetName() == TEXT("Inventory")) {
+			if (Container->GetName() == ContainerName.ToString()) {
 				return Container;
 			}
 		}
 	}
 
 	return nullptr;
+}
+
+UContainerComponent* ASandboxPlayerController::GetInventory() {
+	return GetContainerByName(TEXT("Inventory"));
 }
 
 bool ASandboxPlayerController::TakeObjectToInventory() {
@@ -401,6 +405,14 @@ void  ASandboxPlayerController::ShowMouseCursor(bool bShowCursor) {
 	this->bShowMouseCursor = bShowCursor; 
 };
 
-void ASandboxPlayerController::OnInventoryItemMainAction(int32 SlotId) {
+void ASandboxPlayerController::OnContainerMainAction(int32 SlotId, FName ContainerName) {
 
+}
+
+void ASandboxPlayerController::OnContainerDropSuccess(int32 SlotId, FName SourceName, FName TargetName) {
+
+}
+
+bool ASandboxPlayerController::OnContainerDropCheck(int32 SlotId, FName ContainerName, ASandboxObject* Obj) {
+	return true;
 }

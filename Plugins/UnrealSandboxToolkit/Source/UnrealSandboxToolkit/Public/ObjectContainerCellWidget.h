@@ -14,6 +14,14 @@
 
 class UContainerComponent;
 
+
+UENUM(BlueprintType)
+enum class EContainerCellBinding : uint8 {
+	Player = 0				UMETA(DisplayName = "Player"),
+	ExternalObject = 1		UMETA(DisplayName = "External Object"),
+};
+
+
 /**
  * 
  */
@@ -25,7 +33,10 @@ class UNREALSANDBOXTOOLKIT_API USandboxObjectContainerCellWidget : public UUserW
 public:	
 
 	UPROPERTY(EditAnywhere, Category = "SandboxInventory")
-	uint32 ContainerId; // 100 is current opened object, other ids is reserved for backpack, pockets, and etc
+	FName ContainerName;
+
+	UPROPERTY(EditAnywhere, Category = "SandboxInventory")
+	EContainerCellBinding CellBinding;
 
 	UFUNCTION(BlueprintCallable, Category = "SandboxInventory")
 	FLinearColor SlotBorderColor(int32 SlotId);
@@ -46,15 +57,20 @@ public:
 	bool SlotIsEmpty(int32 SlotId);
 
 	UFUNCTION(BlueprintCallable, Category = "SandboxInventory")
-	AActor* GetOpenedObject();
+	void HandleSlotMainAction(int32 SlotId);
 
+	UFUNCTION(BlueprintCallable, Category = "SandboxInventory")
+	AActor* GetOpenedObject();
+	
 	UFUNCTION(BlueprintCallable, Category = "SandboxInventory")
 	UContainerComponent* GetOpenedContainer();
-
-	UFUNCTION(BlueprintCallable, Category = "SandboxInventory")
-	void HandleSlotMainAction(int32 SlotId);
 
 protected:
 	UContainerComponent* GetContainer();
 
+	bool IsExternal();
+
+private:
+
+	bool SlotDropInternal(int32 SlotDropId, int32 SlotTargetId, AActor* SourceActor, UContainerComponent* SourceContainer, bool bOnlyOne);
 };

@@ -112,7 +112,21 @@ public:
 		return nullptr;
 	}
 
+	template<class T>
+	T* GetFirstComponentByName(AActor* Actor, FString ComponentName) {
+		TArray<T*> Components;
+		Actor->GetComponents<T>(Components);
+		for (T* Component : Components) {
+			if (Component->GetName() == ComponentName)
+				return Component;
+		}
+
+		return nullptr;
+	}
+
 	bool IsDead();
+
+	void RebuildEquipment();
 
 protected:
 

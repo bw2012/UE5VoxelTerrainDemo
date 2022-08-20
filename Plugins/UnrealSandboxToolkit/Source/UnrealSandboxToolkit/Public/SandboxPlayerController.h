@@ -105,7 +105,9 @@ protected:
 
 	virtual void ToggleView();
 
-	virtual UContainerComponent* GetInventory();
+	UContainerComponent* GetContainerByName(FName ContainerName);
+
+	UContainerComponent* GetInventory();
 
 	virtual void OnTracePlayerActionPoint(const FHitResult& Res);
 
@@ -120,7 +122,11 @@ public:
 
 	void ShowMouseCursor(bool bShowCursor);
 
-	virtual void OnInventoryItemMainAction(int32 SlotId);
+	virtual void OnContainerMainAction(int32 SlotId, FName ContainerName);
+
+	virtual void OnContainerDropSuccess(int32 SlotId, FName SourceName, FName TargetName);
+
+	virtual bool OnContainerDropCheck(int32 SlotId, FName ContainerName, ASandboxObject* Obj);
 
 private:
 

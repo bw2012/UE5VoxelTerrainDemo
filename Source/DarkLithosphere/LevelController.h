@@ -23,6 +23,8 @@ struct FTempCharacterLoadInfo {
 	FRotator Rotation;
 
 	TArray<FTempContainerStack> Inventory;
+
+	TArray<FTempContainerStack> Equipment;
 };
 
 

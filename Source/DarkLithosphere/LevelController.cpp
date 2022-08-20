@@ -18,7 +18,7 @@ void ALevelController::ContainerToJson(const UContainerComponent* Container, TSh
 	JsonWriter->WriteObjectStart();
 	JsonWriter->WriteObjectStart("Container");
 
-	FString Name = GetName();
+	FString Name = Container->GetName();
 	JsonWriter->WriteValue("Name", Name);
 
 	JsonWriter->WriteArrayStart("Content");
@@ -196,7 +196,6 @@ void ALevelController::LoadLevelJsonExt(TSharedPtr<FJsonObject> JsonParsed) {
 				TSharedPtr<FJsonObject> ContainerPtr = ContainerList[Idx2]->AsObject();
 				TSharedPtr<FJsonObject> Container2Ptr = ContainerPtr->GetObjectField(TEXT("Container"));
 				FString Name = Container2Ptr->GetStringField("Name"); // TODO handle container name
-				//UContainerComponent* Container = BaseCharacter->GetInventory("Inventory");
 				TArray<TSharedPtr<FJsonValue>> ContentArray = Container2Ptr->GetArrayField("Content");
 
 				for (int Idx3 = 0; Idx3 < ContentArray.Num(); Idx3++) {
@@ -217,8 +216,13 @@ void ALevelController::LoadLevelJsonExt(TSharedPtr<FJsonObject> JsonParsed) {
 					TempContainerStack.Stack = Stack;
 					TempContainerStack.SlotId = SlotId;
 
-					TempCharacterInfo.Inventory.Add(TempContainerStack);
-					//Container->AddStack(Stack, SlotId);
+					if (Name == TEXT("Inventory")) {
+						TempCharacterInfo.Inventory.Add(TempContainerStack);
+					}
+
+					if (Name == TEXT("Equipment")) {
+						TempCharacterInfo.Equipment.Add(TempContainerStack);
+					}
 				}
 			}
 
@@ -244,13 +248,21 @@ void ALevelController::SpawnTempCharacterList() {
 		FVector Pos(TempCharacterInfo.Location.X, TempCharacterInfo.Location.Y, TempCharacterInfo.Location.Z + 90);// ALS spawn issue woraround
 		ABaseCharacter* BaseCharacter = (ABaseCharacter*)GetWorld()->SpawnActor(BaseCharacterSubclass, &Pos, &TempCharacterInfo.Rotation);
 		BaseCharacter->SandboxPlayerId = TempCharacterInfo.PlayerId;
-		UContainerComponent* Container = BaseCharacter->GetInventory("Inventory");
-		if (Container) {
+		UContainerComponent* InventoryContainer = BaseCharacter->GetInventory("Inventory");
+		if (InventoryContainer) {
 			for (const FTempContainerStack& TempContainerStack : TempCharacterInfo.Inventory) {
-				Container->AddStack(TempContainerStack.Stack, TempContainerStack.SlotId);
+				InventoryContainer->AddStack(TempContainerStack.Stack, TempContainerStack.SlotId);
 			}
 		}
-		
+
+		UContainerComponent* EquipmentContainer = BaseCharacter->GetInventory("Equipment");
+		if (EquipmentContainer) {
+			for (const FTempContainerStack& TempContainerStack : TempCharacterInfo.Equipment) {
+				EquipmentContainer->AddStack(TempContainerStack.Stack, TempContainerStack.SlotId);
+			}
+		}
+
+		BaseCharacter->RebuildEquipment();
 	}
 }
 

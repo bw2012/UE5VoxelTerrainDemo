@@ -6,32 +6,9 @@
 #include "SandboxPlayerController.h"
 
 FLinearColor USandboxObjectContainerCellWidget::SlotBorderColor(int32 SlotId) {
-	if (ContainerId == 0) {
-		ASandboxPlayerController* PlayerController = Cast<ASandboxPlayerController>(GetOwningPlayer());
-		if (PlayerController) {
-			if (PlayerController->CurrentInventorySlot == SlotId) {
-				return FLinearColor(0.1, 0.4, 1, 1);
-			}
-		}
-	}
-
-	/*
-	UContainerComponent* Container = GetContainer();
-	if (Container != NULL) {
-		FContainerStack* Stack = Container->GetSlot(SlotId);
-		if (Stack != NULL) {
-			if (Stack->Object != nullptr) {
-				if (Stack->Amount > 0) {
-					return FLinearColor(0.97, 1, 0.4, 1);
-				}
-			}
-		}
-	}
-	*/
-
+	//TODO slot colors
 	return FLinearColor(0, 0, 0, 0.5);
 }
-
 
 FString USandboxObjectContainerCellWidget::SlotGetAmountText(int32 SlotId) {
 	UContainerComponent* Container = GetContainer();
@@ -57,25 +34,27 @@ FString USandboxObjectContainerCellWidget::SlotGetAmountText(int32 SlotId) {
 	return TEXT("");
 }
 
+bool USandboxObjectContainerCellWidget::IsExternal() {
+	return CellBinding == EContainerCellBinding::ExternalObject;
+}
+
 UContainerComponent* USandboxObjectContainerCellWidget::GetContainer() {
-	if (ContainerId == 0) {
+	if (IsExternal()) {
+		ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
+		if (SandboxPC) {
+			return SandboxPC->GetOpenedContainer();
+		}
+	} else {
 		APawn* Pawn = GetOwningPlayer()->GetPawn();
 		if (Pawn) {
 			TArray<UContainerComponent*> Components;
 			Pawn->GetComponents<UContainerComponent>(Components);
 
 			for (UContainerComponent* Container : Components) {
-				if (Container->GetName().Equals(TEXT("Inventory"))) {
+				if (Container->GetName().Equals(ContainerName.ToString())) {
 					return Container;
 				}
 			}
-		}
-	}
-
-	if (ContainerId == 100) { // opened object
-		ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
-		if (SandboxPC) {
-			return SandboxPC->GetOpenedContainer();
 		}
 	}
 
@@ -120,6 +99,32 @@ bool IsSameObject(FContainerStack* StackSourcePtr, FContainerStack* StackTargetP
 }
 
 bool USandboxObjectContainerCellWidget::SlotDrop(int32 SlotDropId, int32 SlotTargetId, AActor* SourceActor, UContainerComponent* SourceContainer, bool bOnlyOne) {
+	if (SlotDropInternal(SlotDropId, SlotTargetId, SourceActor, SourceContainer, bOnlyOne)) {
+		FName SourceName = *SourceContainer->GetName();
+		FName TargetName = ContainerName;
+
+		if (!IsExternal()) {
+			ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
+			if (SandboxPC) {
+				SandboxPC->OnContainerDropSuccess(SlotTargetId, SourceName, TargetName);
+			}
+		} else {
+			ACharacter* PlayerCharacter = Cast<ACharacter>(SourceActor);
+			if (PlayerCharacter) {
+				ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(PlayerCharacter->GetController());
+				if (SandboxPC) {
+					SandboxPC->OnContainerDropSuccess(SlotTargetId, SourceName, TargetName);
+				}
+			}
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+bool USandboxObjectContainerCellWidget::SlotDropInternal(int32 SlotDropId, int32 SlotTargetId, AActor* SourceActor, UContainerComponent* SourceContainer, bool bOnlyOne) {
 	UE_LOG(LogTemp, Log, TEXT("UI cell drop: drop id -> %d ---> target id -> %d"), SlotDropId, SlotTargetId);
 
 	if (SourceContainer == nullptr) {
@@ -131,6 +136,9 @@ bool USandboxObjectContainerCellWidget::SlotDrop(int32 SlotDropId, int32 SlotTar
 	}
 
 	UContainerComponent* TargetContainer = GetContainer();
+	if (!TargetContainer) {
+		return false;
+	}
 
 	if (SlotDropId == SlotTargetId && TargetContainer == SourceContainer) {
 		return false;
@@ -148,6 +156,16 @@ bool USandboxObjectContainerCellWidget::SlotDrop(int32 SlotDropId, int32 SlotTar
 
 	if (StackSourcePtr) {
 		StackSource = *StackSourcePtr;
+	}
+
+	if (!IsExternal()) {
+		ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
+		if (SandboxPC) {
+			ASandboxObject* Obj = (ASandboxObject*)StackSource.ObjectClass->GetDefaultObject();
+			if (!SandboxPC->OnContainerDropCheck(SlotTargetId, ContainerName, Obj)) {
+				return false;
+			}
+		}
 	}
 
 	if (IsSameObject(StackSourcePtr, StackTargetPtr)) {
@@ -195,30 +213,26 @@ bool USandboxObjectContainerCellWidget::SlotIsEmpty(int32 SlotId) {
 	return false;
 }
 
-AActor* USandboxObjectContainerCellWidget::GetOpenedObject() {
-	if (ContainerId == 100) { 
+void USandboxObjectContainerCellWidget::HandleSlotMainAction(int32 SlotId) {
+	ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
+	if (SandboxPC) {
+		SandboxPC->OnContainerMainAction(SlotId, ContainerName);
+	}
+}
+
+AActor * USandboxObjectContainerCellWidget::GetOpenedObject() {
+	if (IsExternal()) {
 		ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
 		if (SandboxPC != nullptr) {
 			return SandboxPC->GetOpenedObject();
 		}
-	}
-
-	if (ContainerId == 0) {
+	} else {
 		return GetOwningPlayer()->GetPawn();
 	}
 
 	return nullptr;
 }
 
-UContainerComponent* USandboxObjectContainerCellWidget::GetOpenedContainer() {
+UContainerComponent * USandboxObjectContainerCellWidget::GetOpenedContainer() {
 	return GetContainer();
-}
-
-void USandboxObjectContainerCellWidget::HandleSlotMainAction(int32 SlotId) {
-	UE_LOG(LogTemp, Log, TEXT("HandleSlotMainAction: %d"), SlotId);
-
-	ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
-	if (SandboxPC) {
-		SandboxPC->OnInventoryItemMainAction(SlotId);
-	}
 }

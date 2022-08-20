@@ -80,6 +80,8 @@ public:
 
 	ASandboxObject* GetAvailableSlotObject(const int Slot);
 
+	TArray<ASandboxObject*> GetAllObjects();
+
 private:
 
 

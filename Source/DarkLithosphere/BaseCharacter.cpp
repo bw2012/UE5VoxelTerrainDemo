@@ -2,6 +2,7 @@
 
 #include "BaseCharacter.h"
 #include "Objects/BaseObject.h"
+#include "Objects/Clothing.h"
 #include "MainPlayerController.h"
 #include "TerrainController.h"
 
@@ -263,6 +264,63 @@ bool ABaseCharacter::PlaySoundCue(USoundCue* SoundCue) {
 	return false;
 }
 
-void  ABaseCharacter::OnFinishSound() {
+void ABaseCharacter::OnFinishSound() {
 	bIsPlaySound = false;
+}
+
+void ABaseCharacter::RebuildEquipment() {
+	UE_LOG(LogTemp, Warning, TEXT("RebuildEquipment"));
+
+	// build equipment
+	// 
+	// prapare sk mesh array 
+	// TODO finish it
+	TArray<FString> EquipSkMeshArray;
+	EquipSkMeshArray.Add(TEXT("BootsMesh"));
+
+	//reset foot heel offset
+	LeftFootRotator = DefaultFootRotator;
+	RightFootRotator = DefaultFootRotator;
+
+	// clear equipment
+	for (FString EquipSkMeshName : EquipSkMeshArray) {
+		USkeletalMeshComponent* SkeletalMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(EquipSkMeshName);
+		SkeletalMeshComponent->SetSkeletalMesh(nullptr);
+	}
+
+	UContainerComponent* Equipment = GetFirstComponentByName<UContainerComponent>(TEXT("Equipment"));
+	if (Equipment) {
+		// rebuild
+		TArray<ASandboxObject*> ObjList = Equipment->GetAllObjects();
+		for (ASandboxObject* Obj : ObjList) {
+			const int TypeId = Obj->GetSandboxTypeId();
+			if (TypeId == 500) {
+				AClothing* Clothing = Cast<AClothing>(Obj);
+				if (Clothing) {
+					if (Clothing->SkeletalMesh) {
+						USkeletalMeshComponent* SkeletalMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(TEXT("BootsMesh"));
+						if (SkeletalMeshComponent) {
+							USkeletalMeshComponent* CharacterMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(TEXT("CharacterMesh0"));
+							SkeletalMeshComponent->SetSkeletalMesh(Clothing->SkeletalMesh);
+							SkeletalMeshComponent->SetMasterPoseComponent(CharacterMeshComponent, true);
+
+							if (Clothing->bModifyFootPose) {
+								Clothing->GetFootPose(LeftFootRotator, RightFootRotator);
+							}
+
+							for (auto& Entry : Clothing->MorphMap) {
+								FString Name = Entry.Key;
+								float Value = Entry.Value;
+
+								UE_LOG(LogTemp, Warning, TEXT("%s %f"), *Name, Value);
+								SkeletalMeshComponent->SetMorphTarget(*Name, Value);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	
 }

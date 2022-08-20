@@ -183,3 +183,20 @@ void UContainerComponent::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >
 void UContainerComponent::CopyTo(UContainerComponent* Target) {
 	Target->Content = this->Content;
 }
+
+TArray<ASandboxObject*> UContainerComponent::GetAllObjects() {
+	TArray<ASandboxObject*> Result;
+	for (int Idx = 0; Idx < Content.Num(); Idx++) {
+		FContainerStack* Stack = &Content[Idx];
+		if (Stack) {
+			ASandboxObject* Obj = Stack->GetObject();
+			if (Obj) {
+				Result.Add(Obj);
+			}
+		}
+
+
+	}
+
+	return Result;
+}

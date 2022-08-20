@@ -138,6 +138,12 @@ public:
 
 	bool IsGuiMode();
 
+	void OnContainerMainAction(int32 SlotId, FName ContainerName) override;
+
+	void OnContainerDropSuccess(int32 SlotId, FName SourceName, FName TargetName) override;
+
+	bool OnContainerDropCheck(int32 SlotId, FName ContainerName, ASandboxObject* Obj) override;
+
 protected:
 
 	virtual void PlayerTick(float DeltaTime) override;
@@ -185,8 +191,6 @@ protected:
 
 		return nullptr;
 	}
-
-	void OnInventoryItemMainAction(int32 SlotId) override;
 
 private:
 	bool bGuiMode = false;
