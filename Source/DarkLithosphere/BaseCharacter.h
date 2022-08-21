@@ -74,6 +74,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	USoundCue* IdleSound;
 
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	TArray<TSubclassOf<ASandboxSkeletalModule>> DefaultModularSkMesh;
+
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
@@ -157,5 +160,9 @@ private:
 	FVector GrassTraceLastPos;
 
 	bool bIsEmptyHand = false;
+
+	TArray<FString> ModularSkMeshArray;
+
+	void MakeModularSkList();
 
 };

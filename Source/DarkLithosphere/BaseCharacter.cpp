@@ -2,7 +2,6 @@
 
 #include "BaseCharacter.h"
 #include "Objects/BaseObject.h"
-#include "Objects/Clothing.h"
 #include "MainPlayerController.h"
 #include "TerrainController.h"
 
@@ -24,6 +23,9 @@ ABaseCharacter::ABaseCharacter(const FObjectInitializer& ObjectInitializer) : Su
 // Called when the game starts or when spawned
 void ABaseCharacter::BeginPlay() {
 	Super::BeginPlay();
+
+	MakeModularSkList();
+
 	SelectActiveInventorySlot(0);
 
 	UShapeComponent* RightHandCollisionComponent = GetFirstComponentByName<UShapeComponent>(TEXT("RightHandCollision"));
@@ -268,26 +270,23 @@ void ABaseCharacter::OnFinishSound() {
 	bIsPlaySound = false;
 }
 
+//TODO to ASandboxCharacter
+//==========================================================================================
+
 void ABaseCharacter::RebuildEquipment() {
 	UE_LOG(LogTemp, Warning, TEXT("RebuildEquipment"));
 
-	// build equipment
-	// 
-	// prapare sk mesh array 
-	// TODO finish it
-	TArray<FString> EquipSkMeshArray;
-	EquipSkMeshArray.Add(TEXT("BootsMesh"));
-
 	//reset foot heel offset
-	LeftFootRotator = DefaultFootRotator;
-	RightFootRotator = DefaultFootRotator;
+	LeftFootRotator = DefaultFootRotator; 
+	RightFootRotator = FRotator(-DefaultFootRotator.Pitch, -DefaultFootRotator.Yaw, DefaultFootRotator.Roll);
 
 	// clear equipment
-	for (FString EquipSkMeshName : EquipSkMeshArray) {
-		USkeletalMeshComponent* SkeletalMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(EquipSkMeshName);
+	for (FString ModularSkMeshName : ModularSkMeshArray) {
+		USkeletalMeshComponent* SkeletalMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(ModularSkMeshName);
 		SkeletalMeshComponent->SetSkeletalMesh(nullptr);
 	}
 
+	TSet<FString> UsedSkMeshSet;
 	UContainerComponent* Equipment = GetFirstComponentByName<UContainerComponent>(TEXT("Equipment"));
 	if (Equipment) {
 		// rebuild
@@ -295,10 +294,11 @@ void ABaseCharacter::RebuildEquipment() {
 		for (ASandboxObject* Obj : ObjList) {
 			const int TypeId = Obj->GetSandboxTypeId();
 			if (TypeId == 500) {
-				AClothing* Clothing = Cast<AClothing>(Obj);
+				ASandboxSkeletalModule* Clothing = Cast<ASandboxSkeletalModule>(Obj);
 				if (Clothing) {
 					if (Clothing->SkeletalMesh) {
-						USkeletalMeshComponent* SkeletalMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(TEXT("BootsMesh"));
+						FString SkMeshBindName = TEXT("ModularSk") + Clothing->SkMeshBindName.ToString() + TEXT("Mesh");
+						USkeletalMeshComponent* SkeletalMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(SkMeshBindName);
 						if (SkeletalMeshComponent) {
 							USkeletalMeshComponent* CharacterMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(TEXT("CharacterMesh0"));
 							SkeletalMeshComponent->SetSkeletalMesh(Clothing->SkeletalMesh);
@@ -314,6 +314,8 @@ void ABaseCharacter::RebuildEquipment() {
 
 								UE_LOG(LogTemp, Warning, TEXT("%s %f"), *Name, Value);
 								SkeletalMeshComponent->SetMorphTarget(*Name, Value);
+
+								UsedSkMeshSet.Add(Clothing->SkMeshBindName.ToString());
 							}
 						}
 					}
@@ -322,5 +324,36 @@ void ABaseCharacter::RebuildEquipment() {
 		}
 	}
 
-	
+	for (TSubclassOf<ASandboxSkeletalModule> Itm : DefaultModularSkMesh) {
+		ASandboxSkeletalModule* DefaultSkMesh = (ASandboxSkeletalModule*)Itm->GetDefaultObject();
+		FName BindName = DefaultSkMesh->SkMeshBindName;
+
+		if (!UsedSkMeshSet.Contains(BindName.ToString())) {
+			UE_LOG(LogTemp, Warning, TEXT("Default: %s"), *BindName.ToString());
+
+			FString SkMeshBindName = TEXT("ModularSk") + BindName.ToString() + TEXT("Mesh");
+			USkeletalMeshComponent* SkeletalMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(SkMeshBindName);
+			if (SkeletalMeshComponent) {
+				USkeletalMeshComponent* CharacterMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(TEXT("CharacterMesh0"));
+				SkeletalMeshComponent->SetSkeletalMesh(DefaultSkMesh->SkeletalMesh);
+				SkeletalMeshComponent->SetMasterPoseComponent(CharacterMeshComponent, true);
+			}
+
+		}
+
+	}
 }
+
+void ABaseCharacter::MakeModularSkList() {
+	TArray<USkeletalMeshComponent*> Components;
+	GetComponents<USkeletalMeshComponent>(Components);
+	for (USkeletalMeshComponent* Component : Components) {
+		FString Name = Component->GetName();
+		if (Name.StartsWith(TEXT("ModularSk"))) {
+			ModularSkMeshArray.Add(Name);
+		}
+	}
+}
+
+
+//==========================================================================================

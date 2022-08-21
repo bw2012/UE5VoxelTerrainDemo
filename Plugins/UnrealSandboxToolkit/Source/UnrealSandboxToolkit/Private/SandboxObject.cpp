@@ -107,3 +107,13 @@ bool ASandboxObject::PlaceToWorldClcPosition(const FVector& SourcePos, const FRo
 	Rotation.Yaw = SourceRotation.Yaw;
 	return true;
 }
+
+int ASandboxSkeletalModule::GetSandboxTypeId() const {
+	return 500;
+}
+
+void ASandboxSkeletalModule::GetFootPose(FRotator& LeftFootRotator, FRotator& RightFootRotator) {
+	LeftFootRotator = FootRotator;
+	RightFootRotator = FRotator(-FootRotator.Pitch, -FootRotator.Yaw, FootRotator.Roll);
+}
+

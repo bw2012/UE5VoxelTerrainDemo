@@ -104,6 +104,7 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 						}
 
 						MainCharacter = Cast<ABaseCharacter>(NewCharacter);
+						MainCharacter->RebuildEquipment();
 					}				
 				}
 			}
@@ -729,7 +730,7 @@ void AMainPlayerController::OnContainerMainAction(int32 SlotId, FName ContainerN
 			/*
 			const int TypeId = Obj->GetSandboxTypeId();
 			if (TypeId == 500) {
-				AClothing* Clothing = Cast<AClothing>(Obj);
+				ASandboxSkeletalModule* Clothing = Cast<ASandboxSkeletalModule>(Obj);
 				if (Clothing) {
 					if (Clothing->SkeletalMesh) {
 						USkeletalMeshComponent* SkeletalMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(BaseCharacter, TEXT("BootsMesh"));

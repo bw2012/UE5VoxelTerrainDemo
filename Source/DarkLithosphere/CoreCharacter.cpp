@@ -13,6 +13,7 @@ void ACoreCharacter::BeginPlay() {
 
 	LeftFootRotator = DefaultFootRotator; // 55, 5, 10 roll, pitch, yaw Pitch(InF), Yaw(InF), Roll(InF)
 	RightFootRotator = FRotator(-DefaultFootRotator.Pitch, -DefaultFootRotator.Yaw, DefaultFootRotator.Roll);
+	//RightFootRotator = DefaultFootRotator;
 }
 
 void ACoreCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent){

@@ -243,8 +243,6 @@ void ALevelController::SpawnTempCharacterList() {
 	for (const FTempCharacterLoadInfo& TempCharacterInfo : TempCharacterList) {
 		TSubclassOf<ABaseCharacter> BaseCharacterSubclass = CharacterMap->CharacterTypeMap[TempCharacterInfo.TypeId];
 
-		//DrawDebugPoint(GetWorld(), TempCharacterInfo.Location, 5.f, FColor(255, 255, 255, 0), true);
-
 		FVector Pos(TempCharacterInfo.Location.X, TempCharacterInfo.Location.Y, TempCharacterInfo.Location.Z + 90);// ALS spawn issue woraround
 		ABaseCharacter* BaseCharacter = (ABaseCharacter*)GetWorld()->SpawnActor(BaseCharacterSubclass, &Pos, &TempCharacterInfo.Rotation);
 		BaseCharacter->SandboxPlayerId = TempCharacterInfo.PlayerId;
