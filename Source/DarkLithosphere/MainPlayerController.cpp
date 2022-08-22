@@ -30,12 +30,18 @@ AMainPlayerController::AMainPlayerController() {
 	SelectedPawn = nullptr;
 	NewCharacterId = 0;
 	bSpawnSandboxCharacter = false;
+	bFirstStart = false;
+	SandboxPlayerUid = TEXT("player 0");
 }
 
 void AMainPlayerController::BeginPlay() {
 	Super::BeginPlay();
 
 	bFirstStart = true;
+
+	if (GetWorld()->IsClient()) {
+		bClientPosses = true;
+	}
 
 	for (TActorIterator<ASandboxEnvironment> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
 		ASandboxEnvironment* Env = Cast<ASandboxEnvironment>(*ActorItr);
@@ -73,51 +79,81 @@ APawn* PawnUnderCursor(const FHitResult& Hit) {
 	return nullptr;
 }
 
+void AMainPlayerController::DefineSandboxPlayerUid_Implementation(const FString& NewPlayerUid){
+	SandboxPlayerUid = NewPlayerUid;
+}
+
+void AMainPlayerController::FindOrCreateCharacter_Implementation() {
+	const int32 PlayerId = PlayerState->GetPlayerId();
+	FString Text = TEXT("Spawn player character: ") + FString::FromInt(PlayerId) + TEXT(" ") + SandboxPlayerUid;
+	GEngine->AddOnScreenDebugMessage(-1, 10, FColor::White, Text);
+
+	ABaseCharacter* MainCharacter = nullptr;
+	for (TActorIterator<ABaseCharacter> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+		ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(*ActorItr);
+		if (BaseCharacter) {
+			UE_LOG(LogTemp, Warning, TEXT("BaseCharacter: %s"), *BaseCharacter->GetName());
+			if (BaseCharacter->SandboxPlayerId == 0) {
+				//MainCharacter = BaseCharacter;
+			}
+		}
+	}
+
+	if (bSpawnSandboxCharacter) {
+		if (!MainCharacter) {
+			if (LevelController) {
+				FVector Location(0, 0, 500);
+				FRotator Rotation(0);
+
+				ACharacter* NewCharacter = ((ALevelController*)LevelController)->SpawnCharacterByTypeId(NewCharacterId, Location, Rotation);
+
+				if (NewCharacter) {
+					UContainerComponent* StartupInventory = GetFirstComponentByName<UContainerComponent>(TEXT("StartupInventory"));
+					UContainerComponent* Inventory = GetFirstComponentByName<UContainerComponent>(NewCharacter, TEXT("Inventory"));
+					if (StartupInventory && Inventory) {
+						StartupInventory->CopyTo(Inventory);
+					}
+
+					MainCharacter = Cast<ABaseCharacter>(NewCharacter);
+					MainCharacter->RebuildEquipment();
+				}
+			}
+		}
+
+		if (MainCharacter) {
+			UnPossess();
+			SandboxPossess(MainCharacter);
+		}
+	}
+
+}
+
 void AMainPlayerController::PlayerTick(float DeltaTime) {
 	Super::PlayerTick(DeltaTime);
 
 	if (bFirstStart) {
-		ABaseCharacter* MainCharacter = nullptr;
-		for (TActorIterator<ABaseCharacter> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
-			ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(*ActorItr);
-			if (BaseCharacter) {
-				UE_LOG(LogTemp, Warning, TEXT("BaseCharacter: %s"), *BaseCharacter->GetName());
-				if (BaseCharacter->SandboxPlayerId == 0) {
-					MainCharacter = BaseCharacter;
-				}
-			}
+		if (GetWorld()->IsClient()) {
+			DefineSandboxPlayerUid(TEXT("test-client"));
 		}
 
-		if (bSpawnSandboxCharacter) {
-			if (!MainCharacter) {
-				if (LevelController) {
-					FVector Location(0, 0, 500);
-					FRotator Rotation(0);
-
-					ACharacter* NewCharacter = ((ALevelController*)LevelController)->SpawnCharacterByTypeId(NewCharacterId, Location, Rotation);
-
-					if (NewCharacter) {
-						UContainerComponent* StartupInventory = GetFirstComponentByName<UContainerComponent>(TEXT("StartupInventory"));
-						UContainerComponent* Inventory = GetFirstComponentByName<UContainerComponent>(NewCharacter, TEXT("Inventory"));
-						if (StartupInventory && Inventory) {
-							StartupInventory->CopyTo(Inventory);
-						}
-
-						MainCharacter = Cast<ABaseCharacter>(NewCharacter);
-						MainCharacter->RebuildEquipment();
-					}				
-				}
-			}
-
-			if (MainCharacter) {
-				UnPossess();
-				SandboxPossess(MainCharacter);
-			}
+		if (GetWorld()->IsServer()) {
+			SandboxPlayerUid = TEXT("test-server");
 		}
 
+		FindOrCreateCharacter();
 		bFirstStart = false;
 	}
 
+	// OnPossess not works on client. this is workaround
+	if (GetWorld()->IsClient()) {
+		if (bClientPosses) {
+			SetCurrentInventorySlot(-1);
+
+
+
+			bClientPosses = false;
+		}
+	}
 
 	ADummyPawn* DummyPawn = Cast<ADummyPawn>(GetPawn());
 	if (DummyPawn) {
@@ -640,16 +676,13 @@ FCraftRecipeData* AMainPlayerController::GetCraftRecipeData(int32 RecipeId) {
 	return D;
 }
 
+// server only
 void AMainPlayerController::SandboxPossess(ACharacter* PlayerCharacter) {
 	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(PlayerCharacter);
 	if (BaseCharacter) {
 		Possess(PlayerCharacter);
-
 		SetCurrentInventorySlot(-1);
-		AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
-		if (MainHud) {
-			MainHud->ShowInGameInventory();
-		}
+		ShowInGameHud();
 	}
 }
 
@@ -782,4 +815,14 @@ bool AMainPlayerController::OnContainerDropCheck(int32 SlotId, FName ContainerNa
 	}
 
 	return true;
+}
+
+
+void AMainPlayerController::ShowInGameHud() {
+	if (!IsRunningDedicatedServer()) {
+		AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
+		if (MainHud) {
+			MainHud->ShowInGameInventory();
+		}
+	}
 }

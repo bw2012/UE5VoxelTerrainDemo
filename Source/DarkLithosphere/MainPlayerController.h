@@ -132,6 +132,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sandbox")
 	virtual void OnAltActionReleased();
 
+	UFUNCTION(Server, Reliable)
+	void FindOrCreateCharacter();
+
+	UFUNCTION(Server, Reliable)
+	void DefineSandboxPlayerUid(const FString& NewSandboxPlayerUid);
+
 	FHitResult TracePlayerActionPoint();
 
 	ALevelController* GetLevelController();
@@ -167,6 +173,8 @@ protected:
 	void SandboxPossess(ACharacter* Character);
 
 	void SetupCamera();
+
+	void ShowInGameHud();
 
 	template<class T>
 	T* GetFirstComponentByName(FString ComponentName) {
@@ -227,7 +235,11 @@ private:
 
 	void ResetAllSelections();
 
-	bool bFirstStart = true;
+	bool bFirstStart = false;
+
+	bool bClientPosses = false;
+
+	FString SandboxPlayerUid;
 
 };
 
