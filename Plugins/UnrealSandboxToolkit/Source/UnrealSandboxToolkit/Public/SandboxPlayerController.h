@@ -10,6 +10,14 @@ class ASandboxObject;
 class UUserWidget;
 class UContainerComponent;
 
+USTRUCT()
+struct FPlayerInfo {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	FString PlayerUid;
+};
+
 UCLASS()
 class UNREALSANDBOXTOOLKIT_API ASandboxPlayerController : public APlayerController
 {
@@ -70,6 +78,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sandbox")
 	void TraceAndSelectActionObject();
 
+	UFUNCTION(Server, Reliable)
+	void TransferContainerStack(uint64 ObjectNetUid, const FString& ContainerName, const FContainerStack& Stack, const int SlotId);
+
+	UFUNCTION(Server, Reliable)
+	void TransferInventoryStack(const FString& ContainerName, const FContainerStack& Stack, const int SlotId);
+
 protected:
 	/** True if the controlled character should navigate to the mouse cursor. */
 	uint32 bMoveToMouseCursor : 1;
@@ -126,7 +140,7 @@ public:
 
 	virtual void OnContainerDropSuccess(int32 SlotId, FName SourceName, FName TargetName);
 
-	virtual bool OnContainerDropCheck(int32 SlotId, FName ContainerName, ASandboxObject* Obj);
+	virtual bool OnContainerDropCheck(int32 SlotId, FName ContainerName, const ASandboxObject* Obj) const;
 
 private:
 

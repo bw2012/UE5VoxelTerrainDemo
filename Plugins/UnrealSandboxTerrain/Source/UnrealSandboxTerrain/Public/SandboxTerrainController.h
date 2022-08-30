@@ -30,6 +30,9 @@ class TVoxelDataInfo;
 class TTerrainAreaPipeline;
 class TTerrainLoadPipeline;
 
+class UTerrainClientComponent;
+class UTerrainServerComponent;
+
 typedef TMap<uint64, TInstanceMeshArray> TInstanceMeshTypeMap;
 typedef std::shared_ptr<TMeshData> TMeshDataPtr;
 typedef kvdb::KvFile<TVoxelIndex, TValueData> TKvFile;
@@ -255,6 +258,12 @@ typedef struct TKvFileZodeData {
 
 } TKvFileZodeData;
 
+struct TZoneModificationData {
+
+	uint32 ChangeCounter = 0;
+
+};
+
 UCLASS()
 class UNREALSANDBOXTERRAIN_API ASandboxTerrainController : public AActor {
 	GENERATED_UCLASS_BODY()
@@ -266,6 +275,8 @@ public:
 	friend TTerrainAreaPipeline;
 	friend TTerrainLoadPipeline;
 	friend UTerrainGeneratorComponent;
+	friend UTerrainClientComponent;
+	friend UTerrainServerComponent;
 
 	virtual void BeginPlay() override;
 
@@ -446,6 +457,8 @@ public:
 	// network
 	//========================================================================================
 
+	virtual void OnClientConnected();
+
 	void NetworkSerializeVd(FBufferArchive& Buffer, const TVoxelIndex& VoxelIndex);
 
 	void NetworkSpawnClientZone(const TVoxelIndex& Index, FArrayReader& RawVdData);
@@ -467,8 +480,6 @@ private:
     void PerformCheckArea();
     
     void StartCheckArea();
-    
-	void BeginClient();
 
 	template<class H>
 	FORCEINLINE void PerformZoneEditHandler(std::shared_ptr<TVoxelDataInfo> VdInfoPtr, H Handler, std::function<void(TMeshDataPtr)> OnComplete);
@@ -590,6 +601,24 @@ private:
 
 	void UnloadFarZones(FVector PlayerLocation, float Radius);
 
+	//===============================================================================
+	// network
+	//===============================================================================
+
+	UTerrainClientComponent* TerrainClientComponent;
+
+	UTerrainServerComponent* TerrainServerComponent;
+
+	TMap<TVoxelIndex, TZoneModificationData> ModifiedVdMap;
+
+	std::mutex ModifiedVdMapMutex;
+
+	void SaveTerrainMetadata();
+
+	void LoadTerrainMetadata();
+
+	void IncrementChangeCounter(const TVoxelIndex& ZoneIndex);
+
 protected:
 
 	FMapInfo MapInfo;
@@ -602,6 +631,8 @@ protected:
 
 	virtual void BeginPlayServer();
 
+	virtual void BeginPlayClient();
+
 	bool IsWorkFinished();
 
 	void AddInitialZone(const TVoxelIndex& ZoneIndex);
@@ -609,6 +640,8 @@ protected:
 	//===============================================================================
 	// save/load
 	//===============================================================================
+
+	FString GetSaveDir();
 
 	bool LoadJson();
 

@@ -45,7 +45,6 @@ public:
 
 	virtual void GetUsedMaterials(TArray<UMaterialInterface*>& OutMaterials, bool bGetDebugMaterials = false) const override;
 
-
 	// ======================================================================
 	// collision 
 	// ======================================================================

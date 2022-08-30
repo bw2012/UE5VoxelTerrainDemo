@@ -6,7 +6,7 @@
 
 typedef uint8 TTerrainLodMask;
 
-typedef struct TSpawnZoneParam {
+struct TSpawnZoneParam {
 
 	TSpawnZoneParam() { };
 
@@ -16,7 +16,23 @@ typedef struct TSpawnZoneParam {
 
 	TTerrainLodMask TerrainLodMask = 0;
 
-} TSpawnZoneParam;
+};
+
+struct TEditTerrainParam {
+
+	TEditTerrainParam() { };
+
+	TEditTerrainParam(const FVector& Origin_) : Origin(Origin_) { };
+
+	FVector Origin;
+
+	float Radius = 0;
+
+	float Extend = 0;
+
+	float Strength = 0;
+
+};
 
 UENUM(BlueprintType)
 enum class ESandboxFoliageType : uint8 {

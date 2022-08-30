@@ -413,6 +413,36 @@ void ASandboxPlayerController::OnContainerDropSuccess(int32 SlotId, FName Source
 
 }
 
-bool ASandboxPlayerController::OnContainerDropCheck(int32 SlotId, FName ContainerName, ASandboxObject* Obj) {
+bool ASandboxPlayerController::OnContainerDropCheck(int32 SlotId, FName ContainerName, const ASandboxObject* Obj) const {
 	return true;
+}
+
+void ASandboxPlayerController::TransferContainerStack_Implementation(uint64 ObjectNetUid, const FString& ContainerName, const FContainerStack& Stack, const int SlotId) {
+	if (LevelController) {
+		ASandboxObject* Obj = LevelController->GetObjectByNetUid(ObjectNetUid);
+		if (Obj) {
+			TArray<UContainerComponent*> Components;
+			Obj->GetComponents<UContainerComponent>(Components);
+			for (UContainerComponent* Container : Components) {
+				if (Container->GetName() == ContainerName) {
+					Container->SetStackDirectly(Stack, SlotId);
+				}
+			}
+		}
+
+		Obj->ForceNetUpdate();
+	}
+}
+
+void ASandboxPlayerController::TransferInventoryStack_Implementation(const FString& ContainerName, const FContainerStack& Stack, const int SlotId) {
+	ACharacter* PlayerCharacter = Cast<ACharacter>(GetCharacter());
+	TArray<UContainerComponent*> Components;
+	PlayerCharacter->GetComponents<UContainerComponent>(Components);
+	for (UContainerComponent* Container : Components) {
+		if (Container->GetName() == ContainerName) {
+			Container->SetStackDirectly(Stack, SlotId);
+		}
+	}
+
+	PlayerCharacter->ForceNetUpdate();
 }

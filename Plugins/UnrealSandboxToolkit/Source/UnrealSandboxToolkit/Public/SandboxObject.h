@@ -13,7 +13,6 @@ class UNREALSANDBOXTOOLKIT_API ASandboxObject : public AActor {
 public:	
 	ASandboxObject();
 
-	
 	//UPROPERTY(EditAnywhere, Category = "Sandbox")
 	UPROPERTY(Category = StaticMeshActor, VisibleAnywhere, BlueprintReadOnly, meta = (ExposeFunctionCategories = "Mesh,Rendering,Physics,Components|StaticMesh", AllowPrivateAccess = "true"))
 	UStaticMeshComponent* SandboxRootMesh;
@@ -23,6 +22,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	uint64 SandboxClassId;
+
+	UPROPERTY(Replicated)
+	uint64 SandboxNetUid;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	bool bStackable;
@@ -35,9 +37,11 @@ public:
 
 public:
 
-	virtual FString GetSandboxName();
+	uint64 GetSandboxNetUid() const;
 
-	virtual uint64 GetSandboxClassId() const;
+	uint64 GetSandboxClassId() const;
+
+	virtual FString GetSandboxName();
 
 	virtual int GetSandboxTypeId() const;
 

@@ -1,15 +1,15 @@
-
 #include "SandboxTerrainController.h"
-#include "Serialization/ArchiveLoadCompressedProxy.h"
-#include "Serialization/ArchiveSaveCompressedProxy.h"
+//#include "Serialization/ArchiveLoadCompressedProxy.h"
+//#include "Serialization/ArchiveSaveCompressedProxy.h"
 #include "Async/Async.h"
-#include "Json.h"
-#include "JsonObjectConverter.h"
 #include "DrawDebugHelpers.h"
 #include "kvdb.hpp"
 
 #include "TerrainZoneComponent.h"
 #include "VoxelMeshComponent.h"
+
+#include "TerrainServerComponent.h"
+#include "TerrainClientComponent.h"
 
 #include <cmath>
 #include <list>
@@ -51,9 +51,7 @@ void ASandboxTerrainController::InitializeTerrainController() {
 	bSaveOnEndPlay = true;
 	BeginTerrainLoadLocation = FVector(0);
 	bSaveAfterInitialLoad = false;
-
-    //FString SaveDir = FPaths::ProjectSavedDir() + TEXT("/Map/") + MapName + TEXT("/");
-    //CheckSaveDir(SaveDir);
+	bReplicates = false;
 }
 
 void ASandboxTerrainController::BeginDestroy() {
@@ -101,6 +99,9 @@ void ASandboxTerrainController::BeginPlay() {
 	Super::BeginPlay();
 	UE_LOG(LogSandboxTerrain, Log, TEXT("ASandboxTerrainController::BeginPlay()"));
 
+	GeneratorComponent = NewTerrainGenerator();
+	GeneratorComponent->RegisterComponent();
+
 	bIsGameShutdown = false;
     
     GlobalTerrainZoneLOD[0] = 0;
@@ -133,15 +134,21 @@ void ASandboxTerrainController::BeginPlay() {
 	if (!GetWorld()) return;
 	bIsLoadFinished = false;
 
-	if (GetWorld()->IsServer()) {
-		UE_LOG(LogSandboxTerrain, Log, TEXT("SERVER"));
-		BeginPlayServer();
+	if (GetNetMode() == NM_Client) {
+		UE_LOG(LogSandboxTerrain, Warning, TEXT("================== CLIENT =================="));
+		BeginPlayClient();
 	} else {
-		UE_LOG(LogSandboxTerrain, Log, TEXT("CLIENT"));
-		BeginClient();
+		if (GetNetMode() == NM_DedicatedServer) {
+			UE_LOG(LogSandboxTerrain, Warning, TEXT("================== DEDICATED SERVER =================="));
+		} 
+		
+		if (GetNetMode() == NM_ListenServer) {
+			UE_LOG(LogSandboxTerrain, Warning, TEXT("================== LISTEN SERVER =================="));
+		}
+
+		BeginPlayServer();
+		StartCheckArea();
 	}
- 
-	StartCheckArea();
 }
 
 void ASandboxTerrainController::ShutdownThreads() {
@@ -160,13 +167,16 @@ void ASandboxTerrainController::EndPlay(const EEndPlayReason::Type EndPlayReason
 
 	ShutdownThreads();
 
-	if (bSaveOnEndPlay) {
+	if (bSaveOnEndPlay || GetNetMode() == NM_DedicatedServer) {
 		Save();
 	}
 
 	CloseFile();
     TerrainData->Clean();
 	GetTerrainGenerator()->Clean();
+
+	SaveTerrainMetadata();
+	ModifiedVdMap.Empty();
 }
 
 void ASandboxTerrainController::Tick(float DeltaTime) {
@@ -196,19 +206,7 @@ void ASandboxTerrainController::StartPostLoadTimers() {
 }
 
 void ASandboxTerrainController::StartCheckArea() {
-    AsyncTask(ENamedThreads::GameThread, [=]() {
-        for (auto Iterator = GetWorld()->GetPlayerControllerIterator(); Iterator; ++Iterator) {
-            APlayerController* PlayerController = Iterator->Get();
-            if (PlayerController){
-                const auto PlayerId = PlayerController->GetUniqueID();
-                const auto Pawn = PlayerController->GetCharacter();
-				if (Pawn) {
-					const FVector Location = Pawn->GetActorLocation();
-				}
-            }
-        }
-        GetWorld()->GetTimerManager().SetTimer(TimerSwapArea, this, &ASandboxTerrainController::PerformCheckArea, 0.25, true);
-    });
+	GetWorld()->GetTimerManager().SetTimer(TimerSwapArea, this, &ASandboxTerrainController::PerformCheckArea, 0.25, true);
 }
 
 void ASandboxTerrainController::PerformCheckArea() {
@@ -363,14 +361,12 @@ void ASandboxTerrainController::ZoneSoftUnload(UTerrainZoneComponent* ZoneCompon
 //======================================================================================================================================================================
 
 void ASandboxTerrainController::BeginPlayServer() {
-	GeneratorComponent = NewTerrainGenerator();
-	GeneratorComponent->RegisterComponent();
-
 	if (!OpenFile()) {
 		return;
 	}
 
 	LoadJson();
+	LoadTerrainMetadata();
 
 	if (bShowInitialArea) {
 		static const float Len = 5000;
@@ -380,6 +376,12 @@ void ASandboxTerrainController::BeginPlayServer() {
 	}
 
 	BeginTerrainLoad();
+
+	if (GetNetMode() == NM_DedicatedServer || GetNetMode() == NM_ListenServer) {
+		TerrainServerComponent = NewObject<UTerrainServerComponent>(this, TEXT("TerrainServer"));
+		TerrainServerComponent->RegisterComponent();
+		TerrainServerComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
+	}
 }
 
 void ASandboxTerrainController::BeginTerrainLoad() {
@@ -398,6 +400,8 @@ void ASandboxTerrainController::BeginTerrainLoad() {
 
 			TTerrainLoadPipeline Loader(TEXT("Initial_Load_Task"), this, Params);
             Loader.LoadArea(BeginTerrainLoadLocation);
+
+			GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Blue, TEXT("Finish initial terrain load"));
 			UE_LOG(LogSandboxTerrain, Warning, TEXT("======= Finish initial terrain load ======="));
 
 			//GetTerrainGenerator()->Clean();
@@ -417,165 +421,12 @@ void ASandboxTerrainController::BeginTerrainLoad() {
     }
 }
 
-void ASandboxTerrainController::BeginClient() {
-	//UVdClientComponent* VdClientComponent = NewObject<UVdClientComponent>(this, TEXT("VdClient"));
-	//VdClientComponent->RegisterComponent();
-	//VdClientComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
-}
+void ASandboxTerrainController::BeginPlayClient() {
+	LoadTerrainMetadata();
 
-void ASandboxTerrainController::NetworkSerializeVd(FBufferArchive& Buffer, const TVoxelIndex& VoxelIndex) {
-	/*
-	TVoxelDataInfo* VoxelDataInfo = GetVoxelDataInfo(VoxelIndex);
-	// TODO: shared lock Vd
-	if (VoxelDataInfo) {
-		if (VoxelDataInfo->DataState == TVoxelDataState::READY_TO_LOAD) {
-			TVoxelData* Vd = LoadVoxelDataByIndex(VoxelIndex);
-			//serializeVoxelData(*Vd, Buffer);
-			delete Vd;
-		} else if (VoxelDataInfo->DataState == TVoxelDataState::LOADED)  {
-			//serializeVoxelData(*VoxelDataInfo->Vd, Buffer);
-		}
-	}
-	*/
-}
-
-//======================================================================================================================================================================
-// save
-//======================================================================================================================================================================
-
-uint32 SaveZoneToFile(TKvFile& File, const TVoxelIndex& Index, const TValueDataPtr DataVd, const TValueDataPtr DataMd, const TValueDataPtr DataObj) {
-	TKvFileZodeData ZoneHeader;
-	if (DataVd) {
-		ZoneHeader.LenVd = DataVd->size();
-	} else {
-		ZoneHeader.SetFlag((int)TZoneFlag::NoVoxelData);
-	}
-
-	if (DataMd) {
-		ZoneHeader.LenMd = DataMd->size();
-	} else {
-		ZoneHeader.SetFlag((int)TZoneFlag::NoMesh);
-	}
-
-	if (DataObj) {
-		ZoneHeader.LenObj = DataObj->size();
-	}
-
-	usbt::TFastUnsafeSerializer ZoneSerializer;
-	ZoneSerializer << ZoneHeader;
-
-	if (DataMd) {
-		ZoneSerializer.write(DataMd->data(), DataMd->size());
-	}
-
-	if (DataVd) {
-		ZoneSerializer.write(DataVd->data(), DataVd->size());
-	}
-
-	if (DataObj) {
-		ZoneSerializer.write(DataObj->data(), DataObj->size());
-	}
-
-	auto DataPtr = ZoneSerializer.data();
-
-#ifdef USBT_DEBUG_ZONE_CRC
-	uint32 CRC = kvdb::CRC32(DataPtr->data(), DataPtr->size());
-	UE_LOG(LogSandboxTerrain, Log, TEXT("Save zone -> %d %d %d -> CRC32 = 0x%x "), Index.X, Index.Y, Index.Z, CRC);
-#else
-	uint32 CRC = 0;
-#endif
-
-	File.save(Index, *DataPtr);
-	return CRC;
-}
-
-
-void ASandboxTerrainController::ForceSave(const TVoxelIndex& ZoneIndex, TVoxelData* Vd, TMeshDataPtr MeshDataPtr, const TInstanceMeshTypeMap& InstanceObjectMap) {
-	TValueDataPtr DataVd = nullptr;
-	TValueDataPtr DataMd = nullptr;
-	TValueDataPtr DataObj = nullptr;
-
-	if (Vd) {
-		DataVd = SerializeVd(Vd);
-	}
-
-	if (MeshDataPtr) {
-		DataMd = SerializeMeshData(MeshDataPtr);
-	}
-
-	if (InstanceObjectMap.Num() > 0) {
-		DataObj = UTerrainZoneComponent::SerializeInstancedMesh(InstanceObjectMap);
-	}
-
-	SaveZoneToFile(TdFile, ZoneIndex, DataVd, DataMd, DataObj);
-}
-
-void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgress, std::function<void(uint32)> OnFinish) {
-	const std::lock_guard<std::mutex> lock(SaveMutex);
-
-	if (!TdFile.isOpen()) {
-		return;
-	}
-
-	double Start = FPlatformTime::Seconds();
-
-	uint32 SavedCount = 0;
-	std::unordered_set<TVoxelIndex> SaveIndexSet = TerrainData->PopSaveIndexSet();
-	uint32 Total = (uint32)SaveIndexSet.size();
-	for (const TVoxelIndex& Index : SaveIndexSet) {
-		TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(Index);
-
-		TValueDataPtr DataVd = nullptr;
-		TValueDataPtr DataMd = nullptr;
-		TValueDataPtr DataObj = nullptr;
-
-		VdInfoPtr->Lock();
-		if (VdInfoPtr->IsChanged()) {
-
-			if (VdInfoPtr->Vd && VdInfoPtr->CanSave()) {
-				DataVd = SerializeVd(VdInfoPtr->Vd);
-			}
-
-			auto MeshDataPtr = VdInfoPtr->PopMeshDataCache();
-			if (MeshDataPtr) {
-				DataMd = SerializeMeshData(MeshDataPtr);
-			}
-
-			if (FoliageDataAsset) {
-				UTerrainZoneComponent* Zone = VdInfoPtr->GetZone();
-				if (Zone && Zone->IsNeedSave()) {
-					DataObj = Zone->SerializeAndResetObjectData();
-				} else {
-					auto InstanceObjectMapPtr = VdInfoPtr->GetOrCreateInstanceObjectMap();
-					if (InstanceObjectMapPtr) {
-						DataObj = UTerrainZoneComponent::SerializeInstancedMesh(*InstanceObjectMapPtr);
-					}
-				}
-			}
-
-			uint32 CRC = SaveZoneToFile(TdFile, Index, DataVd, DataMd, DataObj);
-
-			SavedCount++;
-			VdInfoPtr->ResetLastSave();
-
-			if (OnProgress) {
-				OnProgress(SavedCount, Total);
-			}
-		}
-
-		VdInfoPtr->Unload();
-		VdInfoPtr->Unlock();
-	}
-
-	SaveJson();
-
-	double End = FPlatformTime::Seconds();
-	double Time = (End - Start) * 1000;
-	UE_LOG(LogSandboxTerrain, Log, TEXT("Save terrain data: %d zones saved -> %f ms "), SavedCount, Time);
-
-	if (OnFinish) {
-		OnFinish(SavedCount);
-	}
+	TerrainClientComponent = NewObject<UTerrainClientComponent>(this, TEXT("TerrainClient"));
+	TerrainClientComponent->RegisterComponent();
+	TerrainClientComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
 }
 
 void ASandboxTerrainController::OnStartBackgroundSaveTerrain() {
@@ -617,146 +468,9 @@ void ASandboxTerrainController::AutoSaveByTimer() {
 	SaveMapAsync();
 }
 
-void ASandboxTerrainController::SaveJson() {
-    UE_LOG(LogSandboxTerrain, Log, TEXT("Save terrain json"));
-    
-	MapInfo.SaveTimestamp = FPlatformTime::Seconds();
-	FString JsonStr;
-    
-	FString FileName = TEXT("terrain.json");
-	FString SavePath = FPaths::ProjectSavedDir();
-	FString FullPath = SavePath + TEXT("/Map/") + MapName + TEXT("/") + FileName;
-
-	FJsonObjectConverter::UStructToJsonObjectString(MapInfo, JsonStr);
-	//UE_LOG(LogSandboxTerrain, Log, TEXT("%s"), *JsonStr);
-	FFileHelper::SaveStringToFile(*JsonStr, *FullPath);
-}
-
-//======================================================================================================================================================================
-// kv file
-//======================================================================================================================================================================
-
-bool OpenKvFile(kvdb::KvFile<TVoxelIndex, TValueData>& KvFile, const FString& FileName, const FString& SaveDir) {
-	FString FullPath = SaveDir + FileName;
-	std::string FilePathString = std::string(TCHAR_TO_UTF8(*FullPath));
-
-	if (!FPlatformFileManager::Get().GetPlatformFile().FileExists(*FullPath)) {
-		kvdb::KvFile<TVoxelIndex, TValueData>::create(FilePathString, std::unordered_map<TVoxelIndex, TValueData>());// create new empty file
-	}
-
-	if (!KvFile.open(FilePathString)) {
-		UE_LOG(LogSandboxTerrain, Log, TEXT("Unable to open file: %s"), *FullPath);
-		return false;
-	}
-
-	return true;
-}
-
-bool CheckSaveDir(FString SaveDir){
-    IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
-    if (!PlatformFile.DirectoryExists(*SaveDir)) {
-        PlatformFile.CreateDirectory(*SaveDir);
-        if (!PlatformFile.DirectoryExists(*SaveDir)) {
-            UE_LOG(LogSandboxTerrain, Log, TEXT("Unable to create save directory -> %s"), *SaveDir);
-            return false;
-        }
-    }
-    
-    return true;
-}
-
-bool ASandboxTerrainController::OpenFile() {
-	// open vd file 	
-	FString FileNameTd = TEXT("terrain.dat");
-	FString FileNameVd = TEXT("terrain_voxeldata.dat");
-	FString FileNameMd = TEXT("terrain_mesh.dat");
-	FString FileNameObj = TEXT("terrain_objects.dat");
-
-	FString SavePath = FPaths::ProjectSavedDir();
-	FString SaveDir = SavePath + TEXT("/Map/") + MapName + TEXT("/");
-
-	UE_LOG(LogSandboxTerrain, Log, TEXT("%s"), *SaveDir);
-
-	if (!GetWorld()->IsServer()) {
-		SaveDir = SaveDir + TEXT("/ClientCache/");
-	}
-
-    if(!CheckSaveDir(SaveDir)){
-        return false;
-    }
-
-	if (!OpenKvFile(TdFile, FileNameTd, SaveDir)) {
-		return false;
-	}
-
-	return true;
-}
-
-void ASandboxTerrainController::CloseFile() {
-	TdFile.close();
-}
-
-
-
-//======================================================================================================================================================================
-// load
-//======================================================================================================================================================================
-
-bool ASandboxTerrainController::LoadJson() {
-	UE_LOG(LogSandboxTerrain, Log, TEXT("Load terrain json"));
-
-	FString FileName = TEXT("terrain.json");
-	FString SavePath = FPaths::ProjectSavedDir();
-	FString FullPath = SavePath + TEXT("/Map/") + MapName + TEXT("/") + FileName;
-
-	FString JsonRaw;
-	if (!FFileHelper::LoadFileToString(JsonRaw, *FullPath, FFileHelper::EHashOptions::None)) {
-		UE_LOG(LogSandboxTerrain, Warning, TEXT("Error loading json file"));
-		return false;
-	}
-
-	if (!FJsonObjectConverter::JsonObjectStringToUStruct(JsonRaw, &MapInfo, 0, 0)) {
-		UE_LOG(LogSandboxTerrain, Error, TEXT("Error parsing json file"));
-		return false;
-	}
-
-	UE_LOG(LogSandboxTerrain, Log, TEXT("%s"), *JsonRaw);
-	return true;
-}
-
 //======================================================================================================================================================================
 //  spawn zone
 //======================================================================================================================================================================
-
-// spawn received zone on client
-void ASandboxTerrainController::NetworkSpawnClientZone(const TVoxelIndex& Index, FArrayReader& RawVdData) {
-	FVector Pos = GetZonePos(Index);
-
-	TVoxelDataInfo VdInfo;
-	VdInfo.Vd = NewVoxelData();
-	VdInfo.Vd->setOrigin(Pos);
-
-	FMemoryReader BinaryData = FMemoryReader(RawVdData, true); 
-	BinaryData.Seek(RawVdData.Tell());
-	//deserializeVoxelDataFast(*VdInfo.Vd, BinaryData, true);
-
-	VdInfo.DataState = TVoxelDataState::GENERATED;
-	VdInfo.SetChanged();
-	VdInfo.Vd->setCacheToValid();
-
-    //TerrainData->RegisterVoxelData(VdInfo, Index);
-    //TerrainData->RegisterVoxelData(VdInfo, Index);
-
-	if (VdInfo.Vd->getDensityFillState() == TVoxelDataFillState::MIXED) {
-		TMeshDataPtr MeshDataPtr = GenerateMesh(VdInfo.Vd);
-		/*
-		InvokeSafe([=]() {
-			UTerrainZoneComponent* Zone = AddTerrainZone(Pos);
-			//Zone->ApplyTerrainMesh(MeshDataPtr);
-		});
-		*/
-	}
-}
 
 uint32 ASandboxTerrainController::GetZoneVoxelResolution() {
 	int L = LOD_ARRAY_SIZE - 1;
@@ -1025,6 +739,7 @@ UTerrainZoneComponent* ASandboxTerrainController::AddTerrainZone(FVector Pos) {
     FString ZoneName = FString::Printf(TEXT("Zone [%.0f, %.0f, %.0f]"), IndexTmp.X, IndexTmp.Y, IndexTmp.Z);
     UTerrainZoneComponent* ZoneComponent = NewObject<UTerrainZoneComponent>(this, FName(*ZoneName));
     if (ZoneComponent) {
+		ZoneComponent->SetIsReplicated(true);
         ZoneComponent->RegisterComponent();
         //ZoneComponent->SetRelativeLocation(pos);
         ZoneComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
@@ -1033,6 +748,7 @@ UTerrainZoneComponent* ASandboxTerrainController::AddTerrainZone(FVector Pos) {
 
         FString TerrainMeshCompName = FString::Printf(TEXT("TerrainMesh [%.0f, %.0f, %.0f]"), IndexTmp.X, IndexTmp.Y, IndexTmp.Z);
         UVoxelMeshComponent* TerrainMeshComp = NewObject<UVoxelMeshComponent>(this, FName(*TerrainMeshCompName));
+		TerrainMeshComp->SetIsReplicated(true);
         TerrainMeshComp->RegisterComponent();
         TerrainMeshComp->SetMobility(EComponentMobility::Movable);
         TerrainMeshComp->SetCanEverAffectNavigation(true);

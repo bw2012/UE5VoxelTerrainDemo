@@ -28,33 +28,52 @@ void ATerrainController::OnOverlapActorDuringTerrainEdit(const FHitResult& Overl
 }
 
 void ATerrainController::BeginPlay() {
+	Super::BeginPlay();
+}
+
+void ATerrainController::BeginPlayServer() {
 	if (LevelController) {
 		LevelController->LoadMap();
 
 		//AddInitialZone(TVoxelIndex(24, -6, 0));
 
+		bool bFirst = false; // temp siolution
 		const TArray<FTempCharacterLoadInfo>& TempCharacterList = LevelController->GetTempCharacterList();
 		for (const FTempCharacterLoadInfo& TempCharacterInfo : TempCharacterList) {
 			const TVoxelIndex ZoneIndex = GetZoneIndex(TempCharacterInfo.Location);
-			UE_LOG(LogTemp, Warning, TEXT("PlayerId -> %d "), TempCharacterInfo.PlayerId);
-			UE_LOG(LogTemp, Log, TEXT("AddInitialZone -> %d %d %d"), ZoneIndex.X, ZoneIndex. Y, ZoneIndex.Z);
-			if (TempCharacterInfo.PlayerId == 0) {
+			UE_LOG(LogTemp, Log, TEXT("Server PlayerId -> %s "), *TempCharacterInfo.SandboxPlayerUid);
+			UE_LOG(LogTemp, Log, TEXT("AddInitialZone -> %d %d %d"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
+
+			if (bFirst) {
 				BeginTerrainLoadLocation = TempCharacterInfo.Location;
+				bFirst = true;
 			}
 
 			AddInitialZone(ZoneIndex);
 		}
 	}
-		
-	Super::BeginPlay();
+
+	Super::BeginPlayServer();
 
 	if (LevelController) {
 		LevelController->SpawnTempCharacterList();
 	}
 }
 
+void ATerrainController::BeginPlayClient() {
+	Super::BeginPlayClient();
+}
+
+
 void ATerrainController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 	Super::EndPlay(EndPlayReason);
+
+	if (GetNetMode() == NM_DedicatedServer) {
+		if (LevelController) {
+			UE_LOG(LogTemp, Warning, TEXT("Save dedicated server lavel"));
+			LevelController->SaveMap();
+		}
+	}
 }
 
 void ATerrainController::ShutdownAndSaveMap() {
@@ -64,9 +83,13 @@ void ATerrainController::ShutdownAndSaveMap() {
 		LevelController->SaveMap();
 	}
 
+	if (GetNetMode() == NM_Client) {
+		AsyncTask(ENamedThreads::GameThread, [=]() { OnFinishSaveTerrain(); });
+		return; // TODO save to client cache
+	}
+
 	UE_LOG(LogTemp, Log, TEXT("Start save terrain manual"));
 	RunThread([&]() {
-
 		std::function<void(uint32, uint32)> OnProgress = [=](uint32 Processed, uint32 Total) {
 			if (Processed == Total) {
 				AsyncTask(ENamedThreads::GameThread, [=]() { OnProgressSaveTerrain(1.f); });

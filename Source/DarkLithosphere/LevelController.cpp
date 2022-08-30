@@ -6,12 +6,17 @@
 #include "DrawDebugHelpers.h"
 #include "TerrainController.h"
 
+
 void ALevelController::SaveMap() {
-	SaveLevelJson();
+	if (GetNetMode() != NM_Client) {
+		SaveLevelJson();
+	}
 }
 
 void ALevelController::LoadMap() {
-	LoadLevelJson();
+	if (GetNetMode() != NM_Client) {
+		LoadLevelJson();
+	}
 }
 
 void ALevelController::ContainerToJson(const UContainerComponent* Container, TSharedRef<TJsonWriter<TCHAR>> JsonWriter) {
@@ -25,9 +30,10 @@ void ALevelController::ContainerToJson(const UContainerComponent* Container, TSh
 	int SlotId = 0;
 	for (const auto& Stack : Container->Content) {
 		if (Stack.Amount > 0) {
-			if (Stack.ObjectClass) {
+			const ASandboxObject* SandboxObject = GetSandboxObject((Stack.SandboxClassId));
+			if (SandboxObject) {
 				JsonWriter->WriteObjectStart();
-				ASandboxObject* SandboxObject = Cast<ASandboxObject>(Stack.ObjectClass->ClassDefaultObject);
+
 				FString ClassName = SandboxObject->GetClass()->GetName();
 				JsonWriter->WriteValue("SlotId", SlotId);
 				JsonWriter->WriteValue("Class", ClassName);
@@ -76,8 +82,8 @@ void ALevelController::SaveLevelJsonExt(TSharedRef<TJsonWriter<TCHAR>> JsonWrite
 			int TypeId = BaseCharacter->SandboxTypeId;
 			JsonWriter->WriteValue("TypeId", TypeId);
 
-			int PlayerId = BaseCharacter->SandboxPlayerId;
-			JsonWriter->WriteValue("PlayerId", PlayerId);
+			FString PlayerUid = BaseCharacter->SandboxPlayerUid;
+			JsonWriter->WriteValue("PlayerId", PlayerUid);
 
 			JsonWriter->WriteArrayStart("Location");
 			FVector Location = BaseCharacter->GetActorLocation();
@@ -179,7 +185,7 @@ void ALevelController::LoadLevelJsonExt(TSharedPtr<FJsonObject> JsonParsed) {
 			FTempCharacterLoadInfo TempCharacterInfo;
 
 			TempCharacterInfo.TypeId = CharacterPtr->GetIntegerField(TEXT("TypeId"));
-			TempCharacterInfo.PlayerId = CharacterPtr->GetIntegerField(TEXT("PlayerId"));
+			TempCharacterInfo.SandboxPlayerUid = CharacterPtr->GetStringField(TEXT("PlayerId"));
 
 			TArray<TSharedPtr<FJsonValue>> LocationValArray = CharacterPtr->GetArrayField("Location");
 			TempCharacterInfo.Location.X = LocationValArray[0]->AsNumber();
@@ -204,13 +210,14 @@ void ALevelController::LoadLevelJsonExt(TSharedPtr<FJsonObject> JsonParsed) {
 					int ClassId = ContentPtr->GetIntegerField("ClassId");
 					int Amount = ContentPtr->GetIntegerField("Amount");
 
-					UE_LOG(LogTemp, Warning, TEXT("SlotId: %d, ClassId: %d, Amount: %d"), SlotId, ClassId, Amount);
+					//UE_LOG(LogTemp, Warning, TEXT("SlotId: %d, ClassId: %d, Amount: %d"), SlotId, ClassId, Amount);
 
-					TSubclassOf<ASandboxObject> ASandboxObjectSubclass = GetSandboxObjectByClassId(ClassId);
+					TSubclassOf<ASandboxObject> SandboxObjectSubclass = GetSandboxObjectByClassId(ClassId);
+					ASandboxObject* Obj = (ASandboxObject*)SandboxObjectSubclass->GetDefaultObject();
 
 					FContainerStack Stack;
 					Stack.Amount = Amount;
-					Stack.ObjectClass = ASandboxObjectSubclass;
+					Stack.SandboxClassId = Obj->GetSandboxClassId();
 
 					FTempContainerStack TempContainerStack;
 					TempContainerStack.Stack = Stack;
@@ -226,7 +233,6 @@ void ALevelController::LoadLevelJsonExt(TSharedPtr<FJsonObject> JsonParsed) {
 				}
 			}
 
-
 			if (CharacterMap->CharacterTypeMap.Contains(TempCharacterInfo.TypeId)) {
 				TSubclassOf<ABaseCharacter> BaseCharacterSubclass = CharacterMap->CharacterTypeMap[TempCharacterInfo.TypeId];
 				if (BaseCharacterSubclass) {
@@ -236,7 +242,7 @@ void ALevelController::LoadLevelJsonExt(TSharedPtr<FJsonObject> JsonParsed) {
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("TempCharacterList: %d"), TempCharacterList.Num());
+	//UE_LOG(LogTemp, Warning, TEXT("TempCharacterList: %d"), TempCharacterList.Num());
 }
 
 void ALevelController::SpawnTempCharacterList() {
@@ -245,18 +251,18 @@ void ALevelController::SpawnTempCharacterList() {
 
 		FVector Pos(TempCharacterInfo.Location.X, TempCharacterInfo.Location.Y, TempCharacterInfo.Location.Z + 90);// ALS spawn issue woraround
 		ABaseCharacter* BaseCharacter = (ABaseCharacter*)GetWorld()->SpawnActor(BaseCharacterSubclass, &Pos, &TempCharacterInfo.Rotation);
-		BaseCharacter->SandboxPlayerId = TempCharacterInfo.PlayerId;
+		BaseCharacter->SandboxPlayerUid = TempCharacterInfo.SandboxPlayerUid;
 		UContainerComponent* InventoryContainer = BaseCharacter->GetInventory("Inventory");
 		if (InventoryContainer) {
 			for (const FTempContainerStack& TempContainerStack : TempCharacterInfo.Inventory) {
-				InventoryContainer->AddStack(TempContainerStack.Stack, TempContainerStack.SlotId);
+				InventoryContainer->SetStackDirectly(TempContainerStack.Stack, TempContainerStack.SlotId);
 			}
 		}
 
 		UContainerComponent* EquipmentContainer = BaseCharacter->GetInventory("Equipment");
 		if (EquipmentContainer) {
 			for (const FTempContainerStack& TempContainerStack : TempCharacterInfo.Equipment) {
-				EquipmentContainer->AddStack(TempContainerStack.Stack, TempContainerStack.SlotId);
+				EquipmentContainer->SetStackDirectly(TempContainerStack.Stack, TempContainerStack.SlotId);
 			}
 		}
 

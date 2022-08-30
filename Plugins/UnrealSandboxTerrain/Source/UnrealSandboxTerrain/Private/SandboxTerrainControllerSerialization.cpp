@@ -4,6 +4,10 @@
 #include "Serialization/ArchiveLoadCompressedProxy.h"
 #include "Serialization/ArchiveSaveCompressedProxy.h"
 #include "TerrainZoneComponent.h"
+#include "Json.h"
+#include "JsonObjectConverter.h"
+#include "VoxelDataInfo.hpp"
+#include "TerrainData.hpp"
 
 //======================================================================================================================================================================
 // mesh data de/serealization
@@ -331,4 +335,336 @@ TValueDataPtr ASandboxTerrainController::SerializeVd(TVoxelData* Vd) {
 	}
 
 	return Data;
+}
+
+//======================================================================================================================================================================
+// kv file
+//======================================================================================================================================================================
+
+bool OpenKvFile(kvdb::KvFile<TVoxelIndex, TValueData>& KvFile, const FString& FileName, const FString& SaveDir) {
+	FString FullPath = SaveDir + FileName;
+	std::string FilePathString = std::string(TCHAR_TO_UTF8(*FullPath));
+
+	if (!FPlatformFileManager::Get().GetPlatformFile().FileExists(*FullPath)) {
+		kvdb::KvFile<TVoxelIndex, TValueData>::create(FilePathString, std::unordered_map<TVoxelIndex, TValueData>());// create new empty file
+	}
+
+	if (!KvFile.open(FilePathString)) {
+		UE_LOG(LogSandboxTerrain, Log, TEXT("Unable to open file: %s"), *FullPath);
+		return false;
+	}
+
+	return true;
+}
+
+bool CheckSaveDir(FString SaveDir) {
+	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
+	if (!PlatformFile.DirectoryExists(*SaveDir)) {
+		PlatformFile.CreateDirectory(*SaveDir);
+		if (!PlatformFile.DirectoryExists(*SaveDir)) {
+			UE_LOG(LogSandboxTerrain, Log, TEXT("Unable to create save directory -> %s"), *SaveDir);
+			return false;
+		}
+	}
+
+	return true;
+}
+
+FString ASandboxTerrainController::GetSaveDir() {
+	FString SaveDir = FPaths::ProjectSavedDir() + TEXT("/Map/") + MapName + TEXT("/");
+	if (GetNetMode() == NM_Client) {
+		SaveDir = SaveDir + TEXT("/ClientCache/");
+	}
+
+	return SaveDir;
+}
+
+bool ASandboxTerrainController::OpenFile() {
+	// open vd file 	
+	FString FileNameTd = TEXT("terrain.dat");
+	FString FileNameVd = TEXT("terrain_voxeldata.dat");
+	FString FileNameMd = TEXT("terrain_mesh.dat");
+	FString FileNameObj = TEXT("terrain_objects.dat");
+
+
+	FString SaveDir = GetSaveDir();
+	UE_LOG(LogSandboxTerrain, Log, TEXT("%s"), *SaveDir);
+
+	if (!CheckSaveDir(SaveDir)) {
+		return false;
+	}
+
+	if (!OpenKvFile(TdFile, FileNameTd, SaveDir)) {
+		return false;
+	}
+
+	return true;
+}
+
+void ASandboxTerrainController::CloseFile() {
+	TdFile.close();
+}
+
+//======================================================================================================================================================================
+// save
+//======================================================================================================================================================================
+
+uint32 SaveZoneToFile(TKvFile& File, const TVoxelIndex& Index, const TValueDataPtr DataVd, const TValueDataPtr DataMd, const TValueDataPtr DataObj) {
+	TKvFileZodeData ZoneHeader;
+	if (DataVd) {
+		ZoneHeader.LenVd = DataVd->size();
+	} else {
+		ZoneHeader.SetFlag((int)TZoneFlag::NoVoxelData);
+	}
+
+	if (DataMd) {
+		ZoneHeader.LenMd = DataMd->size();
+	} else {
+		ZoneHeader.SetFlag((int)TZoneFlag::NoMesh);
+	}
+
+	if (DataObj) {
+		ZoneHeader.LenObj = DataObj->size();
+	}
+
+	usbt::TFastUnsafeSerializer ZoneSerializer;
+	ZoneSerializer << ZoneHeader;
+
+	if (DataMd) {
+		ZoneSerializer.write(DataMd->data(), DataMd->size());
+	}
+
+	if (DataVd) {
+		ZoneSerializer.write(DataVd->data(), DataVd->size());
+	}
+
+	if (DataObj) {
+		ZoneSerializer.write(DataObj->data(), DataObj->size());
+	}
+
+	auto DataPtr = ZoneSerializer.data();
+
+#ifdef USBT_DEBUG_ZONE_CRC
+	uint32 CRC = kvdb::CRC32(DataPtr->data(), DataPtr->size());
+	UE_LOG(LogSandboxTerrain, Log, TEXT("Save zone -> %d %d %d -> CRC32 = 0x%x "), Index.X, Index.Y, Index.Z, CRC);
+#else
+	uint32 CRC = 0;
+#endif
+
+	File.save(Index, *DataPtr);
+	return CRC;
+}
+
+
+void ASandboxTerrainController::ForceSave(const TVoxelIndex& ZoneIndex, TVoxelData* Vd, TMeshDataPtr MeshDataPtr, const TInstanceMeshTypeMap& InstanceObjectMap) {
+	TValueDataPtr DataVd = nullptr;
+	TValueDataPtr DataMd = nullptr;
+	TValueDataPtr DataObj = nullptr;
+
+	if (Vd) {
+		DataVd = SerializeVd(Vd);
+	}
+
+	if (MeshDataPtr) {
+		DataMd = SerializeMeshData(MeshDataPtr);
+	}
+
+	if (InstanceObjectMap.Num() > 0) {
+		DataObj = UTerrainZoneComponent::SerializeInstancedMesh(InstanceObjectMap);
+	}
+
+	SaveZoneToFile(TdFile, ZoneIndex, DataVd, DataMd, DataObj);
+}
+
+void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgress, std::function<void(uint32)> OnFinish) {
+	const std::lock_guard<std::mutex> lock(SaveMutex);
+
+	if (!TdFile.isOpen()) {
+		return;
+	}
+
+	double Start = FPlatformTime::Seconds();
+
+	uint32 SavedCount = 0;
+	std::unordered_set<TVoxelIndex> SaveIndexSet = TerrainData->PopSaveIndexSet();
+	uint32 Total = (uint32)SaveIndexSet.size();
+	for (const TVoxelIndex& Index : SaveIndexSet) {
+		TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(Index);
+
+		TValueDataPtr DataVd = nullptr;
+		TValueDataPtr DataMd = nullptr;
+		TValueDataPtr DataObj = nullptr;
+
+		VdInfoPtr->Lock();
+		if (VdInfoPtr->IsChanged()) {
+
+			if (VdInfoPtr->Vd && VdInfoPtr->CanSave()) {
+				DataVd = SerializeVd(VdInfoPtr->Vd);
+			}
+
+			auto MeshDataPtr = VdInfoPtr->PopMeshDataCache();
+			if (MeshDataPtr) {
+				DataMd = SerializeMeshData(MeshDataPtr);
+			}
+
+			if (FoliageDataAsset) {
+				UTerrainZoneComponent* Zone = VdInfoPtr->GetZone();
+				if (Zone && Zone->IsNeedSave()) {
+					DataObj = Zone->SerializeAndResetObjectData();
+				} else {
+					auto InstanceObjectMapPtr = VdInfoPtr->GetOrCreateInstanceObjectMap();
+					if (InstanceObjectMapPtr) {
+						DataObj = UTerrainZoneComponent::SerializeInstancedMesh(*InstanceObjectMapPtr);
+					}
+				}
+			}
+
+			uint32 CRC = SaveZoneToFile(TdFile, Index, DataVd, DataMd, DataObj);
+
+			SavedCount++;
+			VdInfoPtr->ResetLastSave();
+
+			if (OnProgress) {
+				OnProgress(SavedCount, Total);
+			}
+		}
+
+		VdInfoPtr->Unload();
+		VdInfoPtr->Unlock();
+	}
+
+	SaveJson();
+
+	double End = FPlatformTime::Seconds();
+	double Time = (End - Start) * 1000;
+	UE_LOG(LogSandboxTerrain, Log, TEXT("Save terrain data: %d zones saved -> %f ms "), SavedCount, Time);
+
+	if (OnFinish) {
+		OnFinish(SavedCount);
+	}
+}
+
+//======================================================================================================================================================================
+// json
+//======================================================================================================================================================================
+
+void ASandboxTerrainController::SaveJson() {
+	MapInfo.SaveTimestamp = FPlatformTime::Seconds();
+	FString JsonStr;
+
+	FString FileName = TEXT("terrain.json");
+	FString SaveDir = GetSaveDir();
+	FString FullPath = SaveDir + TEXT("/") + FileName;
+
+	UE_LOG(LogSandboxTerrain, Log, TEXT("Save terrain json..."));
+	UE_LOG(LogSandboxTerrain, Log, TEXT("%s"), *FullPath);
+
+	FJsonObjectConverter::UStructToJsonObjectString(MapInfo, JsonStr);
+	//UE_LOG(LogSandboxTerrain, Log, TEXT("%s"), *JsonStr);
+	FFileHelper::SaveStringToFile(*JsonStr, *FullPath);
+}
+
+bool ASandboxTerrainController::LoadJson() {
+	FString FileName = TEXT("terrain.json");
+	FString SavePath = FPaths::ProjectSavedDir();
+	FString FullPath = SavePath + TEXT("/Map/") + MapName + TEXT("/") + FileName;
+
+	UE_LOG(LogSandboxTerrain, Log, TEXT("Load terrain json..."));
+	UE_LOG(LogSandboxTerrain, Log, TEXT("%s"), *FullPath);
+
+	FString JsonRaw;
+	if (!FFileHelper::LoadFileToString(JsonRaw, *FullPath, FFileHelper::EHashOptions::None)) {
+		UE_LOG(LogSandboxTerrain, Warning, TEXT("Error loading json file"));
+		return false;
+	}
+
+	if (!FJsonObjectConverter::JsonObjectStringToUStruct(JsonRaw, &MapInfo, 0, 0)) {
+		UE_LOG(LogSandboxTerrain, Error, TEXT("Error parsing json file"));
+		return false;
+	}
+
+	UE_LOG(LogSandboxTerrain, Log, TEXT("%s"), *JsonRaw);
+	return true;
+}
+
+//======================================================================================================================================================================
+// metadata
+//======================================================================================================================================================================
+
+void ASandboxTerrainController::SaveTerrainMetadata() {
+	FString FileName = TEXT("terrain_meta.dat");
+	FString SaveDir = GetSaveDir();
+	FString FullPath = SaveDir + TEXT("/") + FileName;
+
+	UE_LOG(LogSandboxTerrain, Log, TEXT("Save terrain metadata..."));
+	UE_LOG(LogSandboxTerrain, Log, TEXT("%s"), *FullPath);
+
+	FBufferArchive Buffer;
+
+	static int32 Version = 0;
+	int32 Size = ModifiedVdMap.Num();
+
+	Buffer << Version;
+	Buffer << Size;
+
+	for (auto& Elem : ModifiedVdMap) {
+		TVoxelIndex Index = Elem.Key;
+		TZoneModificationData M = Elem.Value;
+
+		Buffer << Index.X;
+		Buffer << Index.Y;
+		Buffer << Index.Z;
+		Buffer << M.ChangeCounter;
+	}
+
+	if (FFileHelper::SaveArrayToFile(Buffer, *FullPath)) {
+		// Free Binary Array 	
+		Buffer.FlushCache();
+		Buffer.Empty();
+	}
+}
+
+void ASandboxTerrainController::LoadTerrainMetadata() {
+	FString FileName = TEXT("terrain_meta.dat");
+	FString SaveDir = GetSaveDir();
+	FString FullPath = SaveDir + TEXT("/") + FileName;
+
+	UE_LOG(LogSandboxTerrain, Log, TEXT("Load terrain metadata..."));
+	UE_LOG(LogSandboxTerrain, Log, TEXT("%s"), *FullPath);
+
+	ModifiedVdMap.Empty();
+
+	TArray<uint8> Data;
+	if (FFileHelper::LoadFileToArray(Data, *FullPath)) {
+		if (Data.Num() > 0) {
+			FMemoryReader Buffer = FMemoryReader(Data, true); //true, free data after done
+			Buffer.Seek(0);
+
+			int32 Version = 0;
+			int32 Size = 0;
+
+			Buffer << Version;
+			Buffer << Size;
+
+			for (int32 I = 0; I < Size; I++) {
+				TVoxelIndex Index;
+				TZoneModificationData M;
+
+				Buffer << Index.X;
+				Buffer << Index.Y;
+				Buffer << Index.Z;
+				Buffer << M.ChangeCounter;
+
+				ModifiedVdMap.Add(Index, M);
+			}
+
+			Buffer.FlushCache();
+			Data.Empty();
+			Buffer.Close();
+
+			return;
+		}
+	}
+
+	UE_LOG(LogSandboxTerrain, Warning, TEXT("Unable to load metadata!"));
 }

@@ -4,8 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "ContainerComponent.h"
 #include "CoreCharacter.h"
-//#include "SandboxCharacter.h"
 #include "SandboxObjectMap.h"
 #include "Runtime/Engine/Classes/Engine/DataAsset.h"
 #include "BaseCharacter.generated.h"
@@ -45,7 +45,7 @@ public:
 	int SandboxTypeId = 0;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	int SandboxPlayerId = -1;
+	FString SandboxPlayerUid;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	bool bNoSerialization = false;
@@ -143,6 +143,8 @@ protected:
 
 	virtual bool CanMove() override;
 
+	virtual void OnContainerUpdate(UContainerComponent* Container);
+
 	bool PlaySoundCue(USoundCue* SoundCue);
 
 	UFUNCTION()
@@ -164,5 +166,7 @@ private:
 	TArray<FString> ModularSkMeshArray;
 
 	void MakeModularSkList();
+
+	bool bFirstRun;
 
 };

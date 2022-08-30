@@ -136,7 +136,10 @@ public:
 	void FindOrCreateCharacter();
 
 	UFUNCTION(Server, Reliable)
-	void DefineSandboxPlayerUid(const FString& NewSandboxPlayerUid);
+	void RegisterSandboxPlayerUid(const FString& NewSandboxPlayerUid);
+
+	UFUNCTION(Server, Reliable)
+	void RebuildEquipment();
 
 	FHitResult TracePlayerActionPoint();
 
@@ -148,9 +151,11 @@ public:
 
 	void OnContainerDropSuccess(int32 SlotId, FName SourceName, FName TargetName) override;
 
-	bool OnContainerDropCheck(int32 SlotId, FName ContainerName, ASandboxObject* Obj) override;
+	bool OnContainerDropCheck(int32 SlotId, FName ContainerName, const ASandboxObject* Obj) const override;
 
 protected:
+
+	void FindOrCreateCharacterInternal();
 
 	virtual void PlayerTick(float DeltaTime) override;
 
@@ -239,7 +244,7 @@ private:
 
 	bool bClientPosses = false;
 
-	FString SandboxPlayerUid;
+	FPlayerInfo PlayerInfo;
 
 };
 

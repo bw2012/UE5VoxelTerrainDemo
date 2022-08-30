@@ -1,6 +1,7 @@
 
 
 #include "SandboxObject.h"
+#include "Net/UnrealNetwork.h"
 
 ASandboxObject::ASandboxObject() {
 	PrimaryActorTick.bCanEverTick = true;
@@ -8,12 +9,18 @@ ASandboxObject::ASandboxObject() {
 	MaxStackSize = 100;
 	bStackable = true;
 	RootComponent = SandboxRootMesh;
+	bReplicates = true;
+	SandboxNetUid = 0;
 }
 
 static const FString DefaultSandboxObjectName = FString(TEXT("Sandbox object"));
 
 FString ASandboxObject::GetSandboxName() {
 	return DefaultSandboxObjectName;
+}
+
+uint64 ASandboxObject::GetSandboxNetUid() const {
+	return SandboxNetUid;
 }
 
 uint64 ASandboxObject::GetSandboxClassId() const {
@@ -106,6 +113,11 @@ bool ASandboxObject::PlaceToWorldClcPosition(const FVector& SourcePos, const FRo
 	Rotation.Roll = 0;
 	Rotation.Yaw = SourceRotation.Yaw;
 	return true;
+}
+
+void ASandboxObject::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ASandboxObject, SandboxNetUid);
 }
 
 int ASandboxSkeletalModule::GetSandboxTypeId() const {

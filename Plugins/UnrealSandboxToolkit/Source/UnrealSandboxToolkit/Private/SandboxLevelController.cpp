@@ -10,10 +10,14 @@
 
 ASandboxLevelController::ASandboxLevelController() {
 	MapName = TEXT("World 0");
+	ObjectCounter = 1;
 }
 
 void ASandboxLevelController::BeginPlay() {
 	Super::BeginPlay();
+	ObjectCounter = 1;
+	GlobalObjectMap.Empty();
+	PrepareMetaData();
 }
 
 void ASandboxLevelController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
@@ -65,7 +69,8 @@ void ASandboxLevelController::SaveObject(TSharedRef <TJsonWriter<TCHAR>> JsonWri
 		for (const auto& TmpStack : ObjDesc.Container) {
 			if (TmpStack.Stack.Amount > 0) {
 				JsonWriter->WriteObjectStart();
-				ASandboxObject* SandboxObject = Cast<ASandboxObject>(TmpStack.Stack.ObjectClass->ClassDefaultObject);
+
+				const ASandboxObject* SandboxObject = Cast<ASandboxObject>(TmpStack.Stack.GetObject());
 				FString ClassName = SandboxObject->GetClass()->GetName();
 				JsonWriter->WriteValue("SlotId", TmpStack.SlotId);
 				JsonWriter->WriteValue("Class", ClassName);
@@ -138,7 +143,7 @@ FSandboxObjectDescriptor FSandboxObjectDescriptor::MakeObjDescriptor(ASandboxObj
 		int SlotId = 0;
 		for (const auto& Stack : Content) {
 			if (Stack.Amount > 0) {
-				if (Stack.ObjectClass) {
+				if (Stack.GetObject()) {
 					FTempContainerStack TempContainerStack;
 					TempContainerStack.Stack = Stack;
 					TempContainerStack.SlotId = SlotId;
@@ -177,6 +182,8 @@ void ASandboxLevelController::SaveLevelJson() {
 void ASandboxLevelController::SaveLevelJsonExt(TSharedRef <TJsonWriter<TCHAR>> JsonWriter) {
 
 }
+
+TMap<int32, TSubclassOf<ASandboxObject>> ASandboxLevelController::ObjectMapById;
 
 void ASandboxLevelController::PrepareMetaData() {
 	if (bIsMetaDataReady) {
@@ -299,18 +306,15 @@ void ASandboxLevelController::LoadLevelJson() {
 						int ClassId = ContentJsonValue->AsObject()->GetIntegerField("ClassId");
 						int Amount = ContentJsonValue->AsObject()->GetIntegerField("Amount");
 
-						TSubclassOf<ASandboxObject> ASandboxObjectSubclass = GetSandboxObjectByClassId(ClassId);
 						FContainerStack Stack;
 						Stack.Amount = Amount;
-						Stack.ObjectClass = ASandboxObjectSubclass;
+						Stack.SandboxClassId = ClassId;
 
 						FTempContainerStack TempContainerStack;
 						TempContainerStack.Stack = Stack;
 						TempContainerStack.SlotId = SlotId;
 
 						ObjDesc.Container.Add(TempContainerStack);
-
-						//Container->AddStack(Stack, SlotId);
 					}
 				}
 			}
@@ -322,7 +326,6 @@ void ASandboxLevelController::LoadLevelJson() {
 	}
 
 	SpawnPreparedObjects(ObjDescList);
-
 }
 
 ASandboxObject* ASandboxLevelController::SpawnPreparedObject(const FSandboxObjectDescriptor& ObjDesc) {
@@ -332,7 +335,7 @@ ASandboxObject* ASandboxLevelController::SpawnPreparedObject(const FSandboxObjec
 		UContainerComponent* Container = NewObject->GetContainer(TEXT("ObjectContainer"));
 		if (Container) {
 			for (const auto& Itm : ObjDesc.Container) {
-				Container->AddStack(Itm.Stack, Itm.SlotId);
+				Container->SetStackDirectly(Itm.Stack, Itm.SlotId);
 			}
 		}
 	}
@@ -347,11 +350,16 @@ void ASandboxLevelController::SpawnPreparedObjects(const TArray<FSandboxObjectDe
 }
 
 ASandboxObject* ASandboxLevelController::SpawnSandboxObject(const int ClassId, const FTransform& Transform) {
-	TSubclassOf<ASandboxObject> SandboxObject = GetSandboxObjectByClassId(ClassId);
-	if (SandboxObject) {
-		UClass* SpawnClass = SandboxObject->ClassDefaultObject->GetClass();
-		ASandboxObject* NewObject = (ASandboxObject*)GetWorld()->SpawnActor(SpawnClass, &Transform);
-		return NewObject;
+	if (GetNetMode() != NM_Client) {
+		TSubclassOf<ASandboxObject> SandboxObject = GetSandboxObjectByClassId(ClassId);
+		if (SandboxObject) {
+			UClass* SpawnClass = SandboxObject->ClassDefaultObject->GetClass();
+			ASandboxObject* NewObject = (ASandboxObject*)GetWorld()->SpawnActor(SpawnClass, &Transform);
+			NewObject->SandboxNetUid = ObjectCounter;
+			GlobalObjectMap.Add(ObjectCounter, NewObject);
+			ObjectCounter++;
+			return NewObject;
+		}
 	}
 
 	return nullptr;
@@ -373,11 +381,42 @@ TSubclassOf<ASandboxObject> ASandboxLevelController::GetSandboxObjectByClassId(i
 	return nullptr;
 }
 
+ASandboxObject* ASandboxLevelController::GetDefaultSandboxObject(uint64 ClassId) {
+	if (ObjectMapById.Contains(ClassId)) {
+		return (ASandboxObject*)(ObjectMapById[ClassId]->GetDefaultObject());
+	}
+
+	return nullptr;
+}
+
+ASandboxObject* ASandboxLevelController::GetSandboxObject(uint64 ClassId) {
+	if (!bIsMetaDataReady) {
+		PrepareMetaData();
+	}
+
+	if (ObjectMapById.Contains(ClassId)) {
+		return (ASandboxObject*)(ObjectMapById[ClassId]->GetDefaultObject());
+	}
+
+	return nullptr;
+}
+
 bool ASandboxLevelController::RemoveSandboxObject(ASandboxObject* Obj) {
-	if (Obj) {
-		Obj->Destroy();
-		return true;
+	if (GetNetMode() != NM_Client) {
+		if (Obj) {
+			Obj->Destroy();
+			return true;
+		}
 	}
 
 	return false;
 }
+
+ASandboxObject* ASandboxLevelController::GetObjectByNetUid(uint64 NetUid) {
+	if (GlobalObjectMap.Contains(NetUid)) {
+		return GlobalObjectMap[NetUid];
+	}
+
+	return nullptr;
+}
+

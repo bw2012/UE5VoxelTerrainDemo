@@ -85,6 +85,10 @@ public:
 
 protected:
 
+	virtual void BeginPlayServer();
+
+	virtual void BeginPlayClient();
+
 	virtual UTerrainGeneratorComponent* NewTerrainGenerator() override;
 
 	virtual void OnOverlapActorDuringTerrainEdit(const FHitResult& OverlapResult, const FVector& Pos) override;

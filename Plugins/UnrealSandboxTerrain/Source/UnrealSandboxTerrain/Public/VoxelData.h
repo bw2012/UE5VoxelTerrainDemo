@@ -196,11 +196,5 @@ public:
 
 	std::shared_ptr<std::vector<uint8>> serialize();
 
-	friend void serializeVoxelData(TVoxelData& vd, FBufferArchive& binaryData);
-	friend void deserializeVoxelData(TVoxelData &vd, FMemoryReader& binaryData);
-	friend void deserializeVoxelDataFast(TVoxelData* vd, TArray<uint8>& Data, bool createSubstanceCache);
-
 	friend bool deserializeVoxelData(TVoxelData* vd, std::vector<uint8>& data);
 };
-
-//bool deserializeVoxelData(TVoxelData* vd, std::vector<uint8>& data);

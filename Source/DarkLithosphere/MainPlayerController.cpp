@@ -16,12 +16,17 @@
 
 #include "DrawDebugHelpers.h"
 
-
 //#include "SandboxTree.h"
 
 // ALS
 #include "Character/ALSPlayerCameraManager.h"
 #include "Character/ALSBaseCharacter.h"
+
+#include "Math/UnrealMathUtility.h"
+
+// json
+#include "Json.h"
+#include "JsonObjectConverter.h"
 
 
 AMainPlayerController::AMainPlayerController() {
@@ -31,7 +36,6 @@ AMainPlayerController::AMainPlayerController() {
 	NewCharacterId = 0;
 	bSpawnSandboxCharacter = false;
 	bFirstStart = false;
-	SandboxPlayerUid = TEXT("player 0");
 }
 
 void AMainPlayerController::BeginPlay() {
@@ -39,6 +43,7 @@ void AMainPlayerController::BeginPlay() {
 
 	bFirstStart = true;
 
+	//warning C4996 : 'UWorld::IsClient' : Use GetNetMode or IsNetMode instead for more accurate results.Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.
 	if (GetWorld()->IsClient()) {
 		bClientPosses = true;
 	}
@@ -60,6 +65,36 @@ void AMainPlayerController::BeginPlay() {
 			break;
 		}
 	}
+
+	if (IsLocalController()) {
+		UE_LOG(LogTemp, Log, TEXT("Load player json"));
+		FString FileName = TEXT("player.json");
+		FString FullPath = FPaths::ProjectSavedDir() + TEXT("/") + FileName;
+
+		FString JsonRaw;
+		if (!FFileHelper::LoadFileToString(JsonRaw, *FullPath, FFileHelper::EHashOptions::None)) {
+			UE_LOG(LogTemp, Warning, TEXT("Error loading json file"));
+
+			// new player info
+			PlayerInfo.PlayerUid = TEXT("player") + FString::FromInt(FMath::FRandRange(0, 256));
+
+			FString JsonStr;
+			FJsonObjectConverter::UStructToJsonObjectString(PlayerInfo, JsonStr);
+			FFileHelper::SaveStringToFile(*JsonStr, *FullPath);
+		} else {
+			if (!FJsonObjectConverter::JsonObjectStringToUStruct(JsonRaw, &PlayerInfo, 0, 0)) {
+				UE_LOG(LogTemp, Error, TEXT("Error parsing json file"));
+			}
+
+			if (GetWorld()->WorldType == EWorldType::PIE || GetWorld()->WorldType == EWorldType::Editor) {
+				if (GetNetMode() == NM_Client) {
+					PlayerInfo.PlayerUid = TEXT("player-client0");
+				}
+			}
+
+			UE_LOG(LogTemp, Warning, TEXT("Local PlayerUid: %s"), *PlayerInfo.PlayerUid);
+		}
+	}
 }
 
 void SetRenderCustomDepth(AActor* Actor, bool RenderCustomDepth) {
@@ -79,22 +114,28 @@ APawn* PawnUnderCursor(const FHitResult& Hit) {
 	return nullptr;
 }
 
-void AMainPlayerController::DefineSandboxPlayerUid_Implementation(const FString& NewPlayerUid){
-	SandboxPlayerUid = NewPlayerUid;
+void AMainPlayerController::RebuildEquipment_Implementation() {
+	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
+	if (BaseCharacter) {
+		BaseCharacter->RebuildEquipment();
+	}
 }
 
-void AMainPlayerController::FindOrCreateCharacter_Implementation() {
-	const int32 PlayerId = PlayerState->GetPlayerId();
-	FString Text = TEXT("Spawn player character: ") + FString::FromInt(PlayerId) + TEXT(" ") + SandboxPlayerUid;
+void AMainPlayerController::RegisterSandboxPlayerUid_Implementation(const FString& NewPlayerUid){
+	PlayerInfo.PlayerUid = NewPlayerUid;
+}
+
+void AMainPlayerController::FindOrCreateCharacterInternal() {
+	FString Text = TEXT("Spawn player character: ") + PlayerInfo.PlayerUid;
 	GEngine->AddOnScreenDebugMessage(-1, 10, FColor::White, Text);
 
 	ABaseCharacter* MainCharacter = nullptr;
 	for (TActorIterator<ABaseCharacter> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
 		ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(*ActorItr);
 		if (BaseCharacter) {
-			UE_LOG(LogTemp, Warning, TEXT("BaseCharacter: %s"), *BaseCharacter->GetName());
-			if (BaseCharacter->SandboxPlayerId == 0) {
-				//MainCharacter = BaseCharacter;
+			UE_LOG(LogTemp, Warning, TEXT("BaseCharacter: %s => %s"), *BaseCharacter->SandboxPlayerUid, *BaseCharacter->GetName());
+			if (BaseCharacter->SandboxPlayerUid == PlayerInfo.PlayerUid) {
+				MainCharacter = BaseCharacter;
 			}
 		}
 	}
@@ -125,35 +166,49 @@ void AMainPlayerController::FindOrCreateCharacter_Implementation() {
 			SandboxPossess(MainCharacter);
 		}
 	}
+}
 
+void AMainPlayerController::FindOrCreateCharacter_Implementation() {
+	FindOrCreateCharacterInternal();
 }
 
 void AMainPlayerController::PlayerTick(float DeltaTime) {
 	Super::PlayerTick(DeltaTime);
 
 	if (bFirstStart) {
-		if (GetWorld()->IsClient()) {
-			DefineSandboxPlayerUid(TEXT("test-client"));
+		FString PlayerUid = PlayerInfo.PlayerUid;
+		RegisterSandboxPlayerUid(PlayerUid);
+
+		if (GetNetMode() == NM_Client) {
+			FindOrCreateCharacter();
+		} else {
+			FindOrCreateCharacter();
 		}
 
-		if (GetWorld()->IsServer()) {
-			SandboxPlayerUid = TEXT("test-server");
-		}
-
-		FindOrCreateCharacter();
 		bFirstStart = false;
 	}
 
-	// OnPossess not works on client. this is workaround
-	if (GetWorld()->IsClient()) {
-		if (bClientPosses) {
-			SetCurrentInventorySlot(-1);
-
-
-
-			bClientPosses = false;
+	// OnPossess not works on client. workaround
+	if (GetNetMode() == NM_Client) {
+		ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
+		if (BaseCharacter) {
+			if (bClientPosses) {
+				SetCurrentInventorySlot(-1);
+				ShowInGameHud();
+				bClientPosses = false;
+			}
 		}
 	}
+
+	/*
+	if (HasAuthority()) {
+		UE_LOG(LogTemp, Warning, TEXT("server local %s"), *UEnum::GetValueAsString(GetLocalRole()));
+		UE_LOG(LogTemp, Warning, TEXT("server remote %s"), *UEnum::GetValueAsString(GetRemoteRole()));
+	} else {
+		UE_LOG(LogTemp, Warning, TEXT("client local %s"), *UEnum::GetValueAsString(GetLocalRole()));
+		UE_LOG(LogTemp, Warning, TEXT("client remote %s"), *UEnum::GetValueAsString(GetRemoteRole()));
+	}
+	*/
 
 	ADummyPawn* DummyPawn = Cast<ADummyPawn>(GetPawn());
 	if (DummyPawn) {
@@ -351,11 +406,7 @@ ASandboxObject* AMainPlayerController::GetInventoryObject(int32 SlotId) {
 		FContainerStack* Stack = Inventory->GetSlot(SlotId);
 		if (Stack != nullptr) {
 			if (Stack->Amount > 0) {
-				TSubclassOf<ASandboxObject>	ObjectClass = Stack->ObjectClass;
-				if (ObjectClass != nullptr) {
-					ASandboxObject* Actor = Cast<ASandboxObject>(ObjectClass->ClassDefaultObject);
-					return Actor;
-				}
+				return GetLevelController()->GetSandboxObject((Stack->SandboxClassId));
 			}
 		}
 	}
@@ -397,6 +448,10 @@ void AMainPlayerController::OnAltActionPressed() {
 		}
 
 		MainPlayerControllerComponent->PerformAltAction();
+
+		if (GetWorld()->IsClient()) {
+			RebuildEquipment();
+		}
 	}
 
 }
@@ -680,6 +735,7 @@ FCraftRecipeData* AMainPlayerController::GetCraftRecipeData(int32 RecipeId) {
 void AMainPlayerController::SandboxPossess(ACharacter* PlayerCharacter) {
 	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(PlayerCharacter);
 	if (BaseCharacter) {
+		BaseCharacter->SandboxPlayerUid = PlayerInfo.PlayerUid;
 		Possess(PlayerCharacter);
 		SetCurrentInventorySlot(-1);
 		ShowInGameHud();
@@ -803,7 +859,7 @@ void AMainPlayerController::OnContainerDropSuccess(int32 SlotId, FName SourceNam
 	}
 }
 
-bool AMainPlayerController::OnContainerDropCheck(int32 SlotId, FName ContainerName, ASandboxObject* Obj) {
+bool AMainPlayerController::OnContainerDropCheck(int32 SlotId, FName ContainerName, const ASandboxObject* Obj) const {
 	if (ContainerName == TEXT("Equipment")) {
 		if (Obj->GetSandboxTypeId() == 500) {
 			return true;
@@ -816,7 +872,6 @@ bool AMainPlayerController::OnContainerDropCheck(int32 SlotId, FName ContainerNa
 
 	return true;
 }
-
 
 void AMainPlayerController::ShowInGameHud() {
 	if (!IsRunningDedicatedServer()) {

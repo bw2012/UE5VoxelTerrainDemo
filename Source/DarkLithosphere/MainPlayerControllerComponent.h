@@ -100,7 +100,6 @@ public:
 
 private:
 
-
 	ECurrentActionType CurrentActionType = ECurrentActionType::None;
 
 	bool CanPlaceObjectToWorld(const ASandboxObject* Obj) const;
@@ -111,4 +110,11 @@ private:
 
 	void ResetSelectedObject();
 		
+protected:
+
+	UFUNCTION(Server, Reliable)
+	void ServerSpawnObject(uint64 SandboxClassId, FTransform Transform);
+
+	void InternalSpawnObject(uint64 SandboxClassId, FTransform Transform);
+
 };

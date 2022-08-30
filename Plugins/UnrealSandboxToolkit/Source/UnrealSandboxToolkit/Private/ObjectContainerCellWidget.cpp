@@ -6,23 +6,29 @@
 #include "SandboxPlayerController.h"
 
 FLinearColor USandboxObjectContainerCellWidget::SlotBorderColor(int32 SlotId) {
-	//TODO slot colors
+	if (ContainerName == TEXT("Inventory")) { 	//TODO fix
+		ASandboxPlayerController* PlayerController = Cast<ASandboxPlayerController>(GetOwningPlayer());
+		if (PlayerController) {
+			if (PlayerController->CurrentInventorySlot == SlotId) {
+				return FLinearColor(0.1, 0.4, 1, 1);
+		}
+	}
+}
 	return FLinearColor(0, 0, 0, 0.5);
 }
 
 FString USandboxObjectContainerCellWidget::SlotGetAmountText(int32 SlotId) {
 	UContainerComponent* Container = GetContainer();
 	if (Container != NULL) {
-		FContainerStack* Stack = Container->GetSlot(SlotId);
+		const FContainerStack* Stack = Container->GetSlot(SlotId);
 		if (Stack != NULL) {
-			if (Stack->ObjectClass != nullptr) {
-				ASandboxObject* DefaultObject = Cast<ASandboxObject>(Stack->ObjectClass->GetDefaultObject());
+			if (Stack->GetObject() != nullptr) {
+				const ASandboxObject* DefaultObject = Cast<ASandboxObject>(Stack->GetObject());
 				if (DefaultObject != nullptr) {
 					if (!DefaultObject->bStackable) {
 						return TEXT("");
 					}
 				}
-
 
 				if (Stack->Amount > 0) {
 					return FString::Printf(TEXT("%d"), Stack->Amount);
@@ -65,11 +71,11 @@ UTexture2D* USandboxObjectContainerCellWidget::GetSlotTexture(int32 SlotId) {
 	
 	UContainerComponent* Container = GetContainer();
 	if (Container != nullptr) {
-		FContainerStack* Stack = Container->GetSlot(SlotId);
+		const FContainerStack* Stack = Container->GetSlot(SlotId);
 		if (Stack != nullptr) {
 			if (Stack->Amount > 0) {
-				if (Stack->ObjectClass != nullptr) {
-					ASandboxObject* DefaultObject = Cast<ASandboxObject>(Stack->ObjectClass->GetDefaultObject());
+				if (Stack->GetObject() != nullptr) {
+					const ASandboxObject* DefaultObject = Cast<ASandboxObject>(Stack->GetObject());
 					if (DefaultObject != nullptr) {
 						return DefaultObject->IconTexture;
 					}
@@ -85,43 +91,18 @@ void USandboxObjectContainerCellWidget::SelectSlot(int32 SlotId) {
 	UE_LOG(LogTemp, Log, TEXT("SelectSlot: %d"), SlotId);
 }
 
-bool IsSameObject(FContainerStack* StackSourcePtr, FContainerStack* StackTargetPtr) {
-	if (StackSourcePtr && StackTargetPtr) {
-		const auto* SourceObj = StackSourcePtr->GetObject();
-		const auto* TargetObj = StackTargetPtr->GetObject();
-		if (SourceObj && TargetObj) {
-			return SourceObj->GetSandboxClassId() == TargetObj->GetSandboxClassId();
-		}
-
-	}
-
-	return false;
-}
-
 bool USandboxObjectContainerCellWidget::SlotDrop(int32 SlotDropId, int32 SlotTargetId, AActor* SourceActor, UContainerComponent* SourceContainer, bool bOnlyOne) {
-	if (SlotDropInternal(SlotDropId, SlotTargetId, SourceActor, SourceContainer, bOnlyOne)) {
-		FName SourceName = *SourceContainer->GetName();
-		FName TargetName = ContainerName;
-
-		if (!IsExternal()) {
-			ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
-			if (SandboxPC) {
-				SandboxPC->OnContainerDropSuccess(SlotTargetId, SourceName, TargetName);
-			}
-		} else {
-			ACharacter* PlayerCharacter = Cast<ACharacter>(SourceActor);
-			if (PlayerCharacter) {
-				ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(PlayerCharacter->GetController());
-				if (SandboxPC) {
-					SandboxPC->OnContainerDropSuccess(SlotTargetId, SourceName, TargetName);
-				}
-			}
+	bool bResult = SlotDropInternal(SlotDropId, SlotTargetId, SourceActor, SourceContainer, bOnlyOne);
+	if (bResult) {
+		ASandboxPlayerController* LocalController = Cast<ASandboxPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+		if (LocalController && LocalController->GetNetMode() != NM_Client) {
+			const FString TargetContainerName = GetContainer()->GetName();
+			const FString SourceContainerName = SourceContainer->GetName();
+			LocalController->OnContainerDropSuccess(SlotTargetId, *SourceContainerName, *TargetContainerName);
 		}
-
-		return true;
 	}
 
-	return false;
+	return bResult;
 }
 
 bool USandboxObjectContainerCellWidget::SlotDropInternal(int32 SlotDropId, int32 SlotTargetId, AActor* SourceActor, UContainerComponent* SourceContainer, bool bOnlyOne) {
@@ -144,69 +125,7 @@ bool USandboxObjectContainerCellWidget::SlotDropInternal(int32 SlotDropId, int32
 		return false;
 	}
 
-	FContainerStack* StackSourcePtr = SourceContainer->GetSlot(SlotDropId);
-	FContainerStack* StackTargetPtr = TargetContainer->GetSlot(SlotTargetId);
-
-	FContainerStack StackSource;
-	FContainerStack StackTarget;
-
-	if (StackTargetPtr) {
-		StackTarget = *StackTargetPtr;
-	}
-
-	if (StackSourcePtr) {
-		StackSource = *StackSourcePtr;
-	}
-
-	if (!IsExternal()) {
-		ASandboxPlayerController* SandboxPC = Cast<ASandboxPlayerController>(GetOwningPlayer());
-		if (SandboxPC) {
-			ASandboxObject* Obj = (ASandboxObject*)StackSource.ObjectClass->GetDefaultObject();
-			if (!SandboxPC->OnContainerDropCheck(SlotTargetId, ContainerName, Obj)) {
-				return false;
-			}
-		}
-	}
-
-	if (IsSameObject(StackSourcePtr, StackTargetPtr)) {
-		ASandboxObject* Obj = (ASandboxObject*)StackTarget.ObjectClass->GetDefaultObject();
-		uint32 AddAmount = (bOnlyOne) ? 1 : StackSourcePtr->Amount;
-		uint32 NewAmount = StackTargetPtr->Amount + AddAmount;
-		if (NewAmount <= Obj->MaxStackSize) {
-			StackTargetPtr->Amount = NewAmount;
-			StackSourcePtr->Clear();
-			return true;
-		} else {
-			int D = Obj->MaxStackSize - StackTargetPtr->Amount;
-			StackTargetPtr->Amount = Obj->MaxStackSize;
-			StackSourcePtr->Amount -= D;
-			return true;
-		}
-
-		StackTargetPtr->Amount += StackSourcePtr->Amount;
-		StackSourcePtr->Clear();
-		return true;
-	}
-
-	if (bOnlyOne) {
-		if (!SourceContainer->IsSlotEmpty(SlotDropId)) {
-			if (TargetContainer->IsSlotEmpty(SlotTargetId)) {
-				TSubclassOf<ASandboxObject>	ObjectClass = StackSourcePtr->ObjectClass;
-				SourceContainer->ChangeAmount(SlotDropId, -1);
-				FContainerStack NewStack;
-				NewStack.ObjectClass = ObjectClass;
-				NewStack.Amount = 1;
-				TargetContainer->AddStack(NewStack, SlotTargetId);
-				return true;
-			}
-		}
-	} else {
-		SourceContainer->AddStack(StackTarget, SlotDropId);
-		TargetContainer->AddStack(StackSource, SlotTargetId);
-		return true;
-	}
-	
-	return false;
+	return TargetContainer->SlotTransfer(SlotDropId, SlotTargetId, SourceActor, SourceContainer, bOnlyOne);
 }
 
 bool USandboxObjectContainerCellWidget::SlotIsEmpty(int32 SlotId) {

@@ -59,7 +59,12 @@ public:
 	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
 	USandboxObjectMap* ObjectMap;
 
+	//TODO remove
 	TSubclassOf<ASandboxObject> GetSandboxObjectByClassId(int32 ClassId);
+
+	ASandboxObject* GetSandboxObject(uint64 ClassId);
+
+	static ASandboxObject* ASandboxLevelController::GetDefaultSandboxObject(uint64 ClassId);
 
 	void PrepareMetaData();
 
@@ -67,13 +72,15 @@ public:
 
 	virtual bool RemoveSandboxObject(ASandboxObject* Obj);
 
+	ASandboxObject* GetObjectByNetUid(uint64 NetUid);
+
 	ASandboxObject* SpawnPreparedObject(const FSandboxObjectDescriptor& ObjDesc);
 
 protected:
 
 	TMap<FString, TSubclassOf<ASandboxObject>> ObjectMapByClassName;
 
-	TMap<int32, TSubclassOf<ASandboxObject>> ObjectMapById;
+	//TMap<uint64, TSubclassOf<ASandboxObject>> ObjectMapById;
 
 	virtual void SaveLevelJson();
 
@@ -96,5 +103,11 @@ protected:
 private:
 
 	bool bIsMetaDataReady = false;
+
+	static TMap<int32, TSubclassOf<ASandboxObject>> ObjectMapById;
+
+	uint64 ObjectCounter;
+
+	TMap<uint64, ASandboxObject*> GlobalObjectMap;
 
 };

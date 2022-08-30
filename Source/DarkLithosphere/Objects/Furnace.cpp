@@ -98,6 +98,8 @@ void AFurnace::Tick(float DeltaTime) {
 				auto* Stack = Container->GetSlot(FuelSlot);
 				bool bHasFuel = false;
 				if (Stack && Stack->Amount > 0) {
+					//fix1111
+					/*
 					auto* Obj = Stack->GetObject();
 					if (Obj) {
 						uint64 ClassId = Obj->GetSandboxClassId();
@@ -123,6 +125,7 @@ void AFurnace::Tick(float DeltaTime) {
 
 						}
 					}
+					*/
 				} 
 
 				if(!bHasFuel){
@@ -144,6 +147,9 @@ void AFurnace::Tick(float DeltaTime) {
 				// doing job
 				const float ProcessFinish = 10;
 				if (CurrentReceipeId == 0) {
+
+					// TODO fix
+					/*
 					ASandboxObject* RawMatObj = Container->GetAvailableSlotObject(RawMaterialSlot);
 					if (RawMatObj) {
 						uint64 ClassId = RawMatObj->GetSandboxClassId();
@@ -156,6 +162,7 @@ void AFurnace::Tick(float DeltaTime) {
 							CurrentReceipeId = ReceipeId;
 						}
 					}
+					*/
 				} else {
 					if (ProcessTime < ProcessFinish) {
 						ProcessTime += Delta;
@@ -163,6 +170,8 @@ void AFurnace::Tick(float DeltaTime) {
 						bool bSuccess = false;
 						auto& Receipe = FurnaceReceipMap[CurrentReceipeId];
 
+						// TODO fix1111
+						/*
 						ASandboxObject* Product = Container->GetAvailableSlotObject(ProductSlot1);
 						if (Product) {
 							if (Product->GetSandboxClassId() == Receipe.ProductClass) {
@@ -170,6 +179,7 @@ void AFurnace::Tick(float DeltaTime) {
 								bSuccess = true;
 							}
 						} 
+						*/
 
 						if (!bSuccess) {
 							auto* ProductStack1 = Container->GetSlot(ProductSlot1);
@@ -180,9 +190,10 @@ void AFurnace::Tick(float DeltaTime) {
 									if (NewObjS) {
 										FContainerStack NewStack;
 										NewStack.Amount = 1;
-										NewStack.ObjectClass = NewObjS;
+										// TODO fix1111
+										//NewStack.ObjectClass = NewObjS;
 
-										Container->AddStack(NewStack, ProductSlot1);
+										Container->SetStackDirectly(NewStack, ProductSlot1);
 										bSuccess = true;
 									}
 								}

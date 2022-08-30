@@ -288,21 +288,21 @@ bool UMainPlayerControllerComponent::PlaceCurrentObjectToWorld() {
 					bool isPossible = Obj->PlaceToWorldClcPosition(CamLoc, CamRot, Hit, Location, Rotation, true);
 					if (isPossible) {
 						FTransform Transform(Rotation, Location, FVector(1));
-						ASandboxObject* NewObj = MainController->LevelController->SpawnSandboxObject(Obj->GetSandboxClassId(), Transform);
-						if (NewObj) {
-							NewObj->OnPlaceToWorld();
 
-							if (MainController->TerrainController) {
-								MainController->TerrainController->RegisterSandboxObject(NewObj);
-							}
-
-							bool NotEmpty = Inventory->DecreaseObjectsInContainer(MainController->CurrentInventorySlot, 1);
-							if (!NotEmpty) {
-								ResetState();
-							}
-
-							return true;
+						if (GetNetMode() != NM_Client) {
+							InternalSpawnObject(Obj->GetSandboxClassId(), Transform);
 						}
+
+						if (GetNetMode() == NM_Client) {
+							ServerSpawnObject(Obj->GetSandboxClassId(), Transform);
+						}
+
+						bool NotEmpty = Inventory->DecreaseObjectsInContainer(MainController->CurrentInventorySlot, 1);
+						if (!NotEmpty) {
+							ResetState();
+						}
+
+						return true;
 					}
 				}
 			}
@@ -310,6 +310,24 @@ bool UMainPlayerControllerComponent::PlaceCurrentObjectToWorld() {
 	}
 
 	return false;
+}
+
+
+void UMainPlayerControllerComponent::ServerSpawnObject_Implementation(uint64 SandboxClassId, FTransform Transform) {
+	InternalSpawnObject(SandboxClassId, Transform);
+}
+
+void UMainPlayerControllerComponent::InternalSpawnObject(uint64 SandboxClassId, FTransform Transform) {
+	AMainPlayerController* MainController = (AMainPlayerController*)GetOwner();
+	if (MainController) {
+		ASandboxObject* Obj = MainController->LevelController->SpawnSandboxObject(SandboxClassId, Transform);
+		if (Obj) {
+			Obj->OnPlaceToWorld();
+			if (MainController->TerrainController) {
+				MainController->TerrainController->RegisterSandboxObject(Obj);
+			}
+		}
+	}
 }
 
 bool UMainPlayerControllerComponent::PlaceCraftedObjectToWorld() {
@@ -347,14 +365,15 @@ bool UMainPlayerControllerComponent::PlaceCraftedObjectToWorld() {
 
 						bool isPossible = BaseObj->PlaceToWorldClcPosition(CamLoc, CamRot, Hit, Location, Rotation, true);
 						if (isPossible) {
-							
 							FTransform Transform(Rotation, Location, FVector(1));
-							
-							ASandboxObject* Obj = MainController->LevelController->SpawnSandboxObject(CraftRecipeData->SandboxClassId, Transform);
-							if (Obj) {
-								if (MainController->TerrainController) {
-									MainController->TerrainController->RegisterSandboxObject(Obj);
-								}
+							auto SandboxClassId = CraftRecipeData->SandboxClassId;
+
+							if (GetNetMode() != NM_Client) {
+								InternalSpawnObject(SandboxClassId, Transform);
+							}
+
+							if (GetNetMode() == NM_Client) {
+								ServerSpawnObject(SandboxClassId, Transform);
 							}
 
 							ResetState();

@@ -16,7 +16,7 @@ struct FContainerStack {
 	int32 Amount;
 
 	UPROPERTY(EditAnywhere)
-	TSubclassOf<ASandboxObject>	ObjectClass;
+	uint64 SandboxClassId;
 
 	FContainerStack() {
 		Clear();
@@ -24,21 +24,14 @@ struct FContainerStack {
 
 	void Clear() {
 		Amount = 0;
-		ObjectClass = nullptr;
-	}
-
-	ASandboxObject* GetObject() {
-		if (ObjectClass) {
-			return (ASandboxObject*)(ObjectClass->GetDefaultObject());
-		}
-
-		return nullptr;
+		SandboxClassId = 0;
 	}
 
 	bool IsEmpty() {
 		return Amount == 0;
 	}
 
+	const ASandboxObject* GetObject() const;
 };
 
 
@@ -47,20 +40,22 @@ class UNREALSANDBOXTOOLKIT_API UContainerComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
+
+public:
+	UPROPERTY(ReplicatedUsing = OnRep_Content, EditAnywhere, Category = "Sandbox")
+	TArray<FContainerStack> Content;
+
 public:	
-	// Sets default values for this component's properties
 	UContainerComponent();
 
-	// Called when the game starts
 	virtual void BeginPlay() override;
 	
-	// Called every frame
 	virtual void TickComponent( float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction ) override;
 
-	UPROPERTY(Replicated, EditAnywhere, Category = "Sandbox")
-	TArray<FContainerStack> Content;
+	UFUNCTION()
+	void OnRep_Content();
     
-	bool AddStack(const FContainerStack& Stack, const int SlotId);
+	bool SetStackDirectly(const FContainerStack& Stack, const int SlotId);
 
 	bool AddObject(ASandboxObject* Obj);
     
@@ -78,11 +73,17 @@ public:
 
 	void CopyTo(UContainerComponent* Target);
 
-	ASandboxObject* GetAvailableSlotObject(const int Slot);
+	TArray<uint64> GetAllObjects();
 
-	TArray<ASandboxObject*> GetAllObjects();
+	bool SlotTransfer(int32 SlotDropId, int32 SlotTargetId, AActor* SourceActor, UContainerComponent* SourceContainer, bool bOnlyOne = false);
+
+	bool IsUpdated();
+
+	void ResetUpdatedFlag();
 
 private:
 
+	bool bUpdated = false;
 
 };
+

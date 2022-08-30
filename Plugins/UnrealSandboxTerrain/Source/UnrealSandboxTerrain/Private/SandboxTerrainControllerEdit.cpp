@@ -3,6 +3,7 @@
 #include "VoxelDataInfo.hpp"
 #include "TerrainZoneComponent.h"
 #include "TerrainData.hpp"
+#include "TerrainServerComponent.h"
 
 
 struct TZoneEditHandler {
@@ -35,6 +36,11 @@ struct TZoneEditHandler {
 
 
 void ASandboxTerrainController::DigCylinder(const FVector& Origin, const float Radius, const float Length, const FRotator& Rotator, const float Strength, const bool bNoise) {
+	if (GetNetMode() != NM_Standalone) {
+		UE_LOG(LogSandboxTerrain, Error, TEXT("Not implemented yet"));
+		return;
+	}
+
 	struct ZoneHandler : TZoneEditHandler {
 		TMap<uint16, FSandboxTerrainMaterial>* MaterialMapPtr;
 		float Length;
@@ -89,17 +95,19 @@ void ASandboxTerrainController::DigCylinder(const FVector& Origin, const float R
 }
 
 void ASandboxTerrainController::DigTerrainRoundHole(const FVector& Origin, float Radius, float Strength) {
-	if (GetWorld()->IsServer()) {
-		//UVdServerComponent* VdServerComponent = Cast<UVdServerComponent>(GetComponentByClass(UVdServerComponent::StaticClass()));
-		//VdServerComponent->SendToAllClients(USBT_NET_OPCODE_DIG_ROUND, Origin.X, Origin.Y, Origin.Z, Radius, Strength);
-	}
-	else {
-		//UVdClientComponent* VdClientComponent = Cast<UVdClientComponent>(GetComponentByClass(UVdClientComponent::StaticClass()));
-		//VdClientComponent->SendToServer(USBT_NET_OPCODE_DIG_ROUND, Origin.X, Origin.Y, Origin.Z, Radius, Strength);
-		return;
+	if (GetNetMode() == NM_Client) {
+		//return;
+		UE_LOG(LogSandboxTerrain, Log, TEXT("Client: TEST %f %f %f"), Origin.X, Origin.Y, Origin.Z);
 	}
 
-	//DigTerrainRoundHole_Internal(Origin, Radius, Strength);
+	if (GetNetMode() == NM_DedicatedServer || GetNetMode() == NM_ListenServer) {
+		if (TerrainServerComponent) {
+			TEditTerrainParam EditParam(Origin);
+
+
+			TerrainServerComponent->SendToAllVdEdit(EditParam);
+		}
+	}
 
 	struct ZoneHandler : TZoneEditHandler {
 		TMap<uint16, FSandboxTerrainMaterial>* MaterialMapPtr;
@@ -143,7 +151,10 @@ void ASandboxTerrainController::DigTerrainRoundHole(const FVector& Origin, float
 }
 
 void ASandboxTerrainController::DigTerrainCubeHole(const FVector& Origin, const FBox& Box, float Extend, const FRotator& Rotator) {
-	if (!GetWorld()->IsServer()) return;
+	if (GetNetMode() != NM_Standalone) {
+		UE_LOG(LogSandboxTerrain, Error, TEXT("Not implemented yet"));
+		return;
+	}
 
 	struct ZoneHandler : TZoneEditHandler {
 		TMap<uint16, FSandboxTerrainMaterial>* MaterialMapPtr;
@@ -191,7 +202,10 @@ void ASandboxTerrainController::DigTerrainCubeHole(const FVector& Origin, const 
 
 
 void ASandboxTerrainController::DigTerrainCubeHole(const FVector& Origin, float Extend, const FRotator& Rotator) {
-	if (!GetWorld()->IsServer()) return;
+	if (GetNetMode() != NM_Standalone) {
+		UE_LOG(LogSandboxTerrain, Error, TEXT("Not implemented yet"));
+		return;
+	}
 
 	struct ZoneHandler : TZoneEditHandler {
 		TMap<uint16, FSandboxTerrainMaterial>* MaterialMapPtr;
@@ -246,7 +260,10 @@ void ASandboxTerrainController::DigTerrainCubeHole(const FVector& Origin, float 
 }
 
 void ASandboxTerrainController::FillTerrainCube(const FVector& Origin, float Extend, int MatId) {
-	if (!GetWorld()->IsServer()) return;
+	if (GetNetMode() != NM_Standalone) {
+		UE_LOG(LogSandboxTerrain, Error, TEXT("Not implemented yet"));
+		return;
+	}
 
 	struct ZoneHandler : TZoneEditHandler {
 		int newMaterialId;
@@ -279,7 +296,8 @@ void ASandboxTerrainController::FillTerrainCube(const FVector& Origin, float Ext
 }
 
 void ASandboxTerrainController::FillTerrainRound(const FVector& Origin, float Extend, int MatId) {
-	if (!GetWorld()->IsServer()) {
+	if (GetNetMode() != NM_Standalone) {
+		UE_LOG(LogSandboxTerrain, Error, TEXT("Not implemented yet"));
 		return;
 	}
 
@@ -393,6 +411,16 @@ void ASandboxTerrainController::PerformZoneEditHandler(TVoxelDataInfoPtr VdInfoP
 	}
 }
 
+void ASandboxTerrainController::IncrementChangeCounter(const TVoxelIndex& ZoneIndex) {
+	const std::lock_guard<std::mutex> Lock(ModifiedVdMapMutex);
+	TZoneModificationData& Data = ModifiedVdMap.FindOrAdd(ZoneIndex);
+	Data.ChangeCounter++;
+
+	UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> ChangeCounter = %d"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z, Data.ChangeCounter);
+}
+
+TMap<TVoxelIndex, TZoneModificationData> ModifiedVdMap;
+
 // TODO refactor concurency according new terrain data system
 template<class H>
 void ASandboxTerrainController::EditTerrain(const H& ZoneHandler) {
@@ -483,6 +511,7 @@ void ASandboxTerrainController::EditTerrain(const H& ZoneHandler) {
 					}
 
 					if (VoxelDataInfo->DataState == TVoxelDataState::LOADED || VoxelDataInfo->DataState == TVoxelDataState::GENERATED) {
+						IncrementChangeCounter(ZoneIndex);
 						if (Zone == nullptr) {
 							PerformZoneEditHandler(VoxelDataInfo, ZoneHandler, [&](TMeshDataPtr MeshDataPtr) {
 								TerrainData->PutMeshDataToCache(ZoneIndex, MeshDataPtr);

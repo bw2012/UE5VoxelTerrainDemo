@@ -16,7 +16,7 @@ struct FTempCharacterLoadInfo {
 
 	int TypeId;
 
-	int PlayerId;
+	FString SandboxPlayerUid;
 
 	FVector Location;
 

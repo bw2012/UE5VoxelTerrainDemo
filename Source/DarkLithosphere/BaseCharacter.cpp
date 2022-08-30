@@ -4,6 +4,7 @@
 #include "Objects/BaseObject.h"
 #include "MainPlayerController.h"
 #include "TerrainController.h"
+#include "LevelController.h"
 
 
 ABaseCharacter::ABaseCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer) {
@@ -23,6 +24,8 @@ ABaseCharacter::ABaseCharacter(const FObjectInitializer& ObjectInitializer) : Su
 // Called when the game starts or when spawned
 void ABaseCharacter::BeginPlay() {
 	Super::BeginPlay();
+
+	bFirstRun = true;
 
 	MakeModularSkList();
 
@@ -63,6 +66,14 @@ void ABaseCharacter::BeginOverlap(UPrimitiveComponent* OverlappedComponent,	AAct
 void ABaseCharacter::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
+	// OnPossess not works on client. workaround
+	if (GetNetMode() == NM_Client) {
+		if (bFirstRun) {
+			RebuildEquipment();
+			bFirstRun = false;
+		}
+	}
+
 	double T = FPlatformTime::Seconds();
 	if (IdleSound) {
 		double Delta = T - LastIdleSound;
@@ -97,6 +108,22 @@ void ABaseCharacter::Tick(float DeltaTime) {
 			}
 		}
 		*/
+	}
+
+	TArray<UContainerComponent*> Components;
+	GetComponents<UContainerComponent>(Components);
+	for (UContainerComponent* Container : Components) {
+		if (Container->IsUpdated()) {
+			OnContainerUpdate(Container);
+			Container->ResetUpdatedFlag();
+		}
+	}
+}
+
+void ABaseCharacter::OnContainerUpdate(UContainerComponent* Container) {
+	FString Name = Container->GetName();
+	if (Name == TEXT("Equipment")) {
+		RebuildEquipment();
 	}
 }
 
@@ -217,14 +244,15 @@ void ABaseCharacter::SelectActiveInventorySlot(int SlotId) {
 			}
 		}
 
+		/*
 		ABaseObject* Obj = nullptr;
 		if (MainInventory) {
 			FContainerStack* Stack = MainInventory->GetSlot(SlotId);
 			if (Stack != nullptr) {
 				if (Stack->Amount > 0) {
-					TSubclassOf<ASandboxObject>	ObjectClass = Stack->ObjectClass;
-					if (ObjectClass != nullptr) {
-						Obj = Cast<ABaseObject>(ObjectClass->ClassDefaultObject);
+					const ASandboxObject* Obj2 = Stack->GetObject();
+					if (Obj2 != nullptr) {
+						Obj = Obj2;
 					}
 				}
 			}
@@ -243,7 +271,7 @@ void ABaseCharacter::SelectActiveInventorySlot(int SlotId) {
 			if (StaticMeshComponent) {
 				StaticMeshComponent->SetStaticMesh(MeshInHand);
 			}
-		}
+		}*/
 	} else {
 		UStaticMeshComponent* StaticMeshComponent = GetFirstComponentByName<UStaticMeshComponent>(TEXT("RightHandStaticMesh"));
 		if (StaticMeshComponent) {
@@ -290,32 +318,35 @@ void ABaseCharacter::RebuildEquipment() {
 	UContainerComponent* Equipment = GetFirstComponentByName<UContainerComponent>(TEXT("Equipment"));
 	if (Equipment) {
 		// rebuild
-		TArray<ASandboxObject*> ObjList = Equipment->GetAllObjects();
-		for (ASandboxObject* Obj : ObjList) {
-			const int TypeId = Obj->GetSandboxTypeId();
-			if (TypeId == 500) {
-				ASandboxSkeletalModule* Clothing = Cast<ASandboxSkeletalModule>(Obj);
-				if (Clothing) {
-					if (Clothing->SkeletalMesh) {
-						FString SkMeshBindName = TEXT("ModularSk") + Clothing->SkMeshBindName.ToString() + TEXT("Mesh");
-						USkeletalMeshComponent* SkeletalMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(SkMeshBindName);
-						if (SkeletalMeshComponent) {
-							USkeletalMeshComponent* CharacterMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(TEXT("CharacterMesh0"));
-							SkeletalMeshComponent->SetSkeletalMesh(Clothing->SkeletalMesh);
-							SkeletalMeshComponent->SetMasterPoseComponent(CharacterMeshComponent, true);
+		TArray<uint64> ObjList = Equipment->GetAllObjects();
+		for (uint64 ClassId : ObjList) {
+			ASandboxObject* Obj = ASandboxLevelController::GetDefaultSandboxObject(ClassId);
+			if (Obj) {
+				const int TypeId = Obj->GetSandboxTypeId();
+				if (TypeId == 500) {
+					ASandboxSkeletalModule* Clothing = Cast<ASandboxSkeletalModule>(Obj);
+					if (Clothing) {
+						if (Clothing->SkeletalMesh) {
+							FString SkMeshBindName = TEXT("ModularSk") + Clothing->SkMeshBindName.ToString() + TEXT("Mesh");
+							USkeletalMeshComponent* SkeletalMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(SkMeshBindName);
+							if (SkeletalMeshComponent) {
+								USkeletalMeshComponent* CharacterMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(TEXT("CharacterMesh0"));
+								SkeletalMeshComponent->SetSkeletalMesh(Clothing->SkeletalMesh);
+								SkeletalMeshComponent->SetMasterPoseComponent(CharacterMeshComponent, true);
 
-							if (Clothing->bModifyFootPose) {
-								Clothing->GetFootPose(LeftFootRotator, RightFootRotator);
-							}
+								if (Clothing->bModifyFootPose) {
+									Clothing->GetFootPose(LeftFootRotator, RightFootRotator);
+								}
 
-							for (auto& Entry : Clothing->MorphMap) {
-								FString Name = Entry.Key;
-								float Value = Entry.Value;
+								for (auto& Entry : Clothing->MorphMap) {
+									FString Name = Entry.Key;
+									float Value = Entry.Value;
 
-								UE_LOG(LogTemp, Warning, TEXT("%s %f"), *Name, Value);
-								SkeletalMeshComponent->SetMorphTarget(*Name, Value);
+									UE_LOG(LogTemp, Warning, TEXT("%s %f"), *Name, Value);
+									SkeletalMeshComponent->SetMorphTarget(*Name, Value);
 
-								UsedSkMeshSet.Add(Clothing->SkMeshBindName.ToString());
+									UsedSkMeshSet.Add(Clothing->SkMeshBindName.ToString());
+								}
 							}
 						}
 					}
