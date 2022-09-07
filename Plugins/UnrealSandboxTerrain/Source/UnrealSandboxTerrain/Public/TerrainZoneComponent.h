@@ -56,8 +56,6 @@ public:
 
 	std::shared_ptr<std::vector<uint8>> SerializeInstancedMeshes();
 
-	void DeserializeInstancedMeshes(std::vector<uint8>& Data, TInstanceMeshTypeMap& ZoneInstMeshMap);
-
 	void SpawnAll(const TInstanceMeshTypeMap& InstanceMeshMap);
 
 	void SpawnInstancedMesh(const FTerrainInstancedMeshType& MeshType, const TInstanceMeshArray& InstMeshTransArray);

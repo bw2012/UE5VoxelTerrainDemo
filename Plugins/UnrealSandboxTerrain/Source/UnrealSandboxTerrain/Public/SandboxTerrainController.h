@@ -264,6 +264,20 @@ struct TZoneModificationData {
 
 };
 
+struct TInstantMeshData {
+	float X;
+	float Y;
+	float Z;
+
+	float Roll;
+	float Pitch;
+	float Yaw;
+
+	float ScaleX;
+	float ScaleY;
+	float ScaleZ;
+};
+
 UCLASS()
 class UNREALSANDBOXTERRAIN_API ASandboxTerrainController : public AActor {
 	GENERATED_UCLASS_BODY()
@@ -459,7 +473,9 @@ public:
 
 	virtual void OnClientConnected();
 
-	void NetworkSerializeVd(FBufferArchive& Buffer, const TVoxelIndex& VoxelIndex);
+	void BeginClientTerrainLoad(const TVoxelIndex& ZoneIndex, const TSet<TVoxelIndex>& Ignore);
+
+	void NetworkSerializeZone(FBufferArchive& Buffer, const TVoxelIndex& VoxelIndex);
 
 	void NetworkSpawnClientZone(const TVoxelIndex& Index, FArrayReader& RawVdData);
 
@@ -502,7 +518,11 @@ private:
 	
 	void SpawnInitialZone();
 
-	TValueDataPtr SerializeVd(TVoxelData* Vd);
+	TValueDataPtr SerializeVd(TVoxelData* Vd) const;
+
+	void DeserializeVd(TValueDataPtr Data, TVoxelData* Vd) const;
+
+	void DeserializeInstancedMeshes(std::vector<uint8>& Data, TInstanceMeshTypeMap& ZoneInstMeshMap);
 
 	//===============================================================================
 	// async tasks
@@ -547,7 +567,6 @@ private:
 	TMeshDataPtr LoadMeshDataByIndex(const TVoxelIndex& Index);
 
 	void LoadObjectDataByIndex(UTerrainZoneComponent* Zone, TInstanceMeshTypeMap& ZoneInstMeshMap);
-
 
 	//===============================================================================
 	// inst. meshes
@@ -619,13 +638,17 @@ private:
 
 	void IncrementChangeCounter(const TVoxelIndex& ZoneIndex);
 
+	TArray<std::tuple<TVoxelIndex, TZoneModificationData>> NetworkServerMapInfo();
+
+	void OnReceiveServerMapInfo(const TMap<TVoxelIndex, TZoneModificationData>& ServerDataMap);
+
 protected:
 
 	FMapInfo MapInfo;
 
-	virtual void BeginTerrainLoad();
+	virtual void BeginServerTerrainLoad();
 
-	FVector BeginTerrainLoadLocation;
+	FVector BeginServerTerrainLoadLocation;
 
 	virtual void InitializeTerrainController();
 
@@ -720,6 +743,8 @@ protected:
 	//===============================================================================
 	// core
 	//===============================================================================
+
+	void InvokeSafe(std::function<void()> Function);
 
 	void ShutdownThreads();
 

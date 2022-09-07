@@ -136,6 +136,27 @@ void UTerrainClientComponent::HandleRcvData(FArrayReader& Data) {
 			GetTerrainController()->DigTerrainRoundHole(Origin, 80, 5);
 		});
 	}
+
+	if (OpCode == Net_Opcode_ResponseMapInfo) {
+		UE_LOG(LogSandboxTerrain, Log, TEXT("Client: ResponseMapInfo"));
+
+		int32 Size = 0;
+		Data << Size;
+
+		TMap<TVoxelIndex, TZoneModificationData> ServerMap;
+		for (int32 I = 0; I < Size; I++) {
+			TVoxelIndex ElemIndex;
+			uint32 ChangeCounter = 0;
+			ConvertVoxelIndex(Data, ElemIndex);
+			Data << ChangeCounter;
+			TZoneModificationData MData;
+			MData.ChangeCounter = ChangeCounter;
+			ServerMap.Add(ElemIndex, MData);
+			UE_LOG(LogSandboxTerrain, Log, TEXT("Client: change counter %d %d %d - %d"), ElemIndex.X, ElemIndex.Y, ElemIndex.Z, ChangeCounter);
+		}
+
+		GetTerrainController()->OnReceiveServerMapInfo(ServerMap);
+	}
 }
 
 void UTerrainClientComponent::HandleResponseVd(FArrayReader& Data) {
@@ -179,19 +200,13 @@ void UTerrainClientComponent::RequestVoxelData(const TVoxelIndex& ZoneIndex) {
 	FNFSMessageHeader::WrapAndSendPayload(SendBuffer, SimpleAbstractSocket);
 }
 
-void UTerrainClientComponent::RequestAreaInfo(const TVoxelIndex& ZoneIndex, int SizeXY, int SizeZ) {
-	TVoxelIndex Index = ZoneIndex;
-	static uint32 OpCode = Net_Opcode_RequestAreaInfo;
+void UTerrainClientComponent::RequestMapInfo() {
+	static uint32 OpCode = Net_Opcode_RequestMapInfo;
 	static uint32 OpCodeExt = 0;
 
 	FBufferArchive SendBuffer;
 	SendBuffer << OpCode;
 	SendBuffer << OpCodeExt;
-	SendBuffer << Index.X;
-	SendBuffer << Index.Y;
-	SendBuffer << Index.Z;
-	SendBuffer << SizeXY;
-	SendBuffer << SizeZ;
 
 	FSimpleAbstractSocket_FSocket SimpleAbstractSocket(ClientSocketPtr);
 	FNFSMessageHeader::WrapAndSendPayload(SendBuffer, SimpleAbstractSocket);

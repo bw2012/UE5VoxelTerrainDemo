@@ -33,7 +33,7 @@ public:
 
 	void RequestVoxelData(const TVoxelIndex& Index);
 
-	void RequestAreaInfo(const TVoxelIndex& Index, int SizeXY, int SizeZ);
+	void RequestMapInfo();
 
 private:
 

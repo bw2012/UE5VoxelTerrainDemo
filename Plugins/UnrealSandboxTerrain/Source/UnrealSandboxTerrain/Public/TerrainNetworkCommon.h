@@ -14,10 +14,10 @@
 #define Net_Opcode_None					0
 
 #define Net_Opcode_RequestVd			10
-#define Net_Opcode_RequestAreaInfo		11
+#define Net_Opcode_RequestMapInfo		11
 
 #define Net_Opcode_ResponseVd			100
-#define Net_Opcode_ResponseAreaInfo		101
+#define Net_Opcode_ResponseMapInfo		101
 
 #define Net_Opcode_EditVd				200
 
@@ -48,3 +48,8 @@ protected:
 	//TMap<uint32, std::function<void(FArrayReader&)>> OpcodeHandlerMap;
 
 };
+
+
+void ConvertVoxelIndex(FArchive& Data, TVoxelIndex& Index);
+
+TVoxelIndex DeserializeVoxelIndex(FArrayReader& Data);

@@ -412,6 +412,8 @@ void ASandboxTerrainController::PerformZoneEditHandler(TVoxelDataInfoPtr VdInfoP
 }
 
 void ASandboxTerrainController::IncrementChangeCounter(const TVoxelIndex& ZoneIndex) {
+	// TODO client rcv sync
+
 	const std::lock_guard<std::mutex> Lock(ModifiedVdMapMutex);
 	TZoneModificationData& Data = ModifiedVdMap.FindOrAdd(ZoneIndex);
 	Data.ChangeCounter++;

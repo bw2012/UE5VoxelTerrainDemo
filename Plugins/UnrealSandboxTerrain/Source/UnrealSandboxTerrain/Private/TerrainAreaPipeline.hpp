@@ -12,7 +12,8 @@ typedef struct TTerrainAreaPipelineParams {
 	float FullLodDistance = 1000;
 	int32 TerrainSizeMinZ = 5;
 	int32 TerrainSizeMaxZ = 5;
-	//int32 SaveGeneratedZones = 1000;
+
+	TSet<TVoxelIndex> Ignore;
 
 	std::function<void(uint32, uint32)> OnProgress = nullptr;
 
@@ -54,8 +55,7 @@ protected:
 	}
 
 	virtual void EndChunk(int x, int y) {
-		TVoxelIndex Index(x, y, 0);
-		//Controller->Generator->Clean(Index);
+
 	}
 
 	virtual void BeginChunk(int x, int y) {
@@ -64,10 +64,14 @@ protected:
 
 private:
 
-	void PerformChunk(int x, int y) {
-		for (int z = Params.TerrainSizeMinZ; z <= Params.TerrainSizeMaxZ; z++) {
-			TVoxelIndex Index(x + OriginIndex.X, y + OriginIndex.Y, z);
-			PerformZone(Index);
+	void PerformChunk(int X, int Y) {
+		for (int Z = Params.TerrainSizeMinZ; Z <= Params.TerrainSizeMaxZ; Z++) {
+			TVoxelIndex Index(X + OriginIndex.X, Y + OriginIndex.Y, Z);
+
+			if (!Params.Ignore.Contains(Index)) {
+				PerformZone(Index);
+			}
+
 			Progress++;
 
 			if (Params.OnProgress) {
@@ -96,18 +100,11 @@ private:
 				return;
 			}
 		}
-
-		if (bIsStopped) {
-			//UE_LOG(LogSandboxTerrain, Log, TEXT("Terrain swap task is cancelled -> %s %d %d %d"), *Name, OriginIndex.X, OriginIndex.Y, OriginIndex.Z);
-		} else {
-			//UE_LOG(LogSandboxTerrain, Log, TEXT("Finish terrain swap task -> %s %d %d %d"), *Name, OriginIndex.X, OriginIndex.Y, OriginIndex.Z);
-		}
 	}
 
 public:
 
 	void Cancel() {
-		//UE_LOG(LogSandboxTerrain, Log, TEXT("Cancel -> %s %d %d %d"), *Name, OriginIndex.X, OriginIndex.Y, OriginIndex.Z);
 		this->bIsStopped = true;
 	}
 
@@ -118,16 +115,18 @@ public:
 	}
 
 	void LoadArea(const FVector& Origin) {
-		//UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone Z range --> %d %d"), Params.TerrainSizeMaxZ, Params.TerrainSizeMinZ);
 		if (this->Controller) {
 			this->AreaOrigin = Origin;
 			this->OriginIndex = Controller->GetZoneIndex(Origin);
-			//UE_LOG(LogSandboxTerrain, Log, TEXT("Start terrain swap task -> %s %d %d %d"), *Name, OriginIndex.X, OriginIndex.Y, OriginIndex.Z);
 			AreaWalkthrough();
+		}
+	}
 
-			if (!Controller->IsWorkFinished()) {
-				//Controller->Save();
-			}
+	void LoadArea(const TVoxelIndex& ZoneIndex) {
+		if (this->Controller) {
+			this->AreaOrigin = Controller->GetZonePos(ZoneIndex);
+			this->OriginIndex = ZoneIndex;
+			AreaWalkthrough();
 		}
 	}
 };

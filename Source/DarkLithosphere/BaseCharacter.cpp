@@ -302,7 +302,7 @@ void ABaseCharacter::OnFinishSound() {
 //==========================================================================================
 
 void ABaseCharacter::RebuildEquipment() {
-	UE_LOG(LogTemp, Warning, TEXT("RebuildEquipment"));
+	//UE_LOG(LogTemp, Warning, TEXT("RebuildEquipment"));
 
 	//reset foot heel offset
 	LeftFootRotator = DefaultFootRotator; 
@@ -342,7 +342,7 @@ void ABaseCharacter::RebuildEquipment() {
 									FString Name = Entry.Key;
 									float Value = Entry.Value;
 
-									UE_LOG(LogTemp, Warning, TEXT("%s %f"), *Name, Value);
+									//UE_LOG(LogTemp, Warning, TEXT("%s %f"), *Name, Value);
 									SkeletalMeshComponent->SetMorphTarget(*Name, Value);
 
 									UsedSkMeshSet.Add(Clothing->SkMeshBindName.ToString());
@@ -360,8 +360,7 @@ void ABaseCharacter::RebuildEquipment() {
 		FName BindName = DefaultSkMesh->SkMeshBindName;
 
 		if (!UsedSkMeshSet.Contains(BindName.ToString())) {
-			UE_LOG(LogTemp, Warning, TEXT("Default: %s"), *BindName.ToString());
-
+			//UE_LOG(LogTemp, Warning, TEXT("Default: %s"), *BindName.ToString());
 			FString SkMeshBindName = TEXT("ModularSk") + BindName.ToString() + TEXT("Mesh");
 			USkeletalMeshComponent* SkeletalMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(SkMeshBindName);
 			if (SkeletalMeshComponent) {

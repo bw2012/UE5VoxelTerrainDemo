@@ -68,20 +68,6 @@ void UTerrainZoneComponent::ApplyTerrainMesh(TMeshDataPtr MeshDataPtr, const TTe
 	//UE_LOG(LogSandboxTerrain, Log, TEXT("ASandboxTerrainZone::applyTerrainMesh ---------> %f %f %f --> %f ms"), GetComponentLocation().X, GetComponentLocation().Y, GetComponentLocation().Z, time);
 }
 
-typedef struct TInstantMeshData {
-	float X;
-	float Y;
-	float Z;
-
-	float Roll;
-	float Pitch;
-	float Yaw;
-
-	float ScaleX;
-	float ScaleY;
-	float ScaleZ;
-} TInstantMeshData;
-
 TValueDataPtr UTerrainZoneComponent::SerializeAndResetObjectData(){
     const std::lock_guard<std::mutex> lock(InstancedMeshMutex);
     TValueDataPtr Data = SerializeInstancedMeshes();
@@ -170,54 +156,6 @@ std::shared_ptr<std::vector<uint8>> UTerrainZoneComponent::SerializeInstancedMes
 	}
 
 	return Serializer.data();
-}
-
-void UTerrainZoneComponent::DeserializeInstancedMeshes(std::vector<uint8>& Data, TInstanceMeshTypeMap& ZoneInstMeshMap) {
-	usbt::TFastUnsafeDeserializer Deserializer(Data.data());
-
-	int32 MeshCount;
-	Deserializer >> MeshCount;
-
-	for (int Idx = 0; Idx < MeshCount; Idx++) {
-		uint32 MeshTypeId;
-		uint32 MeshVariantId;
-		int32 MeshInstanceCount;
-
-		Deserializer >> MeshTypeId;
-		Deserializer >> MeshVariantId;
-		Deserializer >> MeshInstanceCount;
-
-		FTerrainInstancedMeshType MeshType;
-		if (GetTerrainController()->FoliageMap.Contains(MeshTypeId)) {
-			FSandboxFoliage FoliageType = GetTerrainController()->FoliageMap[MeshTypeId];
-			if ((uint32)FoliageType.MeshVariants.Num() > MeshVariantId) {
-				MeshType.Mesh = FoliageType.MeshVariants[MeshVariantId];
-				MeshType.MeshTypeId = MeshTypeId;
-				MeshType.MeshVariantId = MeshVariantId;
-				MeshType.StartCullDistance = FoliageType.StartCullDistance;
-				MeshType.EndCullDistance = FoliageType.EndCullDistance;
-			}
-		} else {
-			const FTerrainInstancedMeshType* MeshTypePtr = GetTerrainController()->GetInstancedMeshType(MeshTypeId, MeshVariantId);
-			if (MeshTypePtr) {
-				MeshType = *MeshTypePtr;
-			}
-		}
-
-		TInstanceMeshArray& InstMeshArray = ZoneInstMeshMap.FindOrAdd(MeshType.GetMeshTypeCode());
-		InstMeshArray.MeshType = MeshType;
-		InstMeshArray.TransformArray.Reserve(MeshInstanceCount);
-
-		for (int32 InstanceIdx = 0; InstanceIdx < MeshInstanceCount; InstanceIdx++) {
-			TInstantMeshData P;
-			Deserializer >> P;
-			FTransform Transform(FRotator(P.Pitch, P.Yaw, P.Roll), FVector(P.X, P.Y, P.Z), FVector(P.ScaleX, P.ScaleY, P.ScaleZ));
-
-			if (MeshType.Mesh != nullptr) {
-				InstMeshArray.TransformArray.Add(Transform);
-			}
-		}
-	}
 }
 
 void UTerrainZoneComponent::SpawnAll(const TInstanceMeshTypeMap& InstanceMeshMap) {

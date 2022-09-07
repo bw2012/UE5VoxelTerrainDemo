@@ -30,5 +30,15 @@ void UTerrainNetworkworkComponent::HandleRcvData(FArrayReader& Data) {
 }
 */
 
+void ConvertVoxelIndex(FArchive& Data, TVoxelIndex& Index) {
+	Data << Index.X;
+	Data << Index.Y;
+	Data << Index.Z;
+}
 
+TVoxelIndex DeserializeVoxelIndex(FArrayReader& Data) {
+	TVoxelIndex Index;
+	ConvertVoxelIndex(Data, Index);
+	return Index;
+}
 

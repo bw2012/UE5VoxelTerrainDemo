@@ -12,6 +12,7 @@
 
 
 class ASandboxTerrainController;
+struct TZoneModificationData;
 
 /**
 *
@@ -44,7 +45,7 @@ private:
 
 	bool SendVdByIndex(FSocket* SocketPtr, const TVoxelIndex& VoxelIndex);
 
-	bool SendAreaInfo(FSocket* SocketPtr, const TVoxelIndex& ZoneIndex);
+	bool SendMapInfo(FSocket* SocketPtr, TArray<std::tuple<TVoxelIndex, TZoneModificationData>> Area);
 
 	TMap<FString, FSocket*> ConnectedClientsMap;
 

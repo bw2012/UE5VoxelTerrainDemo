@@ -261,8 +261,7 @@ void ASandboxTerrainController::LoadObjectDataByIndex(UTerrainZoneComponent* Zon
 			auto ObjDataPtr = std::make_shared<TValueData>();
 			ObjDataPtr->resize(ZoneHeader.LenObj);
 			Deserializer.read(ObjDataPtr->data(), ZoneHeader.LenObj);
-
-			Zone->DeserializeInstancedMeshes(*ObjDataPtr, ZoneInstMeshMap);
+			DeserializeInstancedMeshes(*ObjDataPtr, ZoneInstMeshMap);
 		}
 	});
 
@@ -299,14 +298,7 @@ TVoxelData* ASandboxTerrainController::LoadVoxelDataByIndex(const TVoxelIndex& I
 			auto VdPtr = std::make_shared<TValueData>();
 			VdPtr->resize(ZoneHeader.LenVd);
 			Deserializer.read(VdPtr->data(), ZoneHeader.LenVd);
-
-			size_t TTT = sizeof(TVoxelDataHeader) + sizeof(uint32);
-			if (VdPtr->size() > TTT) {
-				auto DecompressedDataPtr = Decompress(VdPtr);
-				deserializeVoxelData(Vd, *DecompressedDataPtr);
-			} else {
-				deserializeVoxelData(Vd, *VdPtr);
-			}
+			DeserializeVd(VdPtr, Vd);
 		} else {
 			UE_LOG(LogSandboxTerrain, Warning, TEXT("no vd"));
 			return nullptr;
@@ -320,10 +312,10 @@ TVoxelData* ASandboxTerrainController::LoadVoxelDataByIndex(const TVoxelIndex& I
 }
 
 //======================================================================================================================================================================
-// save vd
+// serialize vd
 //======================================================================================================================================================================
 
-TValueDataPtr ASandboxTerrainController::SerializeVd(TVoxelData* Vd) {
+TValueDataPtr ASandboxTerrainController::SerializeVd(TVoxelData* Vd) const {
 	TValueDataPtr Data = Vd->serialize();
 	size_t DataSize = Data->size();
 	
@@ -335,6 +327,16 @@ TValueDataPtr ASandboxTerrainController::SerializeVd(TVoxelData* Vd) {
 	}
 
 	return Data;
+}
+
+void ASandboxTerrainController::DeserializeVd(TValueDataPtr Data, TVoxelData* Vd) const {
+	size_t TTT = sizeof(TVoxelDataHeader) + sizeof(uint32);
+	if (Data->size() > TTT) {
+		auto DecompressedDataPtr = Decompress(Data);
+		deserializeVoxelData(Vd, *DecompressedDataPtr);
+	} else {
+		deserializeVoxelData(Vd, *Data);
+	}
 }
 
 //======================================================================================================================================================================
@@ -667,4 +669,56 @@ void ASandboxTerrainController::LoadTerrainMetadata() {
 	}
 
 	UE_LOG(LogSandboxTerrain, Warning, TEXT("Unable to load metadata!"));
+}
+
+//======================================================================================================================================================================
+// inst. meshes
+//======================================================================================================================================================================
+
+void ASandboxTerrainController::DeserializeInstancedMeshes(std::vector<uint8>& Data, TInstanceMeshTypeMap& ZoneInstMeshMap) {
+	usbt::TFastUnsafeDeserializer Deserializer(Data.data());
+
+	int32 MeshCount;
+	Deserializer >> MeshCount;
+
+	for (int Idx = 0; Idx < MeshCount; Idx++) {
+		uint32 MeshTypeId;
+		uint32 MeshVariantId;
+		int32 MeshInstanceCount;
+
+		Deserializer >> MeshTypeId;
+		Deserializer >> MeshVariantId;
+		Deserializer >> MeshInstanceCount;
+
+		FTerrainInstancedMeshType MeshType;
+		if (FoliageMap.Contains(MeshTypeId)) {
+			FSandboxFoliage FoliageType = FoliageMap[MeshTypeId];
+			if ((uint32)FoliageType.MeshVariants.Num() > MeshVariantId) {
+				MeshType.Mesh = FoliageType.MeshVariants[MeshVariantId];
+				MeshType.MeshTypeId = MeshTypeId;
+				MeshType.MeshVariantId = MeshVariantId;
+				MeshType.StartCullDistance = FoliageType.StartCullDistance;
+				MeshType.EndCullDistance = FoliageType.EndCullDistance;
+			}
+		} else {
+			const FTerrainInstancedMeshType* MeshTypePtr = GetInstancedMeshType(MeshTypeId, MeshVariantId);
+			if (MeshTypePtr) {
+				MeshType = *MeshTypePtr;
+			}
+		}
+
+		TInstanceMeshArray& InstMeshArray = ZoneInstMeshMap.FindOrAdd(MeshType.GetMeshTypeCode());
+		InstMeshArray.MeshType = MeshType;
+		InstMeshArray.TransformArray.Reserve(MeshInstanceCount);
+
+		for (int32 InstanceIdx = 0; InstanceIdx < MeshInstanceCount; InstanceIdx++) {
+			TInstantMeshData P;
+			Deserializer >> P;
+			FTransform Transform(FRotator(P.Pitch, P.Yaw, P.Roll), FVector(P.X, P.Y, P.Z), FVector(P.ScaleX, P.ScaleY, P.ScaleZ));
+
+			if (MeshType.Mesh != nullptr) {
+				InstMeshArray.TransformArray.Add(Transform);
+			}
+		}
+	}
 }

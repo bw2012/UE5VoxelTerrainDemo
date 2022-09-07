@@ -45,7 +45,7 @@ void ATerrainController::BeginPlayServer() {
 			UE_LOG(LogTemp, Log, TEXT("AddInitialZone -> %d %d %d"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
 
 			if (bFirst) {
-				BeginTerrainLoadLocation = TempCharacterInfo.Location;
+				BeginServerTerrainLoadLocation = TempCharacterInfo.Location;
 				bFirst = true;
 			}
 
