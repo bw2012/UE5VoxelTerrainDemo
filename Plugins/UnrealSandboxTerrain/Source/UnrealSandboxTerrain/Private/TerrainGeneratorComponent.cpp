@@ -245,19 +245,23 @@ float UTerrainGeneratorComponent::GroundLevelFunction(const TVoxelIndex& Index, 
     float t = exp(-pow(R, 2) / (MaxR * 100)) * H; // hill
     */
 
-
+    /*
     {
-
+        const float scale31 = 0.00009f * 10; // big
+        float noise_big1 = Pn->noise(V.X * scale31, V.Y * scale31, 0) * 10;
+        float noise_big2 = Pn->noise(V.X * scale31, V.Y * scale31, -33338 * scale31) * 10.f;
+        const float noise = (noise_big1 + noise_big2) / 2;
         const static float test = 0.5;
-        if (noise_big > -test && noise_big < test) {
-            float ttt = noise_big * 100;
-            FVector V2(V.X, V.Y, ttt);
+        if (noise > -test && noise < test) {
+            float ttt = noise_big1 * 100;
+            FVector V2(V.X, V.Y, 0);
             AsyncTask(ENamedThreads::GameThread, [=]() {
-               // DrawDebugPoint(GetWorld(), V2, 3.f, FColor(255, 255, 255, 0), true);
+               DrawDebugPoint(GetWorld(), V2, 3.f, FColor(255, 255, 255, 0), true);
             });
         }
         
     }
+    */
 
 
     const float gl = noise_small + noise_medium + noise_big;
@@ -583,7 +587,8 @@ void UTerrainGeneratorComponent::GenerateZoneVolumeWithFunction(const TGenerateV
                 const FVector& WorldPos = LocalPos + VoxelData->getOrigin();
                 const float GroundLevel = ChunkData->GetHeightLevel(X, Y);
 
-                float Density = 1.f;
+                float Density = (Itm.Type == TZoneGenerationType::AirOnly) ? 0. : 1.f;
+
                 TMaterialId MaterialId = MaterialFuncion(ZoneIndex, WorldPos, GroundLevel);
 
                 if (bIsLandscape) {
@@ -1152,6 +1157,9 @@ void UTerrainGeneratorComponent::SpawnFoliage(int32 FoliageTypeId, FSandboxFolia
 }
 
 void UTerrainGeneratorComponent::GenerateNewFoliageCustom(const TVoxelIndex& Index, TVoxelData* Vd, TInstanceMeshTypeMap& ZoneInstanceMeshMap) {
+
+    // TODO refactor all. use GenerateRandomInstMesh
+    /*
     if (GetController()->FoliageMap.Num() == 0) {
         return;
     }
@@ -1209,6 +1217,7 @@ void UTerrainGeneratorComponent::GenerateNewFoliageCustom(const TVoxelIndex& Ind
 
             });
     }
+    */
 }
 
 

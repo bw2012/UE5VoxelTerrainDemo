@@ -22,7 +22,7 @@ void ACubeObject::OnPlaceToWorld() {
 }
 
 
-bool ACubeObject::PlaceToWorldClcPosition(const FVector& SourcePos, const FRotator& SourceRotation, const FHitResult& Res, FVector& Location, FRotator& Rotation, bool bFinal) const {
+bool ACubeObject::PlaceToWorldClcPosition(const UWorld* World, const FVector& SourcePos, const FRotator& SourceRotation, const FHitResult& Res, FVector& Location, FRotator& Rotation, bool bFinal) const {
 	Location = Res.Location;
 
 	/*

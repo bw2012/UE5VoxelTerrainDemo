@@ -29,6 +29,15 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	USoundCue* DiggingSoilSound;
 
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	USoundCue* HitWoodSound;
+
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	TSubclassOf<AActor> EffectActor;
+
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	TSubclassOf<AActor> EffectActorWood;
+
 	void OnAltAction(const FHitResult& Hit, ABaseCharacter* Owner);
 
 	bool OnTracePlayerActionPoint(const FHitResult& Res, ABaseCharacter* Owner);

@@ -37,6 +37,8 @@ public:
 
 	virtual void MainInteraction(const APawn* Source);
 
+	virtual void OnTerrainChange() override;
+
 	virtual void Enable();
 
 	virtual void Disable();

@@ -142,6 +142,8 @@ public:
 
 	virtual bool OnContainerDropCheck(int32 SlotId, FName ContainerName, const ASandboxObject* Obj) const;
 
+	ASandboxLevelController* GetLevelController();
+
 private:
 
 	void OnMainActionPressedInternal();

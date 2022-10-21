@@ -84,6 +84,7 @@ EBTNodeResult::Type UBTTask_SelectWalkTarget::ExecuteTask(UBehaviorTreeComponent
 		ResultActor = FindNearestInterestingActor(GetWorld(), OwnerLocation, LightFindingRadius);
 	}
 
+	/*
 	if (ResultActor) {
 			const float WalkRadius = (bIsNight) ? NightWalkingRadius : WalkTargetRadius * 0.95;
 			FVector TargetLocation = ResultActor->GetActorLocation();
@@ -105,6 +106,17 @@ EBTNodeResult::Type UBTTask_SelectWalkTarget::ExecuteTask(UBehaviorTreeComponent
 			//UE_LOG(LogTemp, Warning, TEXT("set blackboard destination -> %f %f %f"), ResultLocation.Location.X, ResultLocation.Location.Y, ResultLocation.Location.Z);
 			OwnerComp.GetBlackboardComponent()->SetValue<UBlackboardKeyType_Vector>(BlackboardKey.GetSelectedKeyID(), ResultLocation.Location);
 		}
+	}
+	*/
+
+	// nothing found
+	const float WalkRadius = (bIsNight) ? NightWalkingRadius : WalkTargetRadius * 2;
+	FNavLocation ResultLocation;
+	UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
+	bool bIsSuccess = NavSys->GetRandomReachablePointInRadius(OwnerLocation, WalkRadius, ResultLocation, nullptr, FSharedConstNavQueryFilter());
+	if (bIsSuccess) {
+		UE_LOG(LogTemp, Warning, TEXT("set blackboard destination -> %f %f %f"), ResultLocation.Location.X, ResultLocation.Location.Y, ResultLocation.Location.Z);
+		OwnerComp.GetBlackboardComponent()->SetValue<UBlackboardKeyType_Vector>(BlackboardKey.GetSelectedKeyID(), ResultLocation.Location);
 	}
 
 	return NodeResult;
@@ -250,6 +262,7 @@ void ACoreAIController::BeginPlay() {
 	}
 
 	if (MainBehaviourTree) {
+		UE_LOG(LogTemp, Warning, TEXT("Use MainBehaviourTree"));
 		RunBehaviorTree(MainBehaviourTree);
 	}
 }

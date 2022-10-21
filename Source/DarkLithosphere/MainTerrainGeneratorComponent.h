@@ -22,6 +22,21 @@ struct TBiome {
 };
 
 
+class TMetaStructure {
+
+protected:
+
+	TVoxelIndex OriginIndex;
+
+public:
+
+	virtual TArray<TVoxelIndex> GetRelevantZones(UMainTerrainGeneratorComponent* Generator) const;
+	
+	virtual void MakeMetaData(UMainTerrainGeneratorComponent* Generator) const;
+
+};
+
+
 /**
  * 
  */
@@ -51,6 +66,8 @@ protected:
 
 	void virtual PrepareMetaData() override;
 
+	void GenerateStructures();
+
 	virtual void PostGenerateNewInstanceObjects(const TVoxelIndex& ZoneIndex, const TZoneGenerationType ZoneType, const TVoxelData* Vd, TInstanceMeshTypeMap& ZoneInstanceMeshMap) const override;
 
 	FRandomStream MakeNewRandomStream(const FVector& ZonePos) const;
@@ -63,6 +80,8 @@ protected:
 
 	void GenerateRandomInstMesh(TInstanceMeshTypeMap& ZoneInstanceMeshMap, uint32 MeshTypeId, FRandomStream& Rnd, const TVoxelIndex& ZoneIndex, const TVoxelData* Vd, int Min = 1, int Max = 1) const;
 
+	void GenerateRandomInstMeshAsFoliage(TInstanceMeshTypeMap& ZoneInstanceMeshMap, uint32 MeshTypeId, FRandomStream& Rnd, const TVoxelIndex& ZoneIndex, const TVoxelData* Vd, int Min = 1, int Max = 1) const;
+
 public:
 
 	float FunctionMakeBox(const float InDensity, const FVector& P, const FBox& InBox) const;
@@ -70,6 +89,10 @@ public:
 	float FunctionMakeCaveLayer(float Density, const FVector& WorldPos) const;
 
 	float FunctionMakeVerticalCylinder(const float InDensity, const FVector& V, const FVector& Origin, const float Radius, const float Top, const float Bottom, const float NoiseFactor = 1.f) const;
+
+	float FunctionMakeSphere(const float InDensity, const FVector& V, const FVector& Origin, const float Radius, const float NoiseFactor) const;
+
+	TGenerationResult FunctionMakeSolidSphere(const float InDensity, const TMaterialId InMaterialId, const FVector& V, const FVector& Origin, const float Radius, const TMaterialId ShellMaterialId) const;
 
 	void GenerateZoneSandboxObject(const TVoxelIndex& Index);
 

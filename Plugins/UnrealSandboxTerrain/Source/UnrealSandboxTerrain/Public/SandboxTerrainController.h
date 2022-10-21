@@ -441,6 +441,8 @@ public:
 
 	void FillTerrainRound(const FVector& Origin, float Extend, int MatId);
 
+	void RemoveInstanceAtMesh(UHierarchicalInstancedStaticMeshComponent* InstancedMeshComp, int32 ItemIndex);
+
 	TVoxelIndex GetZoneIndex(const FVector& Pos);
 
 	FVector GetZonePos(const TVoxelIndex& Index);
@@ -716,7 +718,7 @@ protected:
 
 	virtual UTerrainGeneratorComponent* NewTerrainGenerator();
     
-	virtual void OnOverlapActorDuringTerrainEdit(const FHitResult& OverlapResult, const FVector& Pos);
+	virtual void OnOverlapActorTerrainEdit(const FOverlapResult& OverlapResult, const FVector& Pos);
 
 	virtual void OnFinishGenerateNewZone(const TVoxelIndex& Index);
 

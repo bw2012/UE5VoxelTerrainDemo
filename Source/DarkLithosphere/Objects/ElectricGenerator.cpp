@@ -5,6 +5,7 @@
 AElectricGenerator::AElectricGenerator() {
 	PrimaryActorTick.bCanEverTick = true;
 	MainSound = CreateDefaultSubobject<UAudioComponent>(TEXT("MainSound"));
+	MainSound->AttachToComponent(SandboxRootMesh, FAttachmentTransformRules::KeepRelativeTransform);
 
 	//TODO
 	auto SoundObj = ConstructorHelpers::FObjectFinder<USoundBase>(TEXT("/Game/Sandbox/Object/Industrial/A_ToggleSwitch"));
@@ -89,4 +90,9 @@ void AElectricGenerator::ProduceElectricPower(float& OutputPower) {
 	if (Param == "Y") {
 		OutputPower = 1;
 	}
+}
+
+void AElectricGenerator::OnTerrainChange() {
+	Super::OnTerrainChange();
+	SetProperty(TEXT("Enabled"), TEXT("N"));
 }

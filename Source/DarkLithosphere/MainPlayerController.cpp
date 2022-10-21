@@ -127,7 +127,7 @@ void AMainPlayerController::RegisterSandboxPlayerUid_Implementation(const FStrin
 
 void AMainPlayerController::FindOrCreateCharacterInternal() {
 	FString Text = TEXT("Spawn player character: ") + PlayerInfo.PlayerUid;
-	GEngine->AddOnScreenDebugMessage(-1, 10, FColor::White, Text);
+	//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::White, Text);
 
 	ABaseCharacter* MainCharacter = nullptr;
 	for (TActorIterator<ABaseCharacter> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
@@ -310,96 +310,6 @@ void AMainPlayerController::SetupInputComponent() {
 	InputComponent->BindAction("MainInteraction", IE_Pressed, this, &AMainPlayerController::OnMainInteractionPressed);
 }
 
-void AMainPlayerController::OnMainActionPressed() {
-	ADummyPawn* DummyPawn = Cast<ADummyPawn>(GetPawn());
-	if (DummyPawn) {
-		FHitResult Hit;
-		GetHitResultUnderCursor(ECC_Camera, false, Hit);
-
-		if (this->SandboxMode == 0) {
-			ASandboxObject* Obj = Cast<ASandboxObject>(Hit.GetActor());
-			if (PickedObj && PickedObj == Obj) {
-				SetRenderCustomDepth(PickedObj, false);
-				PickedObj = nullptr;
-				goto l1;
-			} 
-
-			if (SelectedObj && SelectedObj == Obj) {
-				if (PickedObj) {
-					SetRenderCustomDepth(PickedObj, false);
-					PickedObj = nullptr;
-				}
-
-				PickedObj = SelectedObj;
-				SetRenderCustomDepth(PickedObj, true);
-				goto l1;
-			}
-
-			if (!Obj) {
-				if (PickedObj) {
-					SetRenderCustomDepth(PickedObj, false);
-					PickedObj = nullptr;
-				}
-				goto l1;
-			}
-		}
-
-	l1:
-
-		APawn* DetectedPawn = PawnUnderCursor(Hit);
-		if (DetectedPawn) {
-			if (SelectedPawn != DetectedPawn) {
-				if (SelectedPawn) {
-					SetRenderCustomDepth(SelectedPawn, false);
-					SelectedPawn = nullptr;
-				}
-
-				SetRenderCustomDepth(DetectedPawn, true);
-				SelectedPawn = DetectedPawn;
-				UE_LOG(LogTemp, Warning, TEXT("Pawn: %s"), *DetectedPawn->GetName());
-			} else {
-				ResetAllSelections();
-				UnPossessDummyPawn(DetectedPawn);
-			}
-		} else {
-			if (SelectedPawn) {
-				SetRenderCustomDepth(SelectedPawn, false);
-				SelectedPawn = nullptr;
-			}
-		}
-
-		DummyPawn->OnMainAction(Hit);
-
-		if (this->SandboxMode == 1) {
-			 
-		}
-
-		if (this->SandboxMode == 2) {
-
-		}
-
-		if (this->SandboxMode == 3) {
-			
-		}
-			
-		return;
-	}
-
-	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
-	if (BaseCharacter) {
-		MainPlayerControllerComponent->PerformMainAction();
-	}
-}
-
-void AMainPlayerController::OnMainActionReleased() {
-	ADummyPawn* DummyPawn = Cast<ADummyPawn>(GetCharacter());
-	if (DummyPawn) {
-		return;
-	}
-
-	SetDestinationReleased();
-}
-
 ASandboxObject* AMainPlayerController::GetInventoryObject(int32 SlotId) {
 	UContainerComponent* Inventory = GetInventory();
 	if (Inventory != nullptr) {
@@ -435,6 +345,26 @@ void AMainPlayerController::OnMainInteractionPressed() {
 	}
 }
 
+void AMainPlayerController::OnMainActionPressed() {
+	ADummyPawn* DummyPawn = Cast<ADummyPawn>(GetPawn());
+	if (DummyPawn) {
+		return;
+	}
+
+	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
+	if (BaseCharacter) {
+		if (BaseCharacter->IsDead()) {
+			return;
+		}
+
+		MainPlayerControllerComponent->PerformMainAction();
+	}
+}
+
+void AMainPlayerController::OnMainActionReleased() {
+
+}
+
 void AMainPlayerController::OnAltActionPressed() {
 	ADummyPawn* DummyPawn = Cast<ADummyPawn>(GetPawn());
 	if (DummyPawn) {
@@ -453,7 +383,6 @@ void AMainPlayerController::OnAltActionPressed() {
 			RebuildEquipment();
 		}
 	}
-
 }
 
 void AMainPlayerController::OnAltActionReleased() {

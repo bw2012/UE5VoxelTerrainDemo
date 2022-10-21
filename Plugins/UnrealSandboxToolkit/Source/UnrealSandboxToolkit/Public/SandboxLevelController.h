@@ -66,6 +66,8 @@ public:
 
 	static ASandboxObject* ASandboxLevelController::GetDefaultSandboxObject(uint64 ClassId);
 
+	static ASandboxLevelController* ASandboxLevelController::GetInstance();
+
 	void PrepareMetaData();
 
 	virtual ASandboxObject* SpawnSandboxObject(const int ClassId, const FTransform& Transform);
@@ -109,5 +111,7 @@ private:
 	uint64 ObjectCounter;
 
 	TMap<uint64, ASandboxObject*> GlobalObjectMap;
+
+	static ASandboxLevelController* StaticSelf;
 
 };

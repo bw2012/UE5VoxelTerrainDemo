@@ -6,11 +6,11 @@
 #include "GameFramework/Actor.h"
 #include "SandboxEnvironment.generated.h"
 
-struct SandboxGameTime {
-	long days;
-	long hours;
-	long minutes;
-	long seconds;
+struct TSandboxGameTime {
+	int days;
+	int hours;
+	int minutes;
+	int seconds;
 
 	int month;
 	int year;
@@ -100,9 +100,11 @@ public:
 
 	float ClcGameTime(float RealServerTime);
 
-	SandboxGameTime ClcLocalGameTime(float RealServerTime);
+	TSandboxGameTime ClcLocalGameTime(float RealServerTime);
 
-	SandboxGameTime ClcGameTimeOfDay(float RealServerTime, bool bAccordingTimeZone);
+	TSandboxGameTime ClcGameTimeOfDay(float RealServerTime, bool bAccordingTimeZone);
+
+	TSandboxGameTime ClcGameTimeOfDay();
 
 	void SetTimeOffset(float time);
 
@@ -114,9 +116,12 @@ public:
 
 	bool IsNight() const;
 
+	UFUNCTION(BlueprintCallable, Category = "Sandbox")
+	FString GetCurrentTimeAsString();
+
 private:
 
-	bool bIsNight;
+	bool bIsNight = false;
 
 	bool bCaveMode = false;
 

@@ -91,7 +91,7 @@ protected:
 
 	virtual UTerrainGeneratorComponent* NewTerrainGenerator() override;
 
-	virtual void OnOverlapActorDuringTerrainEdit(const FHitResult& OverlapResult, const FVector& Pos) override;
+	virtual void OnOverlapActorTerrainEdit(const FOverlapResult& OverlapResult, const FVector& Pos) override;
 
 	virtual void OnFinishGenerateNewZone(const TVoxelIndex& Index);
 

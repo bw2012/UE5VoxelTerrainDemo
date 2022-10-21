@@ -17,13 +17,10 @@ UTerrainGeneratorComponent* ATerrainController::NewTerrainGenerator() {
 	return Generator;
 }
 
-void ATerrainController::OnOverlapActorDuringTerrainEdit(const FHitResult& OverlapResult, const FVector& Pos) {
+void ATerrainController::OnOverlapActorTerrainEdit(const FOverlapResult& OverlapResult, const FVector& Pos) {
 	ASandboxObject* Object = Cast<ASandboxObject>(OverlapResult.GetActor());
 	if (Object) {
-		UStaticMeshComponent* Component = Cast<UStaticMeshComponent>(Object->GetRootComponent());
-		if (Component) {
-			//Component->SetSimulatePhysics(true);
-		}
+		Object->OnTerrainChange();
 	}
 }
 
@@ -42,14 +39,22 @@ void ATerrainController::BeginPlayServer() {
 		for (const FTempCharacterLoadInfo& TempCharacterInfo : TempCharacterList) {
 			const TVoxelIndex ZoneIndex = GetZoneIndex(TempCharacterInfo.Location);
 			UE_LOG(LogTemp, Log, TEXT("Server PlayerId -> %s "), *TempCharacterInfo.SandboxPlayerUid);
-			UE_LOG(LogTemp, Log, TEXT("AddInitialZone -> %d %d %d"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
 
 			if (bFirst) {
 				BeginServerTerrainLoadLocation = TempCharacterInfo.Location;
 				bFirst = true;
 			}
 
-			AddInitialZone(ZoneIndex);
+			for (int X = -1; X <= 1; X++) {
+				for (int Y = -1; Y <= 1; Y++) {
+					for (int Z = -1; Z <= 1; Z++) {
+						const TVoxelIndex TmpZoneIndex(ZoneIndex.X + X, ZoneIndex.Y + Y, ZoneIndex.Z + Z);
+						UE_LOG(LogTemp, Log, TEXT("AddInitialZone -> %d %d %d"), TmpZoneIndex.X, TmpZoneIndex.Y, TmpZoneIndex.Z);
+						AddInitialZone(TmpZoneIndex);
+						SpawnFromStash(TmpZoneIndex);
+					}
+				}
+			}
 		}
 	}
 
@@ -166,7 +171,7 @@ void ATerrainController::MakeFlattenGrassTrace(const FHitResult& Overlap) {
 			if (Parents.Num() > 0) {
 				UTerrainZoneComponent* Zone = Cast<UTerrainZoneComponent>(Parents[0]);
 				if (Zone) {
-					Zone->SetNeedSave(); // TODO check condition racing
+					Zone->SetObjectsNeedSave(); // TODO check condition racing
 
 					FVector ZonePos = Zone->GetComponentLocation();
 					TVoxelIndex ZoneIndex = GetZoneIndex(ZonePos);
@@ -218,7 +223,15 @@ void ATerrainController::RegisterSandboxObject(ASandboxObject* SandboxObject) {
 
 void ATerrainController::AddToStash(const FSandboxObjectDescriptor& ObjDesc) {
 	const FVector Pos = ObjDesc.Transform.GetLocation();
-	FString Str = FString::FromInt(ObjDesc.ClassId) + FString("|") + FString::SanitizeFloat(Pos.X) + FString("|") + FString::SanitizeFloat(Pos.Y) + FString("|") + FString::SanitizeFloat(Pos.Z);
+	const FQuat Quat = ObjDesc.Transform.GetRotation();
+	FString Str = FString::FromInt(ObjDesc.ClassId) 
+		+ FString("|") + FString::SanitizeFloat(Pos.X) 
+		+ FString("|") + FString::SanitizeFloat(Pos.Y) 
+		+ FString("|") + FString::SanitizeFloat(Pos.Z)
+		+ FString("|") + FString::SanitizeFloat(Quat.W)
+		+ FString("|") + FString::SanitizeFloat(Quat.X)
+		+ FString("|") + FString::SanitizeFloat(Quat.Y)
+		+ FString("|") + FString::SanitizeFloat(Quat.Z);
 	const TVoxelIndex ZoneIndex = GetZoneIndex(Pos);
 	auto& ZoneObjects = ObjectsByZoneMap.FindOrAdd(ZoneIndex);
 	ZoneObjects.Stash.Add(Str, ObjDesc);

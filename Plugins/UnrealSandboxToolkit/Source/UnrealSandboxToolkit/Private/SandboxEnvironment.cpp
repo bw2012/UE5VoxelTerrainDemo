@@ -102,10 +102,13 @@ void ASandboxEnvironment::PerformDayNightCycle() {
 	}
 
 	float RealServerTime = GameState->GetServerWorldTimeSeconds();
-	SandboxGameTime GameDayTime = ClcGameTimeOfDay(RealServerTime, false); // use UTC time
+	TSandboxGameTime GameDayTime = ClcGameTimeOfDay(RealServerTime, false); // use UTC time
 
-	//UE_LOG(LogSandboxTerrain, Log, TEXT("%f"), RealServerTime);
-	//UE_LOG(LogSandboxTerrain, Log, TEXT("%d : %d"), GameTimeOfDay.hours, GameTimeOfDay.minutes);
+	//UE_LOG(LogTemp, Log, TEXT("%f"), RealServerTime);
+	//UE_LOG(LogTemp, Log, TEXT("%d : %d"), GameTimeOfDay.hours, GameTimeOfDay.minutes);
+
+	//FString ttt = GetCurrentTimeAsString();
+	//UE_LOG(LogTemp, Log, TEXT("%s"), *ttt);
 
 	cTime Time;
 	Time.iYear = GameDayTime.year;
@@ -190,7 +193,7 @@ float ASandboxEnvironment::ClcGameTime(float RealServerTime) {
 	return (RealServerTime + RealTimeOffset) * TimeSpeed;
 }
 
-SandboxGameTime ASandboxEnvironment::ClcLocalGameTime(float RealServerTime) {
+TSandboxGameTime ASandboxEnvironment::ClcLocalGameTime(float RealServerTime) {
 	long input_seconds = (long)(ClcGameTime(RealServerTime));
 
 	const int cseconds_in_day = 86400;
@@ -198,7 +201,7 @@ SandboxGameTime ASandboxEnvironment::ClcLocalGameTime(float RealServerTime) {
 	const int cseconds_in_minute = 60;
 	const int cseconds = 1;
 
-	SandboxGameTime ret;
+	TSandboxGameTime ret;
 	ret.days = input_seconds / cseconds_in_day;
 	ret.hours = (input_seconds % cseconds_in_day) / cseconds_in_hour;
 	ret.minutes = ((input_seconds % cseconds_in_day) % cseconds_in_hour) / cseconds_in_minute;
@@ -207,7 +210,7 @@ SandboxGameTime ASandboxEnvironment::ClcLocalGameTime(float RealServerTime) {
 	return ret;
 }
 
-SandboxGameTime ASandboxEnvironment::ClcGameTimeOfDay(float RealServerTime, bool bAccordingTimeZone) {
+TSandboxGameTime ASandboxEnvironment::ClcGameTimeOfDay(float RealServerTime, bool bAccordingTimeZone) {
 	std::tm initial_ptm {};
 	initial_ptm.tm_hour = 12;
 	initial_ptm.tm_min = 0;
@@ -232,7 +235,7 @@ SandboxGameTime ASandboxEnvironment::ClcGameTimeOfDay(float RealServerTime, bool
 	ptm = *gmtime_r(&rawtime, &ptm);
 #endif
 
-	SandboxGameTime Time;
+	TSandboxGameTime Time;
 	Time.hours = ptm.tm_hour;
 	Time.minutes = ptm.tm_min;
 	Time.seconds = ptm.tm_sec;
@@ -241,6 +244,17 @@ SandboxGameTime ASandboxEnvironment::ClcGameTimeOfDay(float RealServerTime, bool
 	Time.year = ptm.tm_year + 1900;
 
 	return Time;
+}
+
+TSandboxGameTime ASandboxEnvironment::ClcGameTimeOfDay() {
+	UWorld* World = GetWorld();
+	AGameStateBase* GameState = World->GetGameState();
+
+	if (!GameState) {
+		return TSandboxGameTime();
+	}
+
+	return  ClcGameTimeOfDay(GameState->GetServerWorldTimeSeconds(), true);
 }
 
 void ASandboxEnvironment::SetTimeOffset(float Offset) {
@@ -269,8 +283,6 @@ void ASandboxEnvironment::UpdatePlayerPosition(FVector Pos, float GroundLevel) {
 		GlobalFog->SetActorLocation(Pos);
 	}
 
-	
-	/*
 	if (AmbientSound) {
 		float Value = 0;
 		if (Pos.Z < -1000) {
@@ -279,12 +291,8 @@ void ASandboxEnvironment::UpdatePlayerPosition(FVector Pos, float GroundLevel) {
 				Value = 1;
 			}
 		}
-
-		FAudioComponentParam Param(TEXT("Z"));
-		Param.FloatParam = Value;
-		AmbientSound->GetAudioComponent()->SetSoundParameter(Param);
+		AmbientSound->GetAudioComponent()->SetFloatParameter(TEXT("Z"), Value);
 	}
-	*/
 }
 
 
@@ -302,4 +310,19 @@ void ASandboxEnvironment::SetCaveMode(bool bCaveModeEnabled) {
 
 bool ASandboxEnvironment::IsNight() const {
 	return bIsNight;
+}
+
+FString ASandboxEnvironment::GetCurrentTimeAsString() {
+	UWorld* World = GetWorld();
+	AGameStateBase* GameState = World->GetGameState();
+
+	if (!GameState) {
+		return TEXT("");
+	}
+
+	float RealServerTime = GameState->GetServerWorldTimeSeconds();
+	TSandboxGameTime CurrentTime = ClcGameTimeOfDay(RealServerTime, true);
+
+	FString Str = FString::Printf(TEXT("%02d:%02d"), CurrentTime.hours, CurrentTime.minutes);
+	return Str;
 }

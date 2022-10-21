@@ -15,12 +15,16 @@ struct FTerrainInstancedMeshType;
 typedef TMap<uint64, TInstanceMeshArray> TInstanceMeshTypeMap;
 
 
+class UTerrainZoneComponent;
+
 /**
 *
 */
 UCLASS()
 class UNREALSANDBOXTERRAIN_API UTerrainInstancedStaticMesh : public UHierarchicalInstancedStaticMeshComponent {
 	GENERATED_UCLASS_BODY()
+
+	friend class UTerrainZoneComponent;
 
 public:
 
@@ -30,6 +34,11 @@ public:
 	UPROPERTY()
 	uint32 MeshVariantId = 0;
 
+	bool IsFoliage();
+
+private:
+
+	bool bIsFoliage;
 };
 
 
@@ -73,9 +82,9 @@ public:
 
 	static TValueDataPtr SerializeInstancedMesh(const TInstanceMeshTypeMap& InstanceMeshMap);
     
-	void SetNeedSave();
+	void SetObjectsNeedSave();
 
-	bool IsNeedSave();
+	bool IsObjectsNeedSave();
 
 	TTerrainLodMask GetTerrainLodMask();
     

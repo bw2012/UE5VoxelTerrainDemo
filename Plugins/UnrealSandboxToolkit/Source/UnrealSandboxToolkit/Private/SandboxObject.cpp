@@ -15,6 +15,15 @@ ASandboxObject::ASandboxObject() {
 
 static const FString DefaultSandboxObjectName = FString(TEXT("Sandbox object"));
 
+void ASandboxObject::BeginPlay() {
+	Super::BeginPlay();
+	SandboxRootMesh->OnComponentSleep.AddDynamic(this, &ASandboxObject::OnSleep);
+}
+
+void ASandboxObject::OnSleep(UPrimitiveComponent* SleepingComponent, FName BoneName) {
+	SandboxRootMesh->SetSimulatePhysics(false);
+}
+
 FString ASandboxObject::GetSandboxName() {
 	return DefaultSandboxObjectName;
 }
@@ -51,11 +60,7 @@ void ASandboxObject::ActionInInventoryActive(UWorld* World, const FHitResult& Hi
 
 }
 
-void ASandboxObject::ActionInInventoryActive2(UWorld* World, const FHitResult& HitResult) {
-
-}
-
-bool ASandboxObject::CanTake(AActor* actor) {
+bool ASandboxObject::CanTake(const AActor* Actor) const {
 	
 	TArray<UContainerComponent*> ContainerComponents;
 	GetComponents<UContainerComponent>(ContainerComponents);
@@ -69,10 +74,9 @@ bool ASandboxObject::CanTake(AActor* actor) {
 	return true; 
 }
 
-void ASandboxObject::InformTerrainChange(int32 Item) {
-
+void ASandboxObject::OnTerrainChange() {
+	SandboxRootMesh->SetSimulatePhysics(true);
 }
-
 
 UContainerComponent* ASandboxObject::GetContainer(const FString& Name) { 
 	return GetFirstComponentByName<UContainerComponent>(Name);
@@ -91,7 +95,7 @@ void ASandboxObject::SetProperty(FString Key, FString Value) {
 	PropertyMap.Add(Key, Value);
 }
 
-FString ASandboxObject::GetProperty(FString Key) {
+FString ASandboxObject::GetProperty(FString Key) const {
 	return PropertyMap.FindRef(Key);
 }
 
@@ -107,7 +111,7 @@ void ASandboxObject::OnPlaceToWorld() {
 
 }
 
-bool ASandboxObject::PlaceToWorldClcPosition(const FVector& SourcePos, const FRotator& SourceRotation, const FHitResult& Res, FVector& Location, FRotator& Rotation, bool bFinal) const {
+bool ASandboxObject::PlaceToWorldClcPosition(const UWorld* World, const FVector& SourcePos, const FRotator& SourceRotation, const FHitResult& Res, FVector& Location, FRotator& Rotation, bool bFinal) const {
 	Location = Res.Location;
 	Rotation.Pitch = 0;
 	Rotation.Roll = 0;
@@ -120,6 +124,10 @@ void ASandboxObject::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLi
 	DOREPLIFETIME(ASandboxObject, SandboxNetUid);
 }
 
+const UStaticMeshComponent* ASandboxObject::GetMarkerMesh() const {
+	return SandboxRootMesh;
+}
+
 int ASandboxSkeletalModule::GetSandboxTypeId() const {
 	return 500;
 }
@@ -128,4 +136,5 @@ void ASandboxSkeletalModule::GetFootPose(FRotator& LeftFootRotator, FRotator& Ri
 	LeftFootRotator = FootRotator;
 	RightFootRotator = FRotator(-FootRotator.Pitch, -FootRotator.Yaw, FootRotator.Roll);
 }
+
 

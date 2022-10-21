@@ -35,6 +35,12 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	TMap<FString, FString> PropertyMap;
 
+protected:
+	virtual void BeginPlay() override;
+
+	UFUNCTION()
+	void OnSleep(UPrimitiveComponent* SleepingComponent, FName BoneName);
+
 public:
 
 	uint64 GetSandboxNetUid() const;
@@ -53,15 +59,13 @@ public:
 
 	virtual void ActionInInventoryActive(UWorld* World, const FHitResult& HitResult);
 
-	virtual void ActionInInventoryActive2(UWorld* World, const FHitResult& HitResult);
-
 	virtual bool IsInteractive(const APawn* Source = nullptr);
 
 	virtual void MainInteraction(const APawn* Source = nullptr);
 
-	virtual bool CanTake(AActor* actor);
+	virtual bool CanTake(const AActor* Actor = nullptr) const;
 
-	virtual void InformTerrainChange(int32 item);
+	virtual void OnTerrainChange();
     
 	UContainerComponent* GetContainer(const FString& Name);
 
@@ -79,7 +83,7 @@ public:
 
 	void SetProperty(FString Key, FString Value);
 
-	FString GetProperty(FString Key);
+	FString GetProperty(FString Key) const;
 
 	void RemoveProperty(FString Key);
 
@@ -87,8 +91,9 @@ public:
 
 	virtual void OnPlaceToWorld();
 
-	virtual bool PlaceToWorldClcPosition(const FVector& SourcePos, const FRotator& SourceRotation, const FHitResult& Res, FVector& Location, FRotator& Rotation, bool bFinal = false) const;
+	virtual bool PlaceToWorldClcPosition(const UWorld* World, const FVector& SourcePos, const FRotator& SourceRotation, const FHitResult& Res, FVector& Location, FRotator& Rotation, bool bFinal = false) const;
 
+	virtual const UStaticMeshComponent* GetMarkerMesh() const;
 };
 
 

@@ -24,9 +24,11 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
-	virtual bool CanTake(AActor* actor) override;
+	virtual bool CanTake(const AActor* Actor = nullptr) const override;
 
 	virtual void PostLoadProperties() override;
+
+	virtual void OnTerrainChange() override;
 
 protected:
 

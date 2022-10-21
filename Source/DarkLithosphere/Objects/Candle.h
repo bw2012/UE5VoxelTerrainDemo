@@ -25,13 +25,15 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
-	virtual bool PlaceToWorldClcPosition(const FVector& SourcePos, const FRotator& SourceRotation, const FHitResult& Res, FVector& Location, FRotator& Rotation, bool bFinal) const override;
+	virtual bool PlaceToWorldClcPosition(const UWorld* World, const FVector& SourcePos, const FRotator& SourceRotation, const FHitResult& Res, FVector& Location, FRotator& Rotation, bool bFinal) const override;
 
 	virtual int GetMaxStackSize() override;
 
-	virtual bool CanTake(AActor* actor) override;
+	virtual bool CanTake(const AActor* Actor = nullptr) const override;
 
 	virtual void PostLoadProperties() override;
+
+	virtual void OnTerrainChange() override;
 
 private:
 

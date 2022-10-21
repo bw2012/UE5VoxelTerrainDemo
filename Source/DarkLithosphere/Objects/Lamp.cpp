@@ -29,7 +29,7 @@ void ALamp::BeginPlay() {
 
 	const auto& Param = GetProperty(TEXT("Enabled"));
 	if (Param == "Y") {
-		//Enable();
+		//EnableLight();
 	} else {
 		DisableLight();
 	}
@@ -44,7 +44,7 @@ void ALamp::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 void ALamp::PostLoadProperties() {
 	const auto& Param = GetProperty(TEXT("Enabled"));
 	if (Param == "Y") {
-		//Enable();
+		//EnableLight();
 	} else {
 		DisableLight();
 	}
@@ -69,7 +69,7 @@ void ALamp::MainInteraction(const APawn* Source) {
 		DisableLight();
 	} else {
 		SetProperty(TEXT("Enabled"), TEXT("Y"));
-		//Enable();
+		//EnableLight();
 	}
 }
 
@@ -94,7 +94,7 @@ void ALamp::SwitchState(bool bIsEnable) {
 
 void ALamp::OnPlaceToWorld() {
 	SetProperty(TEXT("Enabled"), TEXT("Y"));
-	//Enable();
+	//EnableLight();
 }
 
 void ALamp::InElectricPower(float InputPower) {

@@ -1,7 +1,8 @@
 
+
 #include "Candle.h"
-//#include "BaseCharacter.h"
-//#include "SpawnHelper.h"
+#include "SandboxLevelController.h"
+
 
 ACandle::ACandle() {
 	PrimaryActorTick.bCanEverTick = true;
@@ -80,8 +81,8 @@ void ACandle::Tick(float DeltaTime) {
 }
 
 
-bool ACandle::PlaceToWorldClcPosition(const FVector& SourcePos, const FRotator& SourceRotation, const FHitResult& Res, FVector& Location, FRotator& Rotation, bool bFinal) const {
-	Super::PlaceToWorldClcPosition(SourcePos, SourceRotation, Res, Location, Rotation, bFinal);
+bool ACandle::PlaceToWorldClcPosition(const UWorld* World, const FVector& SourcePos, const FRotator& SourceRotation, const FHitResult& Res, FVector& Location, FRotator& Rotation, bool bFinal) const {
+	Super::PlaceToWorldClcPosition(World, SourcePos, SourceRotation, Res, Location, Rotation, bFinal);
 	if (Res.ImpactNormal.Z < 0.45) {
 		return false;
 	}
@@ -93,7 +94,7 @@ int ACandle::GetMaxStackSize() {
 	return Super::GetMaxStackSize();
 }
 
-bool ACandle::CanTake(AActor* actor) {
+bool ACandle::CanTake(const AActor* Actor) const {
 	const auto& ParamBurnt = GetProperty(TEXT("Burnt"));
 	if (ParamBurnt == "Y") {
 		return false;
@@ -106,4 +107,9 @@ bool ACandle::CanTake(AActor* actor) {
 	return true;
 }
 
-
+void ACandle::OnTerrainChange() {
+	ASandboxLevelController* Ctrl = ASandboxLevelController::GetInstance();
+	if (Ctrl) {
+		Ctrl->RemoveSandboxObject(this);
+	}
+}

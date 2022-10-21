@@ -37,6 +37,9 @@ struct FCraftRecipeData {
 	FString Name;
 
 	UPROPERTY(EditAnywhere)
+	bool bOnlyOne = true;
+
+	UPROPERTY(EditAnywhere)
 	TArray<FCraftPartData> Parts;
 };
 
@@ -127,6 +130,12 @@ public:
 	void ToggleMainInventory();
 
 	UFUNCTION(BlueprintCallable, Category = "Sandbox")
+	virtual void OnMainActionPressed();
+
+	UFUNCTION(BlueprintCallable, Category = "Sandbox")
+	virtual void OnMainActionReleased();
+
+	UFUNCTION(BlueprintCallable, Category = "Sandbox")
 	virtual void OnAltActionPressed();
 
 	UFUNCTION(BlueprintCallable, Category = "Sandbox")
@@ -160,10 +169,6 @@ protected:
 	virtual void PlayerTick(float DeltaTime) override;
 
 	virtual void SetupInputComponent() override;
-
-	virtual void OnMainActionPressed();
-
-	virtual void OnMainActionReleased();
 
 	//void PerformAction();
 

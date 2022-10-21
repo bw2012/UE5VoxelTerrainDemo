@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+TMap<int32, TSubclassOf<ASandboxObject>> ASandboxLevelController::ObjectMapById;
+ASandboxLevelController* ASandboxLevelController::StaticSelf;
 
 ASandboxLevelController::ASandboxLevelController() {
 	MapName = TEXT("World 0");
@@ -18,10 +20,17 @@ void ASandboxLevelController::BeginPlay() {
 	ObjectCounter = 1;
 	GlobalObjectMap.Empty();
 	PrepareMetaData();
+
+	if (!StaticSelf) {
+		// TODO warning
+	}
+
+	StaticSelf = this;
 }
 
 void ASandboxLevelController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 	Super::EndPlay(EndPlayReason);
+	StaticSelf = nullptr;
 }
 
 void ASandboxLevelController::Tick(float DeltaTime) {
@@ -172,7 +181,6 @@ void ASandboxLevelController::PrepareObjectForSave(TArray<FSandboxObjectDescript
 	}
 }
 
-
 void ASandboxLevelController::SaveLevelJson() {
 	TArray<FSandboxObjectDescriptor> ObjDescList;
 	PrepareObjectForSave(ObjDescList);
@@ -182,8 +190,6 @@ void ASandboxLevelController::SaveLevelJson() {
 void ASandboxLevelController::SaveLevelJsonExt(TSharedRef <TJsonWriter<TCHAR>> JsonWriter) {
 
 }
-
-TMap<int32, TSubclassOf<ASandboxObject>> ASandboxLevelController::ObjectMapById;
 
 void ASandboxLevelController::PrepareMetaData() {
 	if (bIsMetaDataReady) {
@@ -318,7 +324,6 @@ void ASandboxLevelController::LoadLevelJson() {
 					}
 				}
 			}
-
 			ObjDescList.Add(ObjDesc);
 		}
 
@@ -332,6 +337,8 @@ ASandboxObject* ASandboxLevelController::SpawnPreparedObject(const FSandboxObjec
 	ASandboxObject* NewObject = SpawnSandboxObject(ObjDesc.ClassId, ObjDesc.Transform);
 	if (NewObject) {
 		NewObject->PropertyMap = ObjDesc.PropertyMap;
+		NewObject->PostLoadProperties();
+
 		UContainerComponent* Container = NewObject->GetContainer(TEXT("ObjectContainer"));
 		if (Container) {
 			for (const auto& Itm : ObjDesc.Container) {
@@ -389,6 +396,10 @@ ASandboxObject* ASandboxLevelController::GetDefaultSandboxObject(uint64 ClassId)
 	return nullptr;
 }
 
+ASandboxLevelController* ASandboxLevelController::GetInstance() {
+	return StaticSelf;
+}
+
 ASandboxObject* ASandboxLevelController::GetSandboxObject(uint64 ClassId) {
 	if (!bIsMetaDataReady) {
 		PrepareMetaData();
@@ -419,4 +430,3 @@ ASandboxObject* ASandboxLevelController::GetObjectByNetUid(uint64 NetUid) {
 
 	return nullptr;
 }
-

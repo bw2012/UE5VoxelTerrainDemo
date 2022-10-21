@@ -338,7 +338,7 @@ void ASandboxTerrainController::ZoneHardUnload(UTerrainZoneComponent* ZoneCompon
 	TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(ZoneIndex);
 	VdInfoPtr->Lock();
 	if (VdInfoPtr->IsSoftUnload()) {
-		if (!ZoneComponent->IsNeedSave() && ZoneComponent->bIsSpawnFinished) {
+		if (!ZoneComponent->IsObjectsNeedSave() && ZoneComponent->bIsSpawnFinished) {
 			RemoveAllChilds(ZoneComponent);
 			TerrainData->RemoveZone(ZoneIndex);
 			ZoneComponent->DestroyComponent(true);
@@ -421,7 +421,7 @@ void ASandboxTerrainController::BeginServerTerrainLoad() {
 			TTerrainLoadPipeline Loader(TEXT("Initial_Load_Task"), this, Params);
             Loader.LoadArea(BeginServerTerrainLoadLocation);
 
-			GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Blue, TEXT("Finish initial terrain load"));
+			//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Blue, TEXT("Finish initial terrain load"));
 			UE_LOG(LogSandboxTerrain, Warning, TEXT("======= Finish initial terrain load ======="));
 
 			//GetTerrainGenerator()->Clean();
@@ -895,7 +895,7 @@ void ASandboxTerrainController::OnGenerateNewZone(const TVoxelIndex& Index, UTer
     if (FoliageDataAsset) {
 		TInstanceMeshTypeMap& ZoneInstanceObjectMap = *TerrainData->GetOrCreateInstanceObjectMap(Index);
 		Zone->SpawnAll(ZoneInstanceObjectMap);
-		Zone->SetNeedSave();
+		Zone->SetObjectsNeedSave();
 		TerrainData->AddSaveIndex(Index);
     }
 
@@ -946,7 +946,7 @@ FORCEINLINE float ASandboxTerrainController::ClcGroundLevel(const FVector& V) {
 
 
 
-FORCEINLINE void ASandboxTerrainController::OnOverlapActorDuringTerrainEdit(const FHitResult& OverlapResult, const FVector& Pos) {
+FORCEINLINE void ASandboxTerrainController::OnOverlapActorTerrainEdit(const FOverlapResult& OverlapResult, const FVector& Pos) {
 
 }
 
@@ -1038,10 +1038,10 @@ const FSandboxFoliage& ASandboxTerrainController::GetFoliageById(uint32 FoliageI
 }
 
 void ASandboxTerrainController::MarkZoneNeedsToSave(TVoxelIndex ZoneIndex) {
-	TerrainData->AddSaveIndex(ZoneIndex);
 	TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(ZoneIndex);
 	VdInfoPtr->Lock();
 	VdInfoPtr->SetChanged();
+	TerrainData->AddSaveIndex(ZoneIndex);
 	VdInfoPtr->Unlock();
 	//UE_LOG(LogSandboxTerrain, Log, TEXT("MarkZoneNeedsToSave -> %d %d %d"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
 }

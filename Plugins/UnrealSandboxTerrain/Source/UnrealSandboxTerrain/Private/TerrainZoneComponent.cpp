@@ -203,7 +203,7 @@ void UTerrainZoneComponent::SpawnInstancedMesh(const FTerrainInstancedMeshType& 
 		FString InstancedStaticMeshCompName = FString::Printf(TEXT("InstancedStaticMesh - [%d, %d]-> [%.0f, %.0f, %.0f]"), MeshType.MeshTypeId, MeshType.MeshVariantId, GetComponentLocation().X, GetComponentLocation().Y, GetComponentLocation().Z);
 
 		InstancedStaticMeshComponent = NewObject<UTerrainInstancedStaticMesh>(this, FName(*InstancedStaticMeshCompName));
-
+		InstancedStaticMeshComponent->bIsFoliage = bIsFoliage;
 		InstancedStaticMeshComponent->RegisterComponent();
 		InstancedStaticMeshComponent->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
 		InstancedStaticMeshComponent->SetStaticMesh(MeshType.Mesh);
@@ -221,7 +221,6 @@ void UTerrainZoneComponent::SpawnInstancedMesh(const FTerrainInstancedMeshType& 
 
 		if (bIsFoliage) {
 			auto FoliageType = GetTerrainController()->FoliageMap[MeshType.MeshTypeId];
-
 			if (FoliageType.Type == ESandboxFoliageType::Tree) {
 				SetCollisionTree(InstancedStaticMeshComponent);
 			} else {
@@ -243,12 +242,11 @@ void UTerrainZoneComponent::SpawnInstancedMesh(const FTerrainInstancedMeshType& 
 	//UE_LOG(LogSandboxTerrain, Warning, TEXT("AddInstances -> %d"), InstMeshTransArray.TransformArray.Num());
 }
 
-
-void UTerrainZoneComponent::SetNeedSave() {
+void UTerrainZoneComponent::SetObjectsNeedSave() {
 	bIsObjectsNeedSave = true;
 }
 
-bool UTerrainZoneComponent::IsNeedSave() {
+bool UTerrainZoneComponent::IsObjectsNeedSave() {
 	return bIsObjectsNeedSave;
 }
 
@@ -259,3 +257,7 @@ TTerrainLodMask UTerrainZoneComponent::GetTerrainLodMask() {
 ASandboxTerrainController* UTerrainZoneComponent::GetTerrainController() {
 	return (ASandboxTerrainController*)GetAttachmentRootActor();
 };
+
+bool UTerrainInstancedStaticMesh::IsFoliage() {
+	return bIsFoliage;
+}

@@ -446,3 +446,7 @@ void ASandboxPlayerController::TransferInventoryStack_Implementation(const FStri
 
 	PlayerCharacter->ForceNetUpdate();
 }
+
+ASandboxLevelController* ASandboxPlayerController::GetLevelController() {
+	return LevelController;
+}

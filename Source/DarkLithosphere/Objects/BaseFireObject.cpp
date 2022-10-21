@@ -8,10 +8,14 @@ ABaseFireObject::ABaseFireObject() {
 }
 
 
-bool ABaseFireObject::CanTake(AActor* actor) {
+bool ABaseFireObject::CanTake(const AActor* Actor) const {
 	return false;
 }
 
+void ABaseFireObject::OnTerrainChange() {
+	// do nothing
+	// TODO destroy
+}
 
 void ABaseFireObject::BeginPlay() {
 	Super::BeginPlay();

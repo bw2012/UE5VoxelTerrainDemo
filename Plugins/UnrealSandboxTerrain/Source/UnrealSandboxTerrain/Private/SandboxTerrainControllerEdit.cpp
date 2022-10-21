@@ -352,6 +352,22 @@ public:
 	}
 };
 
+void ASandboxTerrainController::RemoveInstanceAtMesh(UHierarchicalInstancedStaticMeshComponent* InstancedMeshComp, int32 ItemIndex) {
+	InstancedMeshComp->RemoveInstance(ItemIndex);
+	TArray<USceneComponent*> Parents;
+	InstancedMeshComp->GetParentComponents(Parents);
+	if (Parents.Num() > 0) {
+		UTerrainZoneComponent* Zone = Cast<UTerrainZoneComponent>(Parents[0]);
+		if (Zone) {
+			Zone->SetObjectsNeedSave(); // TODO check condition racing
+
+			FVector ZonePos = Zone->GetComponentLocation();
+			TVoxelIndex ZoneIndex = GetZoneIndex(ZonePos);
+			MarkZoneNeedsToSave(ZoneIndex);
+		}
+	}
+}
+
 template<class H>
 void ASandboxTerrainController::PerformTerrainChange(H Handler) {
 	FTerrainEditThread<H>* EditThread = new FTerrainEditThread<H>();
@@ -380,6 +396,8 @@ void ASandboxTerrainController::PerformTerrainChange(H Handler) {
 			if (Cast<ASandboxTerrainController>(Overlap.GetActor())) {
 				UHierarchicalInstancedStaticMeshComponent* InstancedMesh = Cast<UHierarchicalInstancedStaticMeshComponent>(Overlap.GetComponent());
 				if (InstancedMesh) {
+					// RemoveInstanceAtMesh(InstancedMesh, Overlap.ItemIndex); //overhead
+
 					//UE_LOG(LogSandboxTerrain, Warning, TEXT("InstancedMesh: %s -> %d"), *InstancedMesh->GetName(), Overlap.ItemIndex);
 					InstancedMesh->RemoveInstance(Overlap.ItemIndex);
 
@@ -388,12 +406,12 @@ void ASandboxTerrainController::PerformTerrainChange(H Handler) {
 					if (Parents.Num() > 0) {
 						UTerrainZoneComponent* Zone = Cast<UTerrainZoneComponent>(Parents[0]);
 						if (Zone) {
-							Zone->SetNeedSave(); // TODO check condition racing
+							Zone->SetObjectsNeedSave(); // TODO check condition racing
 						}
 					}
 				}
 			} else {
-				//OnOverlapActorDuringTerrainEdit(Overlap, Handler.Origin);
+				OnOverlapActorTerrainEdit(Overlap, Handler.Origin);
 			}
 		}
 	}

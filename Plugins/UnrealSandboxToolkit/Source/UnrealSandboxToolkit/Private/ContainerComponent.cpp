@@ -68,7 +68,6 @@ bool UContainerComponent::SetStackDirectly(const FContainerStack& Stack, const i
 	return true;
 }
 
-
 bool UContainerComponent::AddObject(ASandboxObject* Obj) {
 	if (Obj == nullptr) {
 		return false;
@@ -82,8 +81,8 @@ bool UContainerComponent::AddObject(ASandboxObject* Obj) {
 		FContainerStack* Stack = &Content[Idx];
 
 		//TODO check inventory max volume and mass
-		if (Stack->Amount != 0) {
-			if (Stack->SandboxClassId > 0 && MaxStackSize > 1) {
+		if (Stack->Amount > 0) {
+			if (Stack->SandboxClassId == Obj->GetSandboxClassId() && MaxStackSize > 1) {
 				Stack->Amount++;
 				bIsAdded = true;
 				break;

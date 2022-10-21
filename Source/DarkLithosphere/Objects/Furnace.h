@@ -11,11 +11,7 @@ struct FFurnaceReceipe {
 
 	int RawMatClass = 0;
 
-	int RawMatType = 0;
-
 	int ProductClass = 0;
-
-	int ProductType = 0;
 
 	float ProcessingTime = 0;
 
@@ -35,7 +31,7 @@ protected:
 public:	
 	virtual void Tick(float DeltaTime) override;
 
-	virtual bool CanTake(AActor* actor)override;
+	virtual bool CanTake(const AActor* Actor = nullptr) const override;
 
 	virtual bool IsContainer();
 

@@ -23,15 +23,13 @@ void AFurnace::BeginPlay() {
 
 	FFurnaceReceipe Receipe;
 	Receipe.RawMatClass = 22;
-	Receipe.RawMatType = 0;
 	Receipe.ProductClass = 23;
-	Receipe.ProductType = 0;
 	Receipe.ProcessingTime = 10;
 
 	FurnaceReceipMap.Add(1, Receipe);
 }
 
-bool AFurnace::CanTake(AActor* actor) {
+bool AFurnace::CanTake(const AActor* Actor) const {
 	return false;
 }
 
@@ -74,6 +72,15 @@ ALevelController* GetLevelController(UWorld* World) {
 	return nullptr;
 }
 
+const ASandboxObject* GetStackObject(UContainerComponent* Container, int SlotId) {
+	auto* Stack = Container->GetSlot(SlotId);
+	if (Stack) {
+		return ASandboxLevelController::GetDefaultSandboxObject(Stack->SandboxClassId);
+	}
+
+	return nullptr;
+}
+
 void AFurnace::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
@@ -98,9 +105,7 @@ void AFurnace::Tick(float DeltaTime) {
 				auto* Stack = Container->GetSlot(FuelSlot);
 				bool bHasFuel = false;
 				if (Stack && Stack->Amount > 0) {
-					//fix1111
-					/*
-					auto* Obj = Stack->GetObject();
+					auto* Obj = ASandboxLevelController::GetDefaultSandboxObject(Stack->SandboxClassId);
 					if (Obj) {
 						uint64 ClassId = Obj->GetSandboxClassId();
 						if (ClassId == 12 || ClassId == 18) {
@@ -125,7 +130,6 @@ void AFurnace::Tick(float DeltaTime) {
 
 						}
 					}
-					*/
 				} 
 
 				if(!bHasFuel){
@@ -147,10 +151,7 @@ void AFurnace::Tick(float DeltaTime) {
 				// doing job
 				const float ProcessFinish = 10;
 				if (CurrentReceipeId == 0) {
-
-					// TODO fix
-					/*
-					ASandboxObject* RawMatObj = Container->GetAvailableSlotObject(RawMaterialSlot);
+					const ASandboxObject* RawMatObj = GetStackObject(Container, RawMaterialSlot);
 					if (RawMatObj) {
 						uint64 ClassId = RawMatObj->GetSandboxClassId();
 						UE_LOG(LogTemp, Warning, TEXT("FindReceipe: %d"), ClassId);
@@ -162,7 +163,6 @@ void AFurnace::Tick(float DeltaTime) {
 							CurrentReceipeId = ReceipeId;
 						}
 					}
-					*/
 				} else {
 					if (ProcessTime < ProcessFinish) {
 						ProcessTime += Delta;
@@ -170,29 +170,23 @@ void AFurnace::Tick(float DeltaTime) {
 						bool bSuccess = false;
 						auto& Receipe = FurnaceReceipMap[CurrentReceipeId];
 
-						// TODO fix1111
-						/*
-						ASandboxObject* Product = Container->GetAvailableSlotObject(ProductSlot1);
+						const ASandboxObject* Product = GetStackObject(Container, ProductSlot1);
 						if (Product) {
 							if (Product->GetSandboxClassId() == Receipe.ProductClass) {
 								Container->ChangeAmount(ProductSlot1, 1);
 								bSuccess = true;
 							}
-						} 
-						*/
+						}
 
 						if (!bSuccess) {
 							auto* ProductStack1 = Container->GetSlot(ProductSlot1);
 							if (!ProductStack1 || ProductStack1->Amount == 0) {
 								ALevelController* Controller = GetLevelController(GetWorld());
 								if (Controller) {
-									TSubclassOf<ASandboxObject> NewObjS = Controller->GetSandboxObjectByClassId(Receipe.ProductClass); // TODO type Id
+									TSubclassOf<ASandboxObject> NewObjS = Controller->GetSandboxObjectByClassId(Receipe.ProductClass); 
 									if (NewObjS) {
 										FContainerStack NewStack;
 										NewStack.Amount = 1;
-										// TODO fix1111
-										//NewStack.ObjectClass = NewObjS;
-
 										Container->SetStackDirectly(NewStack, ProductSlot1);
 										bSuccess = true;
 									}

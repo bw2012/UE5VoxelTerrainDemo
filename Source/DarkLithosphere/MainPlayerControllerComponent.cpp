@@ -11,8 +11,6 @@
 
 //bool IsCursorPositionValid(const FHitResult& Hit);
 void CalculateCursorPosition(ABaseCharacter* Character, const FHitResult& Res, FVector& Location, FRotator& Rotation, ASandboxObject* Obj);
-//AActor* SpawnSandboxObject(UWorld* World, const FVector& Location, const FRotator& Rotation, ASandboxObject* Object, bool bEnablePhys = false);
-
 
 UMainPlayerControllerComponent::UMainPlayerControllerComponent() {
 	PrimaryComponentTick.bCanEverTick = true;
@@ -77,6 +75,8 @@ void UMainPlayerControllerComponent::OnPlayerTick() {
 	bool bPlaceToWorld = CurrentActionType == ECurrentActionType::PlaceObjectToWorld || CurrentActionType == ECurrentActionType::PlaceCraftToWorld;
 	bool bIsValid = false;
 
+	DrawDebugPoint(GetWorld(), Res.Location, 5.f, FColor(255, 255, 255, 0), false, 1);
+
 	if (bPlaceToWorld && IsCursorPositionValid(Res)) {
 		ASandboxObject* BaseObj = nullptr;
 
@@ -95,29 +95,42 @@ void UMainPlayerControllerComponent::OnPlayerTick() {
 		}
 
 		if (BaseObj) {
-			auto Mesh = BaseObj->SandboxRootMesh->GetStaticMesh();
-			FVector Location(0);
-			FRotator Rotation(0);
+			auto MeshComponent = BaseObj->GetMarkerMesh();
+			if (MeshComponent) {
+				FVector CompLocation = MeshComponent->GetRelativeLocation();
+				FRotator ComponentRotation = MeshComponent->GetRelativeRotation();
 
-			FVector CamLoc;
-			FRotator CamRot;
-			MainController->GetPlayerViewPoint(CamLoc, CamRot);
+				auto Mesh = MeshComponent->GetStaticMesh();
+				FVector Location(0);
+				FRotator Rotation(0);
 
-			bIsValid = BaseObj->PlaceToWorldClcPosition(CamLoc, CamRot, Res, Location, Rotation);
-			if (bIsValid) {
-				FVector Scale = BaseObj->GetRootComponent()->GetRelativeScale3D();
-				BaseCharacter->CursorMesh->SetStaticMesh(Mesh);
-				BaseCharacter->CursorMesh->SetVisibility(true, true);
-				BaseCharacter->CursorMesh->SetRelativeScale3D(Scale);
-				BaseCharacter->CursorMesh->SetWorldLocationAndRotationNoPhysics(Location, Rotation);
+				FVector CamLoc;
+				FRotator CamRot;
+				MainController->GetPlayerViewPoint(CamLoc, CamRot);
 
-				if (MainController->CursorMaterial) {
-					for (int I = 0; I < Mesh->GetStaticMaterials().Num(); ++I) {
-						UMaterialInstance* Material = (UMaterialInstance*)Mesh->GetMaterial(I);
-						BaseCharacter->CursorMesh->SetMaterial(I, MainController->CursorMaterial);
+				CamRot.Pitch = 0;
+				CamRot.Roll = 0;
+
+				bIsValid = BaseObj->PlaceToWorldClcPosition(GetWorld(), CamLoc, CamRot, Res, Location, Rotation);
+				if (bIsValid) {
+					Location += Rotation.RotateVector(CompLocation);
+
+					FVector Scale = BaseObj->GetRootComponent()->GetRelativeScale3D();
+					BaseCharacter->CursorMesh->SetStaticMesh(Mesh);
+					BaseCharacter->CursorMesh->SetVisibility(true, true);
+					BaseCharacter->CursorMesh->SetRelativeScale3D(Scale);
+					BaseCharacter->CursorMesh->SetWorldLocationAndRotationNoPhysics(Location, Rotation);
+
+					if (MainController->CursorMaterial) {
+						for (int I = 0; I < Mesh->GetStaticMaterials().Num(); ++I) {
+							UMaterialInstance* Material = (UMaterialInstance*)Mesh->GetMaterial(I);
+							BaseCharacter->CursorMesh->SetMaterial(I, MainController->CursorMaterial);
+						}
 					}
 				}
 			}
+			
+
 		}
 	}
 
@@ -285,7 +298,7 @@ bool UMainPlayerControllerComponent::PlaceCurrentObjectToWorld() {
 					FRotator CamRot;
 					MainController->GetPlayerViewPoint(CamLoc, CamRot);
 
-					bool isPossible = Obj->PlaceToWorldClcPosition(CamLoc, CamRot, Hit, Location, Rotation, true);
+					bool isPossible = Obj->PlaceToWorldClcPosition(GetWorld(), CamLoc, CamRot, Hit, Location, Rotation, true);
 					if (isPossible) {
 						FTransform Transform(Rotation, Location, FVector(1));
 
@@ -322,10 +335,7 @@ void UMainPlayerControllerComponent::InternalSpawnObject(uint64 SandboxClassId, 
 	if (MainController) {
 		ASandboxObject* Obj = MainController->LevelController->SpawnSandboxObject(SandboxClassId, Transform);
 		if (Obj) {
-			Obj->OnPlaceToWorld();
-			if (MainController->TerrainController) {
-				MainController->TerrainController->RegisterSandboxObject(Obj);
-			}
+			Obj->OnPlaceToWorld(); // invoke only if spawn by player. not save/load or other cases
 		}
 	}
 }
@@ -363,7 +373,10 @@ bool UMainPlayerControllerComponent::PlaceCraftedObjectToWorld() {
 						FRotator CamRot;
 						MainController->GetPlayerViewPoint(CamLoc, CamRot);
 
-						bool isPossible = BaseObj->PlaceToWorldClcPosition(CamLoc, CamRot, Hit, Location, Rotation, true);
+						CamRot.Pitch = 0;
+						CamRot.Roll = 0;
+
+						bool isPossible = BaseObj->PlaceToWorldClcPosition(GetWorld(), CamLoc, CamRot, Hit, Location, Rotation, true);
 						if (isPossible) {
 							FTransform Transform(Rotation, Location, FVector(1));
 							auto SandboxClassId = CraftRecipeData->SandboxClassId;
@@ -376,7 +389,10 @@ bool UMainPlayerControllerComponent::PlaceCraftedObjectToWorld() {
 								ServerSpawnObject(SandboxClassId, Transform);
 							}
 
-							ResetState();
+							if (CraftRecipeData->bOnlyOne) {
+								ResetState();
+							}
+
 							return true;
 						}
 					}
@@ -467,7 +483,7 @@ void UMainPlayerControllerComponent::TakeSelectedObjectToInventory() {
 					if (TerrainMesh) {
 						const FTerrainInstancedMeshType* TerrainMeshType = Terrain->GetInstancedMeshType(TerrainMesh->MeshTypeId, TerrainMesh->MeshVariantId);
 						if (TerrainMeshType && TerrainMeshType->SandboxClassId > 0) {
-							TerrainMesh->RemoveInstance(ActionPoint.Item);
+							Terrain->RemoveInstanceAtMesh(TerrainMesh, ActionPoint.Item);
 							if (LevelController) {
 								TSubclassOf<ASandboxObject> ObjSubclass = LevelController->GetSandboxObjectByClassId(TerrainMeshType->SandboxClassId);
 								ASandboxObject* Obj = (ASandboxObject*)ObjSubclass->GetDefaultObject();
@@ -501,7 +517,7 @@ void UMainPlayerControllerComponent::MainInteraction() {
 			ASandboxObject* Obj = Cast<ASandboxObject>(Hit.GetActor());
 			if (Obj) {
 				if (Obj->IsInteractive()) {
-					Obj->MainInteraction();
+					Obj->MainInteraction(MainController->GetPawn());
 				} else {
 					ABaseObject* BaseObj = Cast<ABaseObject>(Obj);
 					if (BaseObj) {

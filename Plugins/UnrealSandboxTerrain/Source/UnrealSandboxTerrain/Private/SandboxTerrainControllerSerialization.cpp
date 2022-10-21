@@ -511,8 +511,25 @@ void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgr
 
 			if (FoliageDataAsset) {
 				UTerrainZoneComponent* Zone = VdInfoPtr->GetZone();
-				if (Zone && Zone->IsNeedSave()) {
+				if (Zone && Zone->IsObjectsNeedSave()) {
 					DataObj = Zone->SerializeAndResetObjectData();
+
+					if (!VdInfoPtr->CanSave()) {
+						bool bIsLoaded = LoadDataFromKvFile(TdFile, Index, [&](TValueDataPtr DataPtr) {
+							UE_LOG(LogSandboxTerrain, Warning, TEXT("Only objects was changed. Load mesh and voxel data -> %d %d %d"), Index.X, Index.Y, Index.Z);
+							usbt::TFastUnsafeDeserializer Deserializer(DataPtr->data());
+							TKvFileZodeData ZoneHeader;
+							Deserializer >> ZoneHeader;
+
+							DataMd = std::make_shared<TValueData>();
+							DataMd->resize(ZoneHeader.LenMd);
+							Deserializer.read(DataMd->data(), ZoneHeader.LenMd);
+
+							DataVd = std::make_shared<TValueData>();
+							DataVd->resize(ZoneHeader.LenVd);
+							Deserializer.read(DataVd->data(), ZoneHeader.LenVd);
+						});
+					}
 				} else {
 					auto InstanceObjectMapPtr = VdInfoPtr->GetOrCreateInstanceObjectMap();
 					if (InstanceObjectMapPtr) {
