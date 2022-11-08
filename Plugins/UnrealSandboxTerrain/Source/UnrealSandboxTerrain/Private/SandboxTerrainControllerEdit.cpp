@@ -14,7 +14,7 @@ struct TZoneEditHandler {
 	FVector Origin;
 	FRotator Rotator;
 
-	//TTerrainGenerator* Generator;
+	ASandboxTerrainController* Controller = nullptr;
 
 	static FVector GetVoxelRelativePos(const TVoxelData* Vd, const FVector& Origin, const int X, const int Y, const int Z) {
 		FVector Pos = Vd->voxelIndexToVector(X, Y, Z);
@@ -24,18 +24,21 @@ struct TZoneEditHandler {
 	}
 
 	float Noise(const FVector& Pos) {
-		static const float NoisePositionScale = 0.01f;
-		static const float NoiseValueScale = 0.5f;
-		//const float Noise = Generator->PerlinNoise(Pos, NoisePositionScale, NoiseValueScale);
-		const float Noise = 0;
-		return Noise;
+		if (Controller) {
+			static const float NoisePositionScale = 0.5f;
+			static const float NoiseValueScale = 0.05f;
+			const float Noise = Controller->NormalizedPerlinNoise(Pos, NoisePositionScale, NoiseValueScale);
+			return Noise;
+		} 
+
+		return 0;
 	}
 
 	float Extend;
 };
 
 
-void ASandboxTerrainController::DigCylinder(const FVector& Origin, const float Radius, const float Length, const FRotator& Rotator, const float Strength, const bool bNoise) {
+void ASandboxTerrainController::DigCylinder(const FVector& Origin, const float Radius, const float Length, const FRotator& Rotator, const bool bNoise) {
 	if (GetNetMode() != NM_Standalone) {
 		UE_LOG(LogSandboxTerrain, Error, TEXT("Not implemented yet"));
 		return;
@@ -83,18 +86,16 @@ void ASandboxTerrainController::DigCylinder(const FVector& Origin, const float R
 	} Zh;
 
 	Zh.MaterialMapPtr = &MaterialMap;
-	Zh.Strength = Strength;
 	Zh.Origin = Origin;
 	Zh.Extend = Radius;
 	Zh.Radius = Radius;
 	Zh.Rotator = Rotator;
 	Zh.Length = Length;
-	//Zh.Generator = this->Generator;
 	Zh.bNoise = bNoise;
 	ASandboxTerrainController::PerformTerrainChange(Zh);
 }
 
-void ASandboxTerrainController::DigTerrainRoundHole(const FVector& Origin, float Radius, float Strength) {
+void ASandboxTerrainController::DigTerrainRoundHole(const FVector& Origin, float Radius, bool bNoise) {
 	if (GetNetMode() == NM_Client) {
 		//return;
 		UE_LOG(LogSandboxTerrain, Log, TEXT("Client: TEST %f %f %f"), Origin.X, Origin.Y, Origin.Z);
@@ -103,35 +104,33 @@ void ASandboxTerrainController::DigTerrainRoundHole(const FVector& Origin, float
 	if (GetNetMode() == NM_DedicatedServer || GetNetMode() == NM_ListenServer) {
 		if (TerrainServerComponent) {
 			TEditTerrainParam EditParam(Origin);
-
-
 			TerrainServerComponent->SendToAllVdEdit(EditParam);
 		}
 	}
 
 	struct ZoneHandler : TZoneEditHandler {
 		TMap<uint16, FSandboxTerrainMaterial>* MaterialMapPtr;
+		UWorld* World;
 
-		bool operator()(TVoxelData* vd) {
+		bool operator()(TVoxelData* Vd) {
 			changed = false;
 
-			vd->forEachWithCache([&](int x, int y, int z) {
-				float density = vd->getDensity(x, y, z);
-				FVector o = vd->voxelIndexToVector(x, y, z);
-				o += vd->getOrigin();
-				o -= Origin;
+			Vd->forEachWithCache([&](int X, int Y, int Z) {
+				float OldDensity = Vd->getDensity(X, Y, Z);
+				FVector V = TZoneEditHandler::GetVoxelRelativePos(Vd, Origin, X, Y, Z);
+				float R = std::sqrt(V.X * V.X + V.Y * V.Y + V.Z * V.Z);
+				if (R < Extend + 20) {
+					//unsigned short  MatId = Vd->getMaterial(X, Y, Z);
+					//FSandboxTerrainMaterial& Mat = MaterialMapPtr->FindOrAdd(MatId);
 
-				float rl = std::sqrt(o.X * o.X + o.Y * o.Y + o.Z * o.Z);
-				if (rl < Extend) {
-					unsigned short  MatId = vd->getMaterial(x, y, z);
-					FSandboxTerrainMaterial& Mat = MaterialMapPtr->FindOrAdd(MatId);
+					float Density = 1 / (1 + exp((Extend - R) / 10));
+					if (bNoise) {
+						const float N = Noise(V) * 10;
+						Density += N;
+					}
 
-					if (Mat.RockHardness < USBT_MAX_MATERIAL_HARDNESS) {
-						float ClcStrength = (Mat.RockHardness == 0) ? Strength : (Strength / Mat.RockHardness);
-						if (ClcStrength > 0.1) {
-							float d = density - 1 / rl * (ClcStrength);
-							vd->setDensity(x, y, z, d);
-						}
+					if (OldDensity > Density) {
+						Vd->setDensity(X, Y, Z, Density);
 					}
 
 					changed = true;
@@ -143,14 +142,16 @@ void ASandboxTerrainController::DigTerrainRoundHole(const FVector& Origin, float
 	} Zh;
 
 	Zh.MaterialMapPtr = &MaterialMap;
-	Zh.Strength = Strength;
 	Zh.Origin = Origin;
 	Zh.Extend = Radius;
+	Zh.bNoise = bNoise;
+	Zh.World = GetWorld();
+	Zh.Controller = this;
 	ASandboxTerrainController::PerformTerrainChange(Zh);
 
 }
 
-void ASandboxTerrainController::DigTerrainCubeHole(const FVector& Origin, const FBox& Box, float Extend, const FRotator& Rotator) {
+void ASandboxTerrainController::DigTerrainCubeHoleComplex(const FVector& Origin, const FBox& Box, float Extend, const FRotator& Rotator) {
 	if (GetNetMode() != NM_Standalone) {
 		UE_LOG(LogSandboxTerrain, Error, TEXT("Not implemented yet"));
 		return;
@@ -160,30 +161,77 @@ void ASandboxTerrainController::DigTerrainCubeHole(const FVector& Origin, const 
 		TMap<uint16, FSandboxTerrainMaterial>* MaterialMapPtr;
 		FRotator Rotator;
 		FBox Box;
+		UWorld* World;
 
 		bool operator()(TVoxelData* vd) {
 			changed = false;
 			bool bIsRotator = !Rotator.IsZero();
 
+			const float ExtendXP = Box.Max.X;
+			const float ExtendYP = Box.Max.Y;
+			const float ExtendZP = Box.Max.Z;
+			const float ExtendXN = Box.Min.X;
+			const float ExtendYN = Box.Min.Y;
+			const float ExtendZN = Box.Min.Z;
+
+			static const float E = 50;
+			FBox Box2 = Box.ExpandBy(E);
+
 			vd->forEachWithCache([&](int x, int y, int z) {
-				FVector o = vd->voxelIndexToVector(x, y, z);
-				o += vd->getOrigin();
-				o -= Origin;
+				FVector L = vd->voxelIndexToVector(x, y, z) + vd->getOrigin();
+				FVector P = L - Origin;
 
 				if (bIsRotator) {
-					o = Rotator.RotateVector(o);
+					P = Rotator.RotateVector(P);
 				}
 
-				bool bIsIntersect = FMath::PointBoxIntersection(o, Box);
+				float OldDensity = vd->getDensity(x, y, z);
+				bool bIsIntersect = FMath::PointBoxIntersection(P, Box2);
 				if (bIsIntersect) {
-					unsigned short  MatId = vd->getMaterial(x, y, z);
-					FSandboxTerrainMaterial& Mat = MaterialMapPtr->FindOrAdd(MatId);
-					if (Mat.RockHardness < USBT_MAX_MATERIAL_HARDNESS) {
-						//float Density1 = 1 / (1 + exp((Extend - o.X -50) / 10));
-						//vd->setDensity(x, y, z, Density1);
-						vd->setDensity(x, y, z, 0);
-						changed = true;
+					float R = 0;
+					static float D = 100;
+					static float T = 50;
+
+					if (FMath::Abs(P.X - ExtendXP) < T || FMath::Abs(-P.X + ExtendXN) < T) {
+						const float DensityXP = 1 / (1 + exp((ExtendXP - P.X) / D));
+						const float DensityXN = 1 / (1 + exp((-ExtendXN + P.X) / D));
+						const float DensityX = (DensityXP + DensityXN);
+						R = DensityX + Noise(L);
+						//DrawDebugPoint(World, vd->voxelIndexToVector(x, y, z) + vd->getOrigin(), 3.f, FColor(255, 255, 255, 0), true);
 					}
+
+					if (FMath::Abs(P.Y - ExtendYP) < T || FMath::Abs(-P.Y + ExtendYN) < T) {
+						if (R < 0.5f) {
+							const float DensityYP = 1 / (1 + exp((ExtendYP - P.Y) / D));
+							const float DensityYN = 1 / (1 + exp((-ExtendYN + P.Y) / D));
+							const float DensityY = (DensityYP + DensityYN);
+							R = DensityY + Noise(L);
+							//DrawDebugPoint(World, vd->voxelIndexToVector(x, y, z) + vd->getOrigin(), 3.f, FColor(255, 255, 255, 0), true);
+						}
+					}
+
+					if (FMath::Abs(P.Z - ExtendZP) < T || FMath::Abs(-P.Z + ExtendZN) < T) {
+						if (R < 0.5f) {
+							const float DensityZP = 1 / (1 + exp((ExtendZP - P.Z) / D));
+							const float DensityZN = 1 / (1 + exp((-ExtendZN + P.Z) / D));
+							const float DensityZ = (DensityZP + DensityZN);
+							R = DensityZ; // + Noise(L); // camera in tunnel issue
+						}
+					}
+
+					if (R > 1) {
+						R = 1;
+					}
+
+					if (R < 0) {
+						R = 0;
+					}
+
+					if (OldDensity > R) {
+						vd->setDensity(x, y, z, R);
+					}
+
+					changed = true;
 				}
 			}, USBT_ENABLE_LOD);
 
@@ -196,6 +244,8 @@ void ASandboxTerrainController::DigTerrainCubeHole(const FVector& Origin, const 
 	Zh.Extend = Extend;
 	Zh.Rotator = Rotator;
 	Zh.Box = Box;
+	Zh.World = GetWorld();
+	Zh.Controller = this;
 
 	ASandboxTerrainController::PerformTerrainChange(Zh);
 }
@@ -229,22 +279,21 @@ void ASandboxTerrainController::DigTerrainCubeHole(const FVector& Origin, float 
 				if (bIsIntersect) {
 					unsigned short  MatId = vd->getMaterial(x, y, z);
 					FSandboxTerrainMaterial& Mat = MaterialMapPtr->FindOrAdd(MatId);
-					if (Mat.RockHardness < USBT_MAX_MATERIAL_HARDNESS) {
-						const float DensityXP = 1 / (1 + exp((Extend - o.X) / 10));
-						const float DensityXN = 1 / (1 + exp((-Extend - o.X) / 10));
-						const float DensityYP = 1 / (1 + exp((Extend - o.Y) / 10));
-						const float DensityYN = 1 / (1 + exp((-Extend - o.Y) / 10));
-						const float DensityZP = 1 / (1 + exp((Extend - o.Z) / 10));
-						const float DensityZN = 1 / (1 + exp((-Extend - o.Z) / 10));
-						const float Density = DensityXP * DensityXN * DensityYP * DensityYN * DensityZP * DensityZN;
-						//float OldDensity = vd->getDensity(x, x, x);
 
-						//if (OldDensity > Density) {
-							vd->setDensity(x, y, z, Density);
-						//}
+					const float DensityXP = 1 / (1 + exp((Extend - o.X) / 10));
+					const float DensityXN = 1 / (1 + exp((-Extend - o.X) / 10));
+					const float DensityYP = 1 / (1 + exp((Extend - o.Y) / 10));
+					const float DensityYN = 1 / (1 + exp((-Extend - o.Y) / 10));
+					const float DensityZP = 1 / (1 + exp((Extend - o.Z) / 10));
+					const float DensityZN = 1 / (1 + exp((-Extend - o.Z) / 10));
+					const float Density = DensityXP * DensityXN * DensityYP * DensityYN * DensityZP * DensityZN;
+					//float OldDensity = vd->getDensity(x, y, z);
 
-						changed = true;
-					}
+					//if (OldDensity > Density) {
+					vd->setDensity(x, y, z, Density);
+					//}
+
+					changed = true;
 				}
 			}, USBT_ENABLE_LOD);
 
@@ -360,7 +409,6 @@ void ASandboxTerrainController::RemoveInstanceAtMesh(UHierarchicalInstancedStati
 		UTerrainZoneComponent* Zone = Cast<UTerrainZoneComponent>(Parents[0]);
 		if (Zone) {
 			Zone->SetObjectsNeedSave(); // TODO check condition racing
-
 			FVector ZonePos = Zone->GetComponentLocation();
 			TVoxelIndex ZoneIndex = GetZoneIndex(ZonePos);
 			MarkZoneNeedsToSave(ZoneIndex);
@@ -378,14 +426,13 @@ void ASandboxTerrainController::PerformTerrainChange(H Handler) {
 	FRunnableThread* Thread = FRunnableThread::Create(EditThread, *ThreadName);
 	//FIXME delete thread after finish
 
-	FVector TestPoint(Handler.Origin);
 	TArray<struct FOverlapResult> Result;
-	
 	FCollisionQueryParams CollisionQueryParams = FCollisionQueryParams::DefaultQueryParam;
 	CollisionQueryParams.bTraceComplex = false;
 	CollisionQueryParams.bSkipNarrowPhase = true;
 
 	double Start = FPlatformTime::Seconds();
+	//DrawDebugSphere(GetWorld(), Handler.Origin, Handler.Extend * 1.5f, 24, FColor(255, 255, 255, 100), false, 10);
 	bool bIsOverlap = GetWorld()->OverlapMultiByChannel(Result, Handler.Origin, FQuat(), ECC_Visibility, FCollisionShape::MakeSphere(Handler.Extend * 1.5f)); // ECC_Visibility
 	double End = FPlatformTime::Seconds();
 	double Time = (End - Start) * 1000;
@@ -396,25 +443,55 @@ void ASandboxTerrainController::PerformTerrainChange(H Handler) {
 			if (Cast<ASandboxTerrainController>(Overlap.GetActor())) {
 				UHierarchicalInstancedStaticMeshComponent* InstancedMesh = Cast<UHierarchicalInstancedStaticMeshComponent>(Overlap.GetComponent());
 				if (InstancedMesh) {
-					// RemoveInstanceAtMesh(InstancedMesh, Overlap.ItemIndex); //overhead
-
 					//UE_LOG(LogSandboxTerrain, Warning, TEXT("InstancedMesh: %s -> %d"), *InstancedMesh->GetName(), Overlap.ItemIndex);
-					InstancedMesh->RemoveInstance(Overlap.ItemIndex);
+					//FTransform Transform;
+					//InstancedMesh->GetInstanceTransform(Overlap.ItemIndex, Transform, true);
+					//DrawDebugPoint(GetWorld(), Transform.GetLocation(), 5.f, FColor(255, 255, 255, 0), false, 10);
 
-					TArray<USceneComponent*> Parents;
-					InstancedMesh->GetParentComponents(Parents);
-					if (Parents.Num() > 0) {
-						UTerrainZoneComponent* Zone = Cast<UTerrainZoneComponent>(Parents[0]);
-						if (Zone) {
-							Zone->SetObjectsNeedSave(); // TODO check condition racing
-						}
-					}
+					RemoveInstanceAtMesh(InstancedMesh, Overlap.ItemIndex); //overhead
+					//InstancedMesh->RemoveInstance(Overlap.ItemIndex);
 				}
 			} else {
 				OnOverlapActorTerrainEdit(Overlap, Handler.Origin);
 			}
 		}
 	}
+
+	// UE5 bad collision performance workaround
+}
+
+void ASandboxTerrainController::PerformEachZone(const FVector& Origin, const float Extend, std::function<void(TVoxelIndex, FVector, TVoxelDataInfoPtr)>) {
+	static const float V[3] = { -1, 0, 1 };
+	TVoxelIndex BaseZoneIndex = GetZoneIndex(Origin);
+
+	for (float X : V) {
+		for (float Y : V) {
+			for (float Z : V) {
+				TVoxelIndex ZoneIndex = BaseZoneIndex + TVoxelIndex(X, Y, Z);
+				UTerrainZoneComponent* Zone = GetZoneByVectorIndex(ZoneIndex);
+				TVoxelDataInfoPtr VoxelDataInfo = GetVoxelDataInfo(ZoneIndex);
+
+				// check zone bounds
+				FVector ZoneOrigin = GetZonePos(ZoneIndex);
+				constexpr float ZoneVolumeSize = USBT_ZONE_SIZE / 2;
+				FVector Upper(ZoneOrigin.X + ZoneVolumeSize, ZoneOrigin.Y + ZoneVolumeSize, ZoneOrigin.Z + ZoneVolumeSize);
+				FVector Lower(ZoneOrigin.X - ZoneVolumeSize, ZoneOrigin.Y - ZoneVolumeSize, ZoneOrigin.Z - ZoneVolumeSize);
+
+				if (FMath::SphereAABBIntersection(FSphere(Origin, Extend * 2.f), FBox(Lower, Upper))) {
+
+					/*
+					//UE_LOG(LogSandboxTerrain, Log, TEXT("VoxelDataInfo->DataState = %d, Index = %d %d %d"), VoxelDataInfo->DataState, ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
+					if (VoxelDataInfo->DataState == TVoxelDataState::UNDEFINED) {
+						UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> Invalid zone vd state (UNDEFINED)"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
+						bIsValid = false;
+						break;
+					}
+					*/
+				}
+			}
+		}
+	}
+
 }
 
 template<class H>

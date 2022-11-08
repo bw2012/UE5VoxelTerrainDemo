@@ -141,6 +141,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sandbox")
 	virtual void OnAltActionReleased();
 
+	UFUNCTION(BlueprintCallable, Category = "Sandbox")
+	virtual void OnWheelUp();
+
+	UFUNCTION(BlueprintCallable, Category = "Sandbox")
+	virtual void OnWheelDown();
+
 	UFUNCTION(Server, Reliable)
 	void FindOrCreateCharacter();
 

@@ -1,7 +1,7 @@
 ﻿// Copyright 1998-2016 Epic Games, Inc. All Rights Reserved.
 
 #include "MainPlayerController.h"
-#include "SandboxTerrainController.h"
+#include "TerrainController.h"
 #include "SandboxCharacter.h"
 #include "VoxelIndex.h"
 //#include "Async.h"
@@ -97,6 +97,7 @@ void AMainPlayerController::BeginPlay() {
 	}
 }
 
+/*
 void SetRenderCustomDepth(AActor* Actor, bool RenderCustomDepth) {
 	TArray<UMeshComponent*> MeshComponentList;
 	Actor->GetComponents<UMeshComponent>(MeshComponentList);
@@ -105,6 +106,7 @@ void SetRenderCustomDepth(AActor* Actor, bool RenderCustomDepth) {
 		MeshComponent->SetRenderCustomDepth(RenderCustomDepth);
 	}
 }
+*/
 
 APawn* PawnUnderCursor(const FHitResult& Hit) {
 	if (Hit.bBlockingHit) {
@@ -261,7 +263,6 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 
 	}
 
-
 	ABaseCharacter* PlayerCharacter = Cast<ABaseCharacter>(GetCharacter());
 	if (PlayerCharacter) {
 		MainPlayerControllerComponent->OnPlayerTick();
@@ -273,13 +274,6 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 			// update player position
 			if (SandboxEnvironment) {
 				SandboxEnvironment->UpdatePlayerPosition(Location);
-				if (Location.Z < -500) { // TODO refactor
-					//UE_LOG(LogTemp, Log, TEXT("SetCaveMode = true"));
-					SandboxEnvironment->SetCaveMode(true);
-				} else {
-					//UE_LOG(LogTemp, Log, TEXT("SetCaveMode = false"));
-					SandboxEnvironment->SetCaveMode(false);
-				}
 			}
 		}
 	}
@@ -386,7 +380,15 @@ void AMainPlayerController::OnAltActionPressed() {
 }
 
 void AMainPlayerController::OnAltActionReleased() {
-	//GetWorld()->GetTimerManager().ClearTimer(Timer);
+	ADummyPawn* DummyPawn = Cast<ADummyPawn>(GetPawn());
+	if (DummyPawn) {
+		return;
+	}
+
+	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
+	if (BaseCharacter) {
+		MainPlayerControllerComponent->EndAltAction();
+	}
 }
 
 /*
@@ -465,12 +467,12 @@ void AMainPlayerController::UnPossessDummyPawn(APawn* NewPawn) {
 
 void AMainPlayerController::ResetAllSelections() {
 	if (SelectedPawn) {
-		SetRenderCustomDepth(SelectedPawn, false);
+		//SetRenderCustomDepth(SelectedPawn, false);
 		SelectedPawn = nullptr;
 	}
 
 	if (PickedObj) {
-		SetRenderCustomDepth(PickedObj, false);
+		//SetRenderCustomDepth(PickedObj, false);
 		PickedObj = nullptr;
 	}
 }
@@ -808,5 +810,27 @@ void AMainPlayerController::ShowInGameHud() {
 		if (MainHud) {
 			MainHud->ShowInGameInventory();
 		}
+	}
+}
+
+void AMainPlayerController::OnWheelUp() {
+	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
+	if (BaseCharacter) {
+		if (BaseCharacter->IsDead()) {
+			return;
+		}
+
+		MainPlayerControllerComponent->OnWheelUp();
+	}
+}
+
+void AMainPlayerController::OnWheelDown() {
+	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
+	if (BaseCharacter) {
+		if (BaseCharacter->IsDead()) {
+			return;
+		}
+
+		MainPlayerControllerComponent->OnWheelDown();
 	}
 }

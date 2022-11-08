@@ -507,11 +507,11 @@ void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgr
 			auto MeshDataPtr = VdInfoPtr->PopMeshDataCache();
 			if (MeshDataPtr) {
 				DataMd = SerializeMeshData(MeshDataPtr);
-			}
+			} 
 
 			if (FoliageDataAsset) {
 				UTerrainZoneComponent* Zone = VdInfoPtr->GetZone();
-				if (Zone && Zone->IsObjectsNeedSave()) {
+				if (Zone && (Zone->IsObjectsNeedSave() || VdInfoPtr->IsChanged())) {
 					DataObj = Zone->SerializeAndResetObjectData();
 
 					if (!VdInfoPtr->CanSave()) {
@@ -528,7 +528,7 @@ void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgr
 							DataVd = std::make_shared<TValueData>();
 							DataVd->resize(ZoneHeader.LenVd);
 							Deserializer.read(DataVd->data(), ZoneHeader.LenVd);
-						});
+							});
 					}
 				} else {
 					auto InstanceObjectMapPtr = VdInfoPtr->GetOrCreateInstanceObjectMap();

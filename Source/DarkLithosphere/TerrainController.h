@@ -83,6 +83,8 @@ public:
 
 	void SpawnFromStash(const TVoxelIndex& ZoneIndex);
 
+	TArray<FVector> Test(FVector PlayerLocation, float Radius);
+
 protected:
 
 	virtual void BeginPlayServer();

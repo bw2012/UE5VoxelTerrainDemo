@@ -8,6 +8,7 @@
 #include "NavigationSystem.h"
 #include "SandboxObject.h"
 #include "BaseCharacter.h"
+#include "DrawDebugHelpers.h"
 
 
 ASandboxObject* FindNearestLightSource(UWorld* World, FVector Origin, const float Radius) {
@@ -200,12 +201,11 @@ EBTNodeResult::Type UBTTask_SelectZombieWalkTarget::ExecuteTask(UBehaviorTreeCom
 	
 	if (bIsNight) {
 		UE_LOG(LogTemp, Warning, TEXT("bIsNight"));
-		//ResultActor = FindNearestLightSource(GetWorld(), OwnerLocation, DayWalkTargetRadius);
+		ResultActor = FindNearestLightSource(GetWorld(), OwnerLocation, DayWalkTargetRadius);
 	} else {
-		//ResultActor = FindNearestInterestingActor(GetWorld(), OwnerLocation, LightFindingRadius);
+		ResultActor = FindNearestInterestingActor(GetWorld(), OwnerLocation, LightFindingRadius);
 	}
 
-	/*
 	if (ResultActor) {
 		const float WalkRadius = (bIsNight) ? NightWalkingRadius : DayWalkTargetRadius * 0.95;
 		FVector TargetLocation = ResultActor->GetActorLocation();
@@ -228,7 +228,6 @@ EBTNodeResult::Type UBTTask_SelectZombieWalkTarget::ExecuteTask(UBehaviorTreeCom
 			OwnerComp.GetBlackboardComponent()->SetValue<UBlackboardKeyType_Vector>(BlackboardKey.GetSelectedKeyID(), ResultLocation.Location);
 		}
 	}
-	*/
 
 	const float WalkRadius = (bIsNight) ? NightWalkingRadius : DayWalkTargetRadius;
 	FNavLocation ResultLocation;
@@ -243,6 +242,49 @@ EBTNodeResult::Type UBTTask_SelectZombieWalkTarget::ExecuteTask(UBehaviorTreeCom
 }
 
 //=========================================================================================================================================
+// Ghost
+//=========================================================================================================================================
+
+
+UBTTask_SelectGhostTarget::UBTTask_SelectGhostTarget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer) {
+	NodeName = "Select Ghost Target";
+	FindingRadius = 2000;
+	NightFloatingRadius = 2000;
+}
+
+EBTNodeResult::Type UBTTask_SelectGhostTarget::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) {
+	EBTNodeResult::Type NodeResult = EBTNodeResult::Succeeded;
+
+	const ACoreAIController* CoreController = Cast<ACoreAIController>(OwnerComp.GetAIOwner());
+	if (!CoreController) {
+		return EBTNodeResult::Failed;
+	}
+
+	const FVector OwnerLocation = CoreController->GetPawn()->GetActorLocation();
+	bool bIsNight = CoreController->IsNight();
+	AActor* ResultActor = nullptr;
+
+	const float FloatingRadius = NightFloatingRadius;
+	FNavLocation ResultLocation;
+	UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
+	bool bIsSuccess = NavSys->GetRandomReachablePointInRadius(OwnerLocation, FloatingRadius, ResultLocation, nullptr, FSharedConstNavQueryFilter());
+	if (bIsSuccess) {
+		FVector Pos = ResultLocation.Location;
+
+		Pos.Z += 100;
+
+		UE_LOG(LogTemp, Warning, TEXT("Ghost target: %f %f %f"), Pos.X, Pos.Y, Pos.Z);
+		DrawDebugPoint(GetWorld(), Pos, 6.f, FColor(0, 255, 0, 0), false, 3);
+		OwnerComp.GetBlackboardComponent()->SetValue<UBlackboardKeyType_Vector>(BlackboardKey.GetSelectedKeyID(), Pos);
+	}
+
+	return NodeResult;
+}
+
+//=========================================================================================================================================
+
+
+
 
 void ACoreAIController::BeginPlay() {
 	Super::BeginPlay();

@@ -4,7 +4,7 @@
 #include "../TerrainController.h"
 
 FString USystemInfoWidget::SandboxVersionInfoText() {
-	return TEXT("v0.0.30-alpha-L");
+	return TEXT("v0.0.31-alpha-L");
 }
 
 

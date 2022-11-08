@@ -36,22 +36,7 @@ public:
 	ASkyLight* SkyLight;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	UCurveFloat* DayNightCycleSkyLightCurve;
-
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	UCurveFloat* HeightCurve;
-
-	UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
-	float CaveSkyLightRatio;
-
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	AExponentialHeightFog* GlobalFog;
-
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	UCurveFloat* GlobalFogDensityCurve;
-
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	UCurveFloat* GlobalFogOpacityCurve;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	AStaticMeshActor* CaveSphere;
@@ -59,20 +44,38 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	AAmbientSound* AmbientSound;
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	float TimeSpeed;
+	//UPROPERTY(EditAnywhere, Category = "Sandbox")
+	//UCurveFloat* DayNightCycleSkyLightCurve;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	float RecaptureSkyTreshold;
+	UCurveFloat* HeightCurve;
+
+	//UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
+	//float CaveSkyLightRatio;
+
+	UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
+	float CaveSkyLightIntensity;
+
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	UCurveFloat* CaveSunLightCurve;
+
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	UCurveFloat* GlobalFogDensityCurve;
+
+	//UPROPERTY(EditAnywhere, Category = "Sandbox")
+	//UCurveFloat* GlobalFogOpacityCurve;
+
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	float TimeSpeed;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
 	float CaveFogDensity;
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
-	float CaveFogOpacity;
+	//UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
+	//float CaveFogOpacity;
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
-	FLinearColor CaveFogInscatteringColor;
+	//UPROPERTY(EditAnywhere, Category = "Sandbox Cave")
+	//FLinearColor CaveFogInscatteringColor;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
 	bool bEnableDayNightCycle;
@@ -110,7 +113,7 @@ public:
 
 	double GetNewTimeOffset();
 
-	void UpdatePlayerPosition(FVector Pos, float GroundLevel = 0);
+	virtual void UpdatePlayerPosition(FVector Pos);
 
 	void SetCaveMode(bool bCaveModeEnabled);
 
@@ -118,6 +121,10 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Sandbox")
 	FString GetCurrentTimeAsString();
+	
+protected:
+
+	virtual float ClcHeightFactor() const;
 
 private:
 
@@ -135,11 +142,9 @@ private:
 
 	void PerformDayNightCycle();
 
-	FLinearColor FogColor;
+	//FLinearColor FogColor;
 
 	FVector PlayerPos;
-
-	float GroundLevelPlayerPos;
 
 	float InitialSkyIntensity;
 	

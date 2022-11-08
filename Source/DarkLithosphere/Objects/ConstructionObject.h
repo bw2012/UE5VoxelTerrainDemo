@@ -13,6 +13,7 @@ enum class EConstructionType : uint8 {
 	Ceiling = 3			UMETA(DisplayName = "Ceiling"),
 	Ramp = 4			UMETA(DisplayName = "Ramp"),
 	Door = 5			UMETA(DisplayName = "Door"),
+	UpDownStairs = 6	UMETA(DisplayName = "Up/Down Stairs"),
 };
 
 
@@ -33,5 +34,7 @@ public:
 	virtual bool CanTake(const AActor* Actor = nullptr) const;
 
 	virtual void OnTerrainChange() override;
+
+	virtual void OnPlaceToWorld() override;
 	
 };

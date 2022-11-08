@@ -312,7 +312,6 @@ bool ALevelController::RemoveSandboxObject(ASandboxObject* Obj) {
 	bool Res = Super::RemoveSandboxObject(Obj);
 	if (Res && TerrainController) {
 		TerrainController->UnRegisterSandboxObject(Obj);
-		UE_LOG(LogTemp, Log, TEXT("UnregisterSandboxObject"));
 	}
 
 	return Res;

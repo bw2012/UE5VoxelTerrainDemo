@@ -17,8 +17,6 @@
 #include "VoxelData.h"
 #include "SandboxTerrainController.generated.h"
 
-#define USBT_MAX_MATERIAL_HARDNESS 99999.9f
-
 struct TMeshData;
 class UVoxelMeshComponent;
 class UTerrainZoneComponent;
@@ -141,26 +139,10 @@ struct FSandboxTerrainMaterial {
 	FSandboxTerrainMaterialType Type;
 
 	UPROPERTY(EditAnywhere)
-	float RockHardness;
+	UTexture* TextureDiffuse;
 
 	UPROPERTY(EditAnywhere)
-	UTexture* TextureSideMicro;
-
-	UPROPERTY(EditAnywhere)
-	UTexture* TextureSideMacro;
-
-	UPROPERTY(EditAnywhere)
-	UTexture* TextureSideNormal;
-
-	UPROPERTY(EditAnywhere)
-	UTexture* TextureTopMicro;
-
-	UPROPERTY(EditAnywhere)
-	UTexture* TextureTopMacro;
-
-	UPROPERTY(EditAnywhere)
-	UTexture* TextureTopNormal;
-
+	UTexture* TextureNormal;
 };
 
 UCLASS(Blueprintable)
@@ -429,11 +411,11 @@ public:
 
 	float GetZoneSize();
 
-	void DigTerrainRoundHole(const FVector& Origin, float Radius, float Strength);
+	void DigTerrainRoundHole(const FVector& Origin, float Radius, bool bNoise = true);
 
-	void DigCylinder(const FVector& Origin, const float Radius, const float Length, const FRotator& Rotator = FRotator(0), const float Strength = 1.f, const bool bNoise = true);
+	void DigCylinder(const FVector& Origin, const float Radius, const float Length, const FRotator& Rotator = FRotator(0), const bool bNoise = true);
 
-	void DigTerrainCubeHole(const FVector& Origin, const FBox& Box, float Extend, const FRotator& Rotator = FRotator(0));
+	void DigTerrainCubeHoleComplex(const FVector& Origin, const FBox& Box, float Extend, const FRotator& Rotator = FRotator(0));
 
 	void DigTerrainCubeHole(const FVector& Origin, float Extend, const FRotator& Rotator = FRotator(0));
 
@@ -483,6 +465,20 @@ public:
 
 	float ClcGroundLevel(const FVector& V);
 
+	//===============================================================================
+	// perlin noise
+	//===============================================================================
+
+	float PerlinNoise(const FVector& Pos, const float PositionScale, const float ValueScale) const;
+
+	float NormalizedPerlinNoise(const FVector& Pos, const float PositionScale, const float ValueScale) const;
+
+	//===============================================================================
+	// groud level
+	//===============================================================================
+
+	float GetGroundLevel(const FVector& Pos);
+
 private:
 
 	bool bForcePerformHardUnload = false;
@@ -499,10 +495,16 @@ private:
     
     void StartCheckArea();
 
+	volatile bool bIsWorkFinished = false;
+
+	//===============================================================================
+	// modify terrain
+	//===============================================================================
+
 	template<class H>
 	FORCEINLINE void PerformZoneEditHandler(std::shared_ptr<TVoxelDataInfo> VdInfoPtr, H Handler, std::function<void(TMeshDataPtr)> OnComplete);
 
-	volatile bool bIsWorkFinished = false;
+	void PerformEachZone(const FVector& Origin, const float Extend, std::function<void(TVoxelIndex, FVector, std::shared_ptr<TVoxelDataInfo>)>);
 
 	//===============================================================================
 	// save/load
@@ -697,14 +699,6 @@ protected:
 	bool IsVdExistsInFile(const TVoxelIndex& ZoneIndex);
 
 	std::shared_ptr<TMeshData> GenerateMesh(TVoxelData* Vd);
-
-	//===============================================================================
-	// perlin noise
-	//===============================================================================
-
-	float PerlinNoise(const FVector& Pos) const;
-
-	float NormalizedPerlinNoise(const FVector& Pos) const;
 
 	//===============================================================================
 	// NewVoxelData

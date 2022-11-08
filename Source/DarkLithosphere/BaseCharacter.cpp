@@ -19,6 +19,16 @@ ABaseCharacter::ABaseCharacter(const FObjectInitializer& ObjectInitializer) : Su
 	CursorMesh->SetupAttachment(GetCapsuleComponent());
 	CursorMesh->SetWorldRotation(FRotator());
 
+	CursorToWorld = CreateDefaultSubobject<UDecalComponent>("CursorToWorld");
+	CursorToWorld->SetupAttachment(RootComponent);
+	static ConstructorHelpers::FObjectFinder<UMaterial> DecalMaterialAsset(TEXT("Material'/Game/TopDownCPP/Blueprints/M_Cursor_Decal.M_Cursor_Decal'"));
+	if (DecalMaterialAsset.Succeeded()) {
+		CursorToWorld->SetDecalMaterial(DecalMaterialAsset.Object);
+	}
+
+	CursorToWorld->DecalSize = FVector(50.f, 100.f, 100.f);
+	CursorToWorld->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f).Quaternion());
+
 }
 
 // Called when the game starts or when spawned

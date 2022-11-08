@@ -912,7 +912,7 @@ void UTerrainGeneratorComponent::BatchGenerateVoxelTerrain(const TArray<TSpawnZo
     double Start2 = FPlatformTime::Seconds();
 
     //std::thread T1([&]() { BatchGenerateComplexVd(ComplexList); });
-   //std::thread T2([&]() { BatchGenerateSlightVd(FastList); });
+    //std::thread T2([&]() { BatchGenerateSlightVd(FastList); });
 
     //T1.join();
     //T2.join();
@@ -952,7 +952,6 @@ void UTerrainGeneratorComponent::Clean(TVoxelIndex& Index) {
 //======================================================================================================================================================================
 // Foliage
 //======================================================================================================================================================================
-
 
 void UTerrainGeneratorComponent::GenerateInstanceObjects(const TVoxelIndex& Index, TVoxelData* Vd, TInstanceMeshTypeMap& ZoneInstanceMeshMap) {
     TChunkData* ChunkData = GetChunkData(Index.X, Index.Y);

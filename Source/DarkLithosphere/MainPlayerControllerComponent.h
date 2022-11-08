@@ -30,10 +30,10 @@ struct FSelectedObject {
 	GENERATED_BODY()
 
 	UPROPERTY()
-	ASandboxObject* SandboxObj;
+	ASandboxObject* SandboxObj = nullptr;
 
 	UPROPERTY()
-	UTerrainInstancedStaticMesh* TerrainMesh;
+	UTerrainInstancedStaticMesh* TerrainMesh = nullptr;
 
 	UPROPERTY()
 	ESelectedObjectType ObjType;
@@ -73,6 +73,8 @@ public:
 
 	void PerformAltAction();
 
+	void EndAltAction();
+
 	//void OnTracePlayerActionPoint(const FHitResult& Res);
 
 	void ResetState();
@@ -98,6 +100,10 @@ public:
 
 	void OnInventoryItemMainAction(int32 SlotId);
 
+	void OnWheelUp();
+
+	void OnWheelDown();
+
 private:
 
 	ECurrentActionType CurrentActionType = ECurrentActionType::None;
@@ -106,9 +112,11 @@ private:
 
 	int32 CraftReceiptId = 0;
 
-	bool bToolActive = false;
-
 	void ResetSelectedObject();
+
+	bool bAltActionPressed = false;
+
+	volatile double Timestamp = 0.f;
 		
 protected:
 

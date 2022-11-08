@@ -1,5 +1,6 @@
-#include "ConstructionObject.h"
 
+#include "ConstructionObject.h"
+#include "../TerrainController.h"
 
 int GetTargetClassId(const AActor* Actor) {
 	const ASandboxObject* TargetObject = Cast<ASandboxObject>(Actor);
@@ -127,18 +128,23 @@ bool TestNewPosition(const TSubclassOf<ASandboxObject> SubclassSandboxObject, co
 		//DrawDebugBox(World, BoxSphereBounds.Origin, (BoxSphereBounds.BoxExtent - 5), FColor::Purple, false, 1, 0, 1);
 
 		TArray<FOverlapResult> OverlapArray;
-		World->OverlapMultiByChannel(OverlapArray, BoxSphereBounds.Origin, FQuat::Identity, ECC_WorldDynamic, FCollisionShape::MakeBox(BoxSphereBounds.BoxExtent - 5));
+		World->OverlapMultiByChannel(OverlapArray, BoxSphereBounds.Origin, FQuat::Identity, ECC_WorldDynamic, FCollisionShape::MakeBox(BoxSphereBounds.BoxExtent));
 		for (auto& Overlap : OverlapArray) {
 			AActor* Actor = Overlap.GetActor();
 			auto* Component = Overlap.GetComponent();
 
-			UE_LOG(LogTemp, Warning, TEXT("Overlap actor -> %s"), *Actor->GetClass()->GetName());
-			if (Component) {
-				UE_LOG(LogTemp, Warning, TEXT("Overlap actor -> %s"), *Component->GetName());
-			}
-			
-			if (Actor->GetClass()->GetName() == "BP_Terrain_C") {
+			if (Actor->GetClass()->GetName() == "BP_Terrain_C") { // FIXME
 				continue;
+			}
+
+			if (Actor->GetClass()->GetName() == "BP_MainFemaleCharacter_C") { // FIXME
+				continue;
+			}
+
+
+			//UE_LOG(LogTemp, Warning, TEXT("Overlap actor -> %s"), *Actor->GetClass()->GetName());
+			if (Component) {
+				//UE_LOG(LogTemp, Warning, TEXT("Overlap actor -> %s"), *Component->GetName());
 			}
 
 			return false;
@@ -163,6 +169,29 @@ bool AConstructionObject::PlaceToWorldClcPosition(const UWorld* World, const FVe
 
 	if (TargetConstruction) {
 		auto TargetConstructionType = TargetConstruction->ConstructionType;
+
+		if (ConstructionType == EConstructionType::UpDownStairs) {
+			if (TargetConstructionType == EConstructionType::UpDownStairs) {
+
+				const FVector TargetObjLocation = TargetObject->GetActorLocation();
+				const FVector CursorLocation = TraceResult.Location;
+				const FRotator R = TargetObject->GetActorRotation().GetInverse();
+				const FVector Test = R.RotateVector(TargetObjLocation - CursorLocation);
+
+				NewLocation = TargetObject->GetActorLocation();
+				NewRotation = TargetObject->GetActorRotation();
+
+				if (Test.Z < -50) {
+					// up
+					NewLocation.Z += 600;
+				} else {
+					// down
+					NewLocation.Z -= 600;
+				}
+
+				return true;
+			}
+		}
 
 		if (ConstructionType == EConstructionType::Door) {
 			if (TargetConstruction->GetSandboxClassId() == 114) { // FIXME
@@ -216,28 +245,36 @@ bool AConstructionObject::PlaceToWorldClcPosition(const UWorld* World, const FVe
 			if (TargetConstructionType == EConstructionType::Foundation) {
 				TransformMode4(NewLocation, NewRotation, TargetObject, TraceResult);
 				return TestNewPosition(GetClass(), World, NewLocation, NewRotation);
+				//return true;
 			}
 
 			NewRotation = SourceRotation;
-
-			AActor* Actor = TraceResult.GetActor();
-			FString Name = Actor->GetClass()->GetName();
-			UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), *Name);
-
-			if (Name == "Landscape" || Name == "BP_Terrain_C") {
-				TransformMode0(NewLocation, NewRotation, TraceResult);
-				return true;
-			}
 		}
 	} else {
+		if (ConstructionType == EConstructionType::UpDownStairs) {
+			auto* Component = TraceResult.GetComponent();
+			if (Component) {
+				FString ComponentName = Component->GetClass()->GetName();
+				if (ComponentName == "VoxelMeshComponent") {
+					NewLocation = TraceResult.Location;
+					NewLocation.Z -= 350;
+					NewRotation = FRotator(0);
+					return true;
+				}
+			}
+		}
+
 		if (ConstructionType == EConstructionType::Foundation) {
 			NewRotation = SourceRotation;
 			FString Name = TargetObject->GetClass()->GetName();
 			//UE_LOG(LogTemp, Warning, TEXT("Hit: %s"), *Name);
 
 			if (Name == "Landscape" || Name == "BP_Terrain_C") {
-				TransformMode0(NewLocation, NewRotation, TraceResult);
-				return true;
+				if (TraceResult.Normal.Z > 0.5) {
+					TransformMode0(NewLocation, NewRotation, TraceResult);
+					return TestNewPosition(GetClass(), World, NewLocation, NewRotation);
+					//return true;
+				}
 			}
 		}
 	}
@@ -252,4 +289,44 @@ bool AConstructionObject::CanTake(const AActor* actor) const {
 
 void AConstructionObject::OnTerrainChange() {
 	// do nothing
+}
+
+void AConstructionObject::OnPlaceToWorld() {
+	// TODO server only
+
+	if (ConstructionType == EConstructionType::UpDownStairs) {
+		for (TActorIterator<ATerrainController> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+			ATerrainController* TerrainCtrl = Cast<ATerrainController>(*ActorItr);
+			if (TerrainCtrl) {
+				UE_LOG(LogTemp, Log, TEXT("Found ATerrainController -> %s"), *TerrainCtrl->GetName());
+				FVector Location = GetActorLocation();
+				Location.Z += 340;
+				Location.Y -= 420;
+
+				TerrainCtrl->DigTerrainCubeHole(Location, 550);
+
+				break;
+			}
+		}
+
+	}
+
+	if (ConstructionType == EConstructionType::Foundation) {
+		const UBoxComponent* BoxComponent = Cast<UBoxComponent>(FindBPComponentsByName(GetClass(), "DigVolume"));
+		if (BoxComponent) {
+			for (TActorIterator<ATerrainController> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+				ATerrainController* TerrainCtrl = Cast<ATerrainController>(*ActorItr); // FIXME: remove Cast()
+				if (TerrainCtrl) {
+					FVector Origin = BoxComponent->GetRelativeLocation() + GetActorLocation();
+					FVector Extent = BoxComponent->GetScaledBoxExtent();
+					FBox Box(EForceInit::ForceInitToZero);
+					Box = Box.ExpandBy(Extent);
+					//DrawDebugBox(GetWorld(), Origin, Extent, FColor(255, 255, 255, 0), true);
+					TerrainCtrl->DigTerrainCubeHoleComplex(Origin, Box, 200, GetActorRotation().GetInverse()); // FIXME: why inverse?
+					break;
+				}
+			}
+		}
+
+	}
 }

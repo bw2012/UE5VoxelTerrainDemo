@@ -33,6 +33,12 @@ public:
 	USoundCue* HitWoodSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	bool bShowEffects;
+
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	bool bSpawnStones;
+
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	TSubclassOf<AActor> EffectActor;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
@@ -44,6 +50,10 @@ public:
 
 	void ToggleToolMode();
 
+	void SwitchUp();
+
+	void SwitchDown();
+
 	int GetSandboxTypeId() const override;
 
 	virtual bool VisibleInHand(FTransform& Transform) override;
@@ -51,6 +61,8 @@ public:
 private:
 
 	int DiggingToolMode = 0;
+
+	int DiggingToolSize = 0;
 
 	void PlaySound(const FSandboxTerrainMaterial& MatInfo, const FVector& Location, UWorld* World);
 };

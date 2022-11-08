@@ -19,4 +19,6 @@ public:
 
 	virtual bool IsContainer() override;
 
+	virtual bool PlaceToWorldClcPosition(const UWorld* World, const FVector& SourcePos, const FRotator& SourceRotation, const FHitResult& Res, FVector& Location, FRotator& Rotation, bool bFinal) const override;
+
 };

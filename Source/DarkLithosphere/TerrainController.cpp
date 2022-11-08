@@ -32,17 +32,16 @@ void ATerrainController::BeginPlayServer() {
 	if (LevelController) {
 		LevelController->LoadMap();
 
-		//AddInitialZone(TVoxelIndex(24, -6, 0));
-
-		bool bFirst = false; // temp siolution
+		bool bFirst = true; // temp solution
 		const TArray<FTempCharacterLoadInfo>& TempCharacterList = LevelController->GetTempCharacterList();
 		for (const FTempCharacterLoadInfo& TempCharacterInfo : TempCharacterList) {
 			const TVoxelIndex ZoneIndex = GetZoneIndex(TempCharacterInfo.Location);
 			UE_LOG(LogTemp, Log, TEXT("Server PlayerId -> %s "), *TempCharacterInfo.SandboxPlayerUid);
 
 			if (bFirst) {
+				UE_LOG(LogTemp, Log, TEXT("BeginServerTerrainLoadLocation -> %f %f %f"), TempCharacterInfo.Location.X, TempCharacterInfo.Location.Y, TempCharacterInfo.Location.Z);
 				BeginServerTerrainLoadLocation = TempCharacterInfo.Location;
-				bFirst = true;
+				bFirst = false;
 			}
 
 			for (int X = -1; X <= 1; X++) {
@@ -214,7 +213,7 @@ void ATerrainController::RegisterSandboxObject(ASandboxObject* SandboxObject) {
 		FString ObjectName = SandboxObject->GetName();
 
 		if (ZoneObjects.WorldObjectMap.Contains(ObjectName)) {
-			UE_LOG(LogTemp, Warning, TEXT("duplicate object -> %s"), *ObjectName);
+			UE_LOG(LogTemp, Warning, TEXT("Duplicate object -> %s"), *ObjectName);
 		}
 
 		ZoneObjects.WorldObjectMap.Add(ObjectName, SandboxObject);
@@ -284,4 +283,32 @@ void ATerrainController::OnRestoreZoneSoftUnload(const TVoxelIndex& ZoneIndex) {
 
 void ATerrainController::OnFinishLoadZone(const TVoxelIndex& Index) {
 	SpawnFromStash(Index);
+}
+
+
+TArray<FVector> ATerrainController::Test(FVector PlayerLocation, float Radius) {
+	UE_LOG(LogTemp, Log, TEXT("ATerrainController::Test"));
+	TArray<FVector> Result;
+
+	double Start = FPlatformTime::Seconds();
+
+	TArray<UTerrainZoneComponent*> Components;
+	GetComponents<UTerrainZoneComponent>(Components);
+	for (UTerrainZoneComponent* ZoneComponent : Components) {
+		FVector ZonePos = ZoneComponent->GetComponentLocation();
+		const TVoxelIndex ZoneIndex = GetZoneIndex(ZonePos);
+		float ZoneDistance = FVector::Distance(ZonePos, PlayerLocation);
+		if (ZoneDistance > Radius) {
+			if (ZoneIndex.Z > -1) { // TODO landscape only
+				//DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
+				Result.Add(ZonePos);
+			}
+		} 
+	}
+
+	double End = FPlatformTime::Seconds();
+	double Time = (End - Start) * 1000;
+	//UE_LOG(LogSandboxTerrain, Log, TEXT("UnloadFarZones --> %f ms"), Time);
+
+	return Result;
 }

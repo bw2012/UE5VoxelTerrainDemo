@@ -77,6 +77,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	TArray<TSubclassOf<ASandboxSkeletalModule>> DefaultModularSkMesh;
 
+	/** A decal that projects to the cursor location. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	class UDecalComponent* CursorToWorld;
+
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 

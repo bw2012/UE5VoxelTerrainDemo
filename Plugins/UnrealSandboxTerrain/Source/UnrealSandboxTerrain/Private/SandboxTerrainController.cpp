@@ -128,9 +128,7 @@ void ASandboxTerrainController::BeginPlay() {
 
 		for (const auto& InstMesh : TerrainParameters->InstanceMeshes) {
 			uint64 MeshTypeCode = InstMesh.GetMeshTypeCode();
-
-			UE_LOG(LogSandboxTerrain, Log, TEXT("TEST -> %lld"), MeshTypeCode);
-
+			UE_LOG(LogSandboxTerrain, Log, TEXT("MeshTypeCode -> %lld"), MeshTypeCode);
 			InstMeshMap.Add(MeshTypeCode, InstMesh);
 		}
 	}
@@ -151,7 +149,6 @@ void ASandboxTerrainController::BeginPlay() {
 		}
 
 		BeginPlayServer();
-		StartCheckArea();
 	}
 }
 
@@ -163,6 +160,11 @@ void ASandboxTerrainController::ShutdownThreads() {
 	for (auto& TerrainControllerEvent : TerrainControllerEventList) {
 		while (!TerrainControllerEvent->IsComplete()) {};
 	}
+
+	UE_LOG(LogSandboxTerrain, Warning, TEXT("ConveyorList -> %d threads. Waiting for finish..."), ConveyorList.size());
+	//while (ConveyorList.size() > 0) {
+	//	UE_LOG(LogSandboxTerrain, Warning, TEXT("ConveyorList -> %d threads"), ConveyorList.size());
+	//};
 }
 
 void ASandboxTerrainController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
@@ -194,11 +196,6 @@ void ASandboxTerrainController::Tick(float DeltaTime) {
 			ConveyorList.pop_front();
 		}
 	}
-
-
-	//if (bIsGeneratingTerrain) {
-	//	OnProgressBuildTerrain(GeneratingProgress);
-	//}
 }
 
 //======================================================================================================================================================================
@@ -206,7 +203,9 @@ void ASandboxTerrainController::Tick(float DeltaTime) {
 //======================================================================================================================================================================
 
 void ASandboxTerrainController::StartPostLoadTimers() {
-	GetWorld()->GetTimerManager().SetTimer(TimerAutoSave, this, &ASandboxTerrainController::AutoSaveByTimer, AutoSavePeriod, true);
+	if (AutoSavePeriod > 0) {
+		GetWorld()->GetTimerManager().SetTimer(TimerAutoSave, this, &ASandboxTerrainController::AutoSaveByTimer, AutoSavePeriod, true);
+	}
 }
 
 void ASandboxTerrainController::StartCheckArea() {
@@ -398,7 +397,7 @@ void ASandboxTerrainController::BeginClientTerrainLoad(const TVoxelIndex& ZoneIn
 
 	RunThread([=]() {
 		const TVoxelIndex Index = ZoneIndex;
-		UE_LOG(LogSandboxTerrain, Warning, TEXT("Server: Begin terrain load at location: %f %f %f"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
+		UE_LOG(LogSandboxTerrain, Warning, TEXT("Client: Begin terrain load at location: %f %f %f"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
 		TTerrainLoadPipeline Loader(TEXT("test_job"), this, Params);
 		Loader.LoadArea(Index);
 	});
@@ -435,6 +434,7 @@ void ASandboxTerrainController::BeginServerTerrainLoad() {
 
 				AsyncTask(ENamedThreads::GameThread, [&] {
 					StartPostLoadTimers();
+					StartCheckArea();
 				});
 			}
         });
@@ -593,9 +593,7 @@ void ASandboxTerrainController::BatchGenerateZone(const TArray<TSpawnZoneParam>&
 	for (const auto& P : GenerationList) {
 		TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(P.Index);
 		VdInfoPtr->Lock();
-
 		VdInfoPtr->Vd = NewVdArray[Idx].Vd;
-
 		FVector v = VdInfoPtr->Vd->getOrigin();
 
 		if (NewVdArray[Idx].Method == TGenerationMethod::FastSimple || NewVdArray[Idx].Method == Skip) {
@@ -617,14 +615,9 @@ void ASandboxTerrainController::BatchGenerateZone(const TArray<TSpawnZoneParam>&
 */
 
 		VdInfoPtr->SetChanged();
-
 		TInstanceMeshTypeMap& ZoneInstanceObjectMap = *TerrainData->GetOrCreateInstanceObjectMap(P.Index);
 		GeneratorComponent->GenerateInstanceObjects(P.Index, VdInfoPtr->Vd, ZoneInstanceObjectMap);
-
-		//TerrainData->AddSaveIndex(P.Index);
-
 		VdInfoPtr->Unlock();
-
 		Idx++;
 	}
 }
@@ -959,16 +952,17 @@ FORCEINLINE void ASandboxTerrainController::OnFinishGenerateNewZone(const TVoxel
 //======================================================================================================================================================================
 
 // TODO use seed
-float ASandboxTerrainController::PerlinNoise(const FVector& Pos) const {
-	//return Generator->PerlinNoise(Pos.X, Pos.Y, Pos.Z);
+float ASandboxTerrainController::PerlinNoise(const FVector& Pos, const float PositionScale, const float ValueScale) const {
+	if (GeneratorComponent) {
+		return GeneratorComponent->PerlinNoise(Pos, PositionScale, ValueScale);
+	}
+
 	return 0;
 }
 
 // range 0..1
-float ASandboxTerrainController::NormalizedPerlinNoise(const FVector& Pos) const {
-	//float NormalizedPerlin = (Generator->PerlinNoise(Pos.X, Pos.Y, Pos.Z) + 0.87) / 1.73;
-	//return NormalizedPerlin;
-	return 0;
+float ASandboxTerrainController::NormalizedPerlinNoise(const FVector& Pos, const float PositionScale, const float ValueScale) const {
+	return (PerlinNoise(Pos, PositionScale, 1.f) + 0.87f) / 1.73f * ValueScale;
 }
 
 //======================================================================================================================================================================
@@ -1106,4 +1100,16 @@ const FTerrainInstancedMeshType* ASandboxTerrainController::GetInstancedMeshType
 	uint64 MeshCode = FTerrainInstancedMeshType::ClcMeshTypeCode(MeshTypeId, MeshVariantId);
 	const FTerrainInstancedMeshType* MeshType = InstMeshMap.Find(MeshCode);
 	return MeshType;
+}
+
+float ASandboxTerrainController::GetGroundLevel(const FVector& Pos) {
+
+	// TODO fixme on client side
+	const UTerrainGeneratorComponent* Generator = GetTerrainGenerator();
+	if (Generator) {
+		const TVoxelIndex ZoneIndex = GetZoneIndex(Pos);
+		return Generator->GroundLevelFunction(ZoneIndex, Pos);
+	}
+
+	return 0;
 }

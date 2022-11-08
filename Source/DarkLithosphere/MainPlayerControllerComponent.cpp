@@ -24,7 +24,14 @@ void UMainPlayerControllerComponent::TickComponent(float DeltaTime, ELevelTick T
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
-//void SetRenderCustomDepth(AActor* Actor, bool RenderCustomDepth);
+void SetRenderCustomDepth(AActor* Actor, bool RenderCustomDepth) {
+	TArray<UMeshComponent*> MeshComponentList;
+	Actor->GetComponents<UMeshComponent>(MeshComponentList);
+
+	for (UMeshComponent* MeshComponent : MeshComponentList) {
+		MeshComponent->SetRenderCustomDepth(RenderCustomDepth);
+	}
+}
 
 bool UMainPlayerControllerComponent::CanPlaceObjectToWorld(const ASandboxObject* Obj) const {
 	const AMiningTool* MiningTool = Cast<AMiningTool>(Obj);
@@ -52,30 +59,44 @@ void UMainPlayerControllerComponent::OnPlayerTick() {
 		return;
 	}
 
+	bool bRepeatingAction = false;
+
+	if (bAltActionPressed) {
+		double T = FPlatformTime::Seconds();
+		double Delta = T - Timestamp;
+		if (Delta >= 0.25) {
+			Timestamp = T;
+			bRepeatingAction = true;
+		}
+	}
+
 	ASandboxObject* Obj = MainController->GetCurrentInventoryObject();
 	if (Obj) {
 		AMiningTool* MiningTool = Cast<AMiningTool>(Obj);
 		if (MiningTool) {
-			//if (bToolActive) {
-				FHitResult Hit = MainController->TracePlayerActionPoint();
-				if (Hit.bBlockingHit) {
-					if (MiningTool->OnTracePlayerActionPoint(Hit, BaseCharacter)) {
-						if (SelectedObject.ObjType == ESelectedObjectType::SandboxObject) {
-							//SetRenderCustomDepth(SelectedObj, false);
-							ResetSelectedObject();
-						}
-						return;
-					}
+			FHitResult Hit = MainController->TracePlayerActionPoint();
+			if (Hit.bBlockingHit) {
+				if (bRepeatingAction) {
+					MiningTool->OnAltAction(Hit, BaseCharacter);
 				}
-			//}
+
+				if (MiningTool->OnTracePlayerActionPoint(Hit, BaseCharacter)) {
+					if (SelectedObject.ObjType == ESelectedObjectType::SandboxObject) {
+						ResetSelectedObject();
+					}
+					return;
+				}
+			}
 		}
 	}
+
+	BaseCharacter->CursorToWorld->SetVisibility(false);
 
 	FHitResult Res = MainController->TracePlayerActionPoint();
 	bool bPlaceToWorld = CurrentActionType == ECurrentActionType::PlaceObjectToWorld || CurrentActionType == ECurrentActionType::PlaceCraftToWorld;
 	bool bIsValid = false;
 
-	DrawDebugPoint(GetWorld(), Res.Location, 5.f, FColor(255, 255, 255, 0), false, 1);
+	//DrawDebugPoint(GetWorld(), Res.Location, 5.f, FColor(255, 255, 255, 0), false, 1);
 
 	if (bPlaceToWorld && IsCursorPositionValid(Res)) {
 		ASandboxObject* BaseObj = nullptr;
@@ -129,8 +150,6 @@ void UMainPlayerControllerComponent::OnPlayerTick() {
 					}
 				}
 			}
-			
-
 		}
 	}
 
@@ -154,6 +173,10 @@ void UMainPlayerControllerComponent::PerformMainAction() {
 	ResetState();
 }
 
+void UMainPlayerControllerComponent::EndAltAction() {
+	bAltActionPressed = false;
+}
+
 void UMainPlayerControllerComponent::PerformAltAction() {
 	if (CurrentActionType == ECurrentActionType::PlaceObjectToWorld) {
 		PlaceCurrentObjectToWorld();
@@ -170,10 +193,8 @@ void UMainPlayerControllerComponent::PerformAltAction() {
 	if (Obj) {
 		AMiningTool* MiningTool = Cast<AMiningTool>(Obj);
 		if (MiningTool) {
-			//if (!bToolActive) {
-			//	bToolActive = true;
-			//	return;
-			//}
+			bAltActionPressed = true;
+			Timestamp = FPlatformTime::Seconds();
 
 			FHitResult Hit = MainController->TracePlayerActionPoint();
 			if (Hit.bBlockingHit) {
@@ -222,6 +243,10 @@ void UMainPlayerControllerComponent::SelectActionObject() {
 						}
 					}
 
+					if (SelectedObject.SandboxObj) {
+						SetRenderCustomDepth(SelectedObject.SandboxObj, false);
+					}
+
 					SelectedObject = NewSelectedObject;
 					NotSelected = false;
 				}
@@ -230,8 +255,12 @@ void UMainPlayerControllerComponent::SelectActionObject() {
 
 		ASandboxObject* Obj = Cast<ASandboxObject>(Hit.GetActor());
 		if (Obj) {
-			//if (Obj->CanTake(MainController->GetCharacter())) {
-				//SetRenderCustomDepth(Obj, true);
+			if (SelectedObject.SandboxObj) {
+				SetRenderCustomDepth(SelectedObject.SandboxObj, false);
+			}
+
+			if (Obj->CanTake(MainController->GetCharacter())) {
+				SetRenderCustomDepth(Obj, true);
 
 				FSelectedObject NewSelectedObject;
 				NewSelectedObject.SandboxObj = Obj;
@@ -248,21 +277,21 @@ void UMainPlayerControllerComponent::SelectActionObject() {
 				NotSelected = false;
 				//UE_LOG(LogTemp, Warning, TEXT("Obj: %s"), *Obj->GetName());
 				//UE_LOG(LogTemp, Warning, TEXT("Obj - %f %f %f"), Obj->GetActorRotation().Pitch, Obj->GetActorRotation().Yaw, Obj->GetActorRotation().Roll);
-			//}
+			}
 		} 
 	}
 
 
 	if (NotSelected) {
-		//if (SelectedObj) {
-		//	SetRenderCustomDepth(SelectedObj, false);
-		//}
-
 		ResetSelectedObject();
 	}
 }
 
 void UMainPlayerControllerComponent::ResetSelectedObject() {
+	if (SelectedObject.SandboxObj) {
+		SetRenderCustomDepth(SelectedObject.SandboxObj, false);
+	}
+
 	FSelectedObject NewSelectedObject;
 	NewSelectedObject.SandboxObj = nullptr;
 	NewSelectedObject.TerrainMesh = nullptr;
@@ -405,10 +434,7 @@ bool UMainPlayerControllerComponent::PlaceCraftedObjectToWorld() {
 }
 
 void UMainPlayerControllerComponent::ResetState() {
-	//if (SelectedObj) {
-		//SetRenderCustomDepth(SelectedObj, false);
-	//}
-
+	bAltActionPressed = false;
 	ResetSelectedObject();
 	CurrentActionType = ECurrentActionType::None;
 	CraftReceiptId = 0;
@@ -418,8 +444,6 @@ void UMainPlayerControllerComponent::ResetState() {
 	if (BaseCharacter) {
 		ResetCursorMesh(BaseCharacter);
 	}
-
-	//bToolActive = false;
 }
 
 void  UMainPlayerControllerComponent::SetActionType(ECurrentActionType ActionType) {
@@ -502,6 +526,8 @@ void UMainPlayerControllerComponent::TakeSelectedObjectToInventory() {
 }
 
 void UMainPlayerControllerComponent::MainInteraction() {
+	ResetState();
+
 	AMainPlayerController* MainController = (AMainPlayerController*)GetOwner();
 	if (MainController->HasOpenContainer()) {
 		MainController->CloseObjectWithContainer();
@@ -566,4 +592,36 @@ void UMainPlayerControllerComponent::OnSelectCurrentInventorySlot(int SlotId) {
 
 void UMainPlayerControllerComponent::OnInventoryItemMainAction(int32 SlotId) {
 
+}
+
+void UMainPlayerControllerComponent::OnWheelUp() {
+	AMainPlayerController* MainController = (AMainPlayerController*)GetOwner();
+	ASandboxObject* Obj = MainController->GetCurrentInventoryObject();
+	if (Obj) {
+		AMiningTool* MiningTool = Cast<AMiningTool>(Obj);
+		if (MiningTool) {
+			MiningTool->SwitchUp();
+
+			ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(MainController->GetCharacter());
+			if (BaseCharacter) {
+				BaseCharacter->CursorToWorld->SetVisibility(false);
+			}
+		}
+	}
+}
+
+void UMainPlayerControllerComponent::OnWheelDown() {
+	AMainPlayerController* MainController = (AMainPlayerController*)GetOwner();
+	ASandboxObject* Obj = MainController->GetCurrentInventoryObject();
+	if (Obj) {
+		AMiningTool* MiningTool = Cast<AMiningTool>(Obj);
+		if (MiningTool) {
+			MiningTool->SwitchDown();
+
+			ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(MainController->GetCharacter());
+			if (BaseCharacter) {
+				BaseCharacter->CursorToWorld->SetVisibility(false);
+			}
+		}
+	}
 }

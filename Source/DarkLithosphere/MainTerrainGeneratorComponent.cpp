@@ -428,6 +428,8 @@ FSandboxFoliage UMainTerrainGeneratorComponent::FoliageExt(const int32 FoliageTy
 		if (!Biome.IsForest()) {
 			Foliage.Probability /= 5;
 			return Foliage;
+		} else {
+			Foliage.Probability *= 3;
 		}
 
 	}
@@ -538,7 +540,7 @@ void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxel
 	}
 
 	// green crystals
-	if (ZoneIndex.Z <= -8) {
+	if (ZoneIndex.Z <= -8 && ZoneIndex.Z > -20) {
 		FVector Pos(0);
 		FVector Normal(0);
 		if (SelectRandomSpawnPoint(Rnd, ZoneIndex, Vd, Pos, Normal)) {

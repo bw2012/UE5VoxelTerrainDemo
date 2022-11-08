@@ -133,7 +133,7 @@ void UTerrainClientComponent::HandleRcvData(FArrayReader& Data) {
 		//Data << Strength;
 
 		AsyncTask(ENamedThreads::GameThread, [=] {
-			GetTerrainController()->DigTerrainRoundHole(Origin, 80, 5);
+			GetTerrainController()->DigTerrainRoundHole(Origin, 80);
 		});
 	}
 

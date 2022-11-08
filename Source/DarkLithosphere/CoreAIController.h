@@ -59,6 +59,18 @@ class DARKLITHOSPHERE_API UBTTask_SelectZombieWalkTarget : public UBTTask_Blackb
 
 };
 
+UCLASS(config = Game)
+class DARKLITHOSPHERE_API UBTTask_SelectGhostTarget : public UBTTask_BlackboardBase {
+	GENERATED_UCLASS_BODY()
+
+	UPROPERTY(config, Category = Node, EditAnywhere, meta = (ClampMin = "0.0", UIMin = "0.0"))
+	float FindingRadius;
+
+	UPROPERTY(config, Category = Node, EditAnywhere, meta = (ClampMin = "0.0", UIMin = "0.0"))
+	float NightFloatingRadius;
+
+	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+};
 
 
 /**
