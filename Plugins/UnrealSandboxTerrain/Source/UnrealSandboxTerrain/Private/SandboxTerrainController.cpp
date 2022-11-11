@@ -363,6 +363,8 @@ void ASandboxTerrainController::ZoneSoftUnload(UTerrainZoneComponent* ZoneCompon
 // begin play
 //======================================================================================================================================================================
 
+bool LoadDataFromKvFile(TKvFile& KvFile, const TVoxelIndex& Index, std::function<void(TValueDataPtr)> Function);
+
 void ASandboxTerrainController::BeginPlayServer() {
 	if (!OpenFile()) {
 		return;
@@ -385,6 +387,33 @@ void ASandboxTerrainController::BeginPlayServer() {
 		TerrainServerComponent->RegisterComponent();
 		TerrainServerComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
 	}
+
+	// debug
+	/*
+	TVoxelIndex TestIndex(2, 0, 0);
+	FVector TestZonePos = GetZonePos(TestIndex);
+	DrawDebugBox(GetWorld(), TestZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(0, 0, 255, 100), true);
+	bool bIsLoaded = LoadDataFromKvFile(TdFile, TestIndex, [&](TValueDataPtr DataPtr) {
+		UE_LOG(LogTemp, Warning, TEXT("TEST LOAD -> %d %d %d"), TestIndex.X, TestIndex.Y, TestIndex.Z);
+		usbt::TFastUnsafeDeserializer Deserializer(DataPtr->data());
+		TKvFileZodeData ZoneHeader;
+		Deserializer >> ZoneHeader;
+
+		UE_LOG(LogTemp, Warning, TEXT("TEST -> LenVd=%d LenMd=%d LenObj=%d"), ZoneHeader.LenVd, ZoneHeader.LenMd, ZoneHeader.LenObj);
+
+		if (ZoneHeader.Is(TZoneFlag::NoVoxelData)) {
+			UE_LOG(LogTemp, Warning, TEXT("NoVoxelData"));
+		}
+
+		if (ZoneHeader.Is(TZoneFlag::NoMesh)) {
+			UE_LOG(LogTemp, Warning, TEXT("NoMesh"));
+		}
+
+		TZoneModificationData& Data = ModifiedVdMap.FindOrAdd(TestIndex);
+		UE_LOG(LogTemp, Warning, TEXT("Zone: %d %d %d -> ChangeCounter = %d"), TestIndex.X, TestIndex.Y, TestIndex.Z, Data.ChangeCounter);
+
+	});
+	*/
 }
 
 void ASandboxTerrainController::BeginClientTerrainLoad(const TVoxelIndex& ZoneIndex, const TSet<TVoxelIndex>& Ignore) {

@@ -219,7 +219,7 @@ typedef struct TChunkIndex {
 } TChunkIndex;
 
 enum class TZoneFlag : int {
-	Generated = 0,
+	Generated = 0, // Not used?
 	NoMesh = 1,
 	NoVoxelData = 2,
 };

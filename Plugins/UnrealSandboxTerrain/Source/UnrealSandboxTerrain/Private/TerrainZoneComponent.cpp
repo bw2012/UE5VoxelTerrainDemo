@@ -175,6 +175,7 @@ void SetCollisionGrass(UTerrainInstancedStaticMesh* InstancedStaticMeshComponent
 	InstancedStaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	//InstancedStaticMeshComponent->SetCollisionProfileName(TEXT("OverlapAll"));
 	
+	/*
 	InstancedStaticMeshComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	InstancedStaticMeshComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Overlap);
 	InstancedStaticMeshComponent->SetCollisionResponseToChannel(ECollisionChannel::ECC_WorldStatic, ECollisionResponse::ECR_Ignore);
@@ -186,9 +187,9 @@ void SetCollisionGrass(UTerrainInstancedStaticMesh* InstancedStaticMeshComponent
 
 	InstancedStaticMeshComponent->CanCharacterStepUpOn = ECanBeCharacterBase::ECB_No;
 	InstancedStaticMeshComponent->SetGenerateOverlapEvents(false);
-	
+	*/
 
-	//InstancedStaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision); // workaround bad UE5 performance
+	InstancedStaticMeshComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision); // workaround bad UE5 performance
 	InstancedStaticMeshComponent->SetCastShadow(false);
 }
 

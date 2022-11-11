@@ -458,9 +458,25 @@ void ASandboxTerrainController::PerformTerrainChange(H Handler) {
 	}
 
 	// UE5 bad collision performance workaround
+	PerformEachZone(Handler.Origin, Handler.Extend, [&](TVoxelIndex ZoneIndex, FVector Origin, TVoxelDataInfoPtr VoxelDataInfo) {
+		UTerrainZoneComponent* Zone = GetZoneByVectorIndex(ZoneIndex);
+		if (Zone) {
+			TArray<USceneComponent*> Childs;
+			Zone->GetChildrenComponents(true, Childs);
+			for (USceneComponent* Child : Childs) {
+				UHierarchicalInstancedStaticMeshComponent* InstancedMesh = Cast<UHierarchicalInstancedStaticMeshComponent>(Child);
+				if (InstancedMesh && !InstancedMesh->IsCollisionEnabled()) {
+					TArray<int32> Instances = InstancedMesh->GetInstancesOverlappingSphere(Handler.Origin, Handler.Extend, true);
+					for (int32 Instance : Instances) {
+						InstancedMesh->RemoveInstance(Instance);
+					}
+				}
+			}
+		}
+	});
 }
 
-void ASandboxTerrainController::PerformEachZone(const FVector& Origin, const float Extend, std::function<void(TVoxelIndex, FVector, TVoxelDataInfoPtr)>) {
+void ASandboxTerrainController::PerformEachZone(const FVector& Origin, const float Extend, std::function<void(TVoxelIndex, FVector, TVoxelDataInfoPtr)> Function) {
 	static const float V[3] = { -1, 0, 1 };
 	TVoxelIndex BaseZoneIndex = GetZoneIndex(Origin);
 
@@ -478,15 +494,7 @@ void ASandboxTerrainController::PerformEachZone(const FVector& Origin, const flo
 				FVector Lower(ZoneOrigin.X - ZoneVolumeSize, ZoneOrigin.Y - ZoneVolumeSize, ZoneOrigin.Z - ZoneVolumeSize);
 
 				if (FMath::SphereAABBIntersection(FSphere(Origin, Extend * 2.f), FBox(Lower, Upper))) {
-
-					/*
-					//UE_LOG(LogSandboxTerrain, Log, TEXT("VoxelDataInfo->DataState = %d, Index = %d %d %d"), VoxelDataInfo->DataState, ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
-					if (VoxelDataInfo->DataState == TVoxelDataState::UNDEFINED) {
-						UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> Invalid zone vd state (UNDEFINED)"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
-						bIsValid = false;
-						break;
-					}
-					*/
+					Function(ZoneIndex, ZoneOrigin, GetVoxelDataInfo(ZoneIndex));
 				}
 			}
 		}
@@ -508,12 +516,10 @@ void ASandboxTerrainController::PerformZoneEditHandler(TVoxelDataInfoPtr VdInfoP
 
 void ASandboxTerrainController::IncrementChangeCounter(const TVoxelIndex& ZoneIndex) {
 	// TODO client rcv sync
-
 	const std::lock_guard<std::mutex> Lock(ModifiedVdMapMutex);
 	TZoneModificationData& Data = ModifiedVdMap.FindOrAdd(ZoneIndex);
 	Data.ChangeCounter++;
-
-	UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> ChangeCounter = %d"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z, Data.ChangeCounter);
+	//UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> ChangeCounter = %d"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z, Data.ChangeCounter);
 }
 
 TMap<TVoxelIndex, TZoneModificationData> ModifiedVdMap;
@@ -528,108 +534,77 @@ void ASandboxTerrainController::EditTerrain(const H& ZoneHandler) {
 
 	bool bIsValid = true;
 
-	static const float V[3] = { -1, 0, 1 };
-	for (float x : V) {
-		for (float y : V) {
-			for (float z : V) {
-				TVoxelIndex ZoneIndex = BaseZoneIndex + TVoxelIndex(x, y, z);
-				UTerrainZoneComponent* Zone = GetZoneByVectorIndex(ZoneIndex);
-				TVoxelDataInfoPtr VoxelDataInfo = GetVoxelDataInfo(ZoneIndex);
-
-				// check zone bounds
-				FVector ZoneOrigin = GetZonePos(ZoneIndex);
-				FVector Upper(ZoneOrigin.X + ZoneVolumeSize, ZoneOrigin.Y + ZoneVolumeSize, ZoneOrigin.Z + ZoneVolumeSize);
-				FVector Lower(ZoneOrigin.X - ZoneVolumeSize, ZoneOrigin.Y - ZoneVolumeSize, ZoneOrigin.Z - ZoneVolumeSize);
-
-				if (FMath::SphereAABBIntersection(FSphere(ZoneHandler.Origin, ZoneHandler.Extend * 2.f), FBox(Lower, Upper))) {
-					//UE_LOG(LogSandboxTerrain, Log, TEXT("VoxelDataInfo->DataState = %d, Index = %d %d %d"), VoxelDataInfo->DataState, ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
-					if (VoxelDataInfo->DataState == TVoxelDataState::UNDEFINED) {
-						UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> Invalid zone vd state (UNDEFINED)"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
-						bIsValid = false;
-						break;
-					}
-				}
-			}
+	PerformEachZone(ZoneHandler.Origin, ZoneHandler.Extend, [&](TVoxelIndex ZoneIndex, FVector Origin, TVoxelDataInfoPtr VoxelDataInfo) {
+		if (VoxelDataInfo->DataState == TVoxelDataState::UNDEFINED) {
+			UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> Invalid zone vd state (UNDEFINED)"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
+			bIsValid = false;
 		}
-	}
+	});
 
 	if (!bIsValid) {
 		return;
 	}
 
-	for (float x : V) {
-		for (float y : V) {
-			for (float z : V) {
-				TVoxelIndex ZoneIndex = BaseZoneIndex + TVoxelIndex(x, y, z);
-				UTerrainZoneComponent* Zone = GetZoneByVectorIndex(ZoneIndex);
-				TVoxelDataInfoPtr VoxelDataInfo = GetVoxelDataInfo(ZoneIndex);
+	PerformEachZone(ZoneHandler.Origin, ZoneHandler.Extend, [&](TVoxelIndex ZoneIndex, FVector Origin, TVoxelDataInfoPtr VoxelDataInfo) {
+		VoxelDataInfo->Lock();
+		UTerrainZoneComponent* Zone = GetZoneByVectorIndex(ZoneIndex);
+		//UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> %d"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z, (int)VoxelDataInfo->DataState);
 
-				// check zone bounds
-				FVector ZoneOrigin = GetZonePos(ZoneIndex);
-				FVector Upper(ZoneOrigin.X + ZoneVolumeSize, ZoneOrigin.Y + ZoneVolumeSize, ZoneOrigin.Z + ZoneVolumeSize);
-				FVector Lower(ZoneOrigin.X - ZoneVolumeSize, ZoneOrigin.Y - ZoneVolumeSize, ZoneOrigin.Z - ZoneVolumeSize);
+		if (VoxelDataInfo->DataState == TVoxelDataState::UNDEFINED) {
+			UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> UNDEFINED"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
+			VoxelDataInfo->Unlock();
+			return;
+		}
 
-				if (FMath::SphereAABBIntersection(FSphere(ZoneHandler.Origin, ZoneHandler.Extend * 2.f), FBox(Lower, Upper))) {
-					VoxelDataInfo->Lock();
-
-					//UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> %d"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z, (int)VoxelDataInfo->DataState);
-
-					if (VoxelDataInfo->DataState == TVoxelDataState::UNDEFINED) {
-						UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> UNDEFINED"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
-						VoxelDataInfo->Unlock();
-						continue;
-					}
-
-					if (VoxelDataInfo->DataState == TVoxelDataState::READY_TO_LOAD) {
-						TVoxelData* Vd = LoadVoxelDataByIndex(ZoneIndex);
-						if (Vd) {
-							VoxelDataInfo->Vd = Vd;
-							VoxelDataInfo->DataState = TVoxelDataState::LOADED;
-						} else {
-							VoxelDataInfo->DataState = TVoxelDataState::UNGENERATED;
-						}
-					}
-
-					if (VoxelDataInfo->DataState == TVoxelDataState::UNGENERATED) {
-						VoxelDataInfo->DataState = TVoxelDataState::GENERATION_IN_PROGRESS;
-
-						if (VoxelDataInfo->Vd == nullptr) {
-							UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> UNGENERATED"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
-
-							TVoxelData* NewVd = NewVoxelData();
-							NewVd->setOrigin(GetZonePos(ZoneIndex));
-							VoxelDataInfo->Vd = NewVd;
-						} else {
-							UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> UNGENERATED but Vd is not null"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
-						}
-
-						GetTerrainGenerator()->ForceGenerateZone(VoxelDataInfo->Vd, ZoneIndex);
-						VoxelDataInfo->DataState = TVoxelDataState::GENERATED;
-					}
-
-					if (VoxelDataInfo->DataState == TVoxelDataState::LOADED || VoxelDataInfo->DataState == TVoxelDataState::GENERATED) {
-						IncrementChangeCounter(ZoneIndex);
-						if (Zone == nullptr) {
-							PerformZoneEditHandler(VoxelDataInfo, ZoneHandler, [&](TMeshDataPtr MeshDataPtr) {
-								TerrainData->PutMeshDataToCache(ZoneIndex, MeshDataPtr);
-								ExecGameThreadAddZoneAndApplyMesh(ZoneIndex, MeshDataPtr);
-								TerrainData->AddSaveIndex(ZoneIndex);
-							});
-						} else {
-							PerformZoneEditHandler(VoxelDataInfo, ZoneHandler, [&](TMeshDataPtr MeshDataPtr) {
-								TerrainData->PutMeshDataToCache(ZoneIndex, MeshDataPtr);
-								ExecGameThreadZoneApplyMesh(Zone, MeshDataPtr);
-								TerrainData->AddSaveIndex(ZoneIndex);
-							});
-						}
-					}
-
-					TerrainData->AddSaveIndex(ZoneIndex);
-					VoxelDataInfo->Unlock();
-				}
+		if (VoxelDataInfo->DataState == TVoxelDataState::READY_TO_LOAD) {
+			TVoxelData* Vd = LoadVoxelDataByIndex(ZoneIndex);
+			if (Vd) {
+				VoxelDataInfo->Vd = Vd;
+				VoxelDataInfo->DataState = TVoxelDataState::LOADED;
+			} else {
+				VoxelDataInfo->DataState = TVoxelDataState::UNGENERATED;
 			}
 		}
-	}
+
+		if (VoxelDataInfo->DataState == TVoxelDataState::UNGENERATED) {
+			VoxelDataInfo->DataState = TVoxelDataState::GENERATION_IN_PROGRESS;
+
+			if (VoxelDataInfo->Vd == nullptr) {
+				UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> UNGENERATED"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
+
+				TVoxelData* NewVd = NewVoxelData();
+				NewVd->setOrigin(GetZonePos(ZoneIndex));
+				VoxelDataInfo->Vd = NewVd;
+			} else {
+				UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> UNGENERATED but Vd is not null"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
+			}
+
+			GetTerrainGenerator()->ForceGenerateZone(VoxelDataInfo->Vd, ZoneIndex);
+			VoxelDataInfo->DataState = TVoxelDataState::GENERATED;
+		}
+
+		if (VoxelDataInfo->DataState == TVoxelDataState::LOADED || VoxelDataInfo->DataState == TVoxelDataState::GENERATED) {
+			IncrementChangeCounter(ZoneIndex);
+			if (Zone == nullptr) {
+				PerformZoneEditHandler(VoxelDataInfo, ZoneHandler, [&](TMeshDataPtr MeshDataPtr) {
+					TerrainData->PutMeshDataToCache(ZoneIndex, MeshDataPtr);
+					ExecGameThreadAddZoneAndApplyMesh(ZoneIndex, MeshDataPtr);
+					TerrainData->AddSaveIndex(ZoneIndex);
+				});
+			} else {
+				PerformZoneEditHandler(VoxelDataInfo, ZoneHandler, [&](TMeshDataPtr MeshDataPtr) {
+					TerrainData->PutMeshDataToCache(ZoneIndex, MeshDataPtr);
+					ExecGameThreadZoneApplyMesh(Zone, MeshDataPtr);
+					TerrainData->AddSaveIndex(ZoneIndex);
+				});
+			}
+		}
+
+		TerrainData->AddSaveIndex(ZoneIndex);
+		VoxelDataInfo->Unlock();
+	});
+
+
 
 	double End = FPlatformTime::Seconds();
 	double Time = (End - Start) * 1000;

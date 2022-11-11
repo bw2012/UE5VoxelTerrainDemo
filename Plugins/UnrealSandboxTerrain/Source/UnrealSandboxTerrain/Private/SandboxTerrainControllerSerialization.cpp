@@ -516,6 +516,7 @@ void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgr
 
 					if (!VdInfoPtr->CanSave()) {
 						bool bIsLoaded = LoadDataFromKvFile(TdFile, Index, [&](TValueDataPtr DataPtr) {
+							// TODO refactor
 							UE_LOG(LogSandboxTerrain, Warning, TEXT("Only objects was changed. Load mesh and voxel data -> %d %d %d"), Index.X, Index.Y, Index.Z);
 							usbt::TFastUnsafeDeserializer Deserializer(DataPtr->data());
 							TKvFileZodeData ZoneHeader;
@@ -528,7 +529,7 @@ void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgr
 							DataVd = std::make_shared<TValueData>();
 							DataVd->resize(ZoneHeader.LenVd);
 							Deserializer.read(DataVd->data(), ZoneHeader.LenVd);
-							});
+						});
 					}
 				} else {
 					auto InstanceObjectMapPtr = VdInfoPtr->GetOrCreateInstanceObjectMap();
