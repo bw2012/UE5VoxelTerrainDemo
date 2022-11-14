@@ -367,6 +367,7 @@ bool LoadDataFromKvFile(TKvFile& KvFile, const TVoxelIndex& Index, std::function
 
 void ASandboxTerrainController::BeginPlayServer() {
 	if (!OpenFile()) {
+		// TODO error message
 		return;
 	}
 
@@ -540,15 +541,6 @@ std::list<TChunkIndex> ASandboxTerrainController::MakeChunkListByAreaSize(const 
 	return ReverseSpiralWalkthrough(AreaRadius);
 }
 
-//TODO: is it used?
-bool ASandboxTerrainController::IsVdExistsInFile(const TVoxelIndex& ZoneIndex) {
-	if (TdFile.isOpen()) {
-		return TdFile.isExist(ZoneIndex);
-	}
-
-	return false;
-}
-
 void ASandboxTerrainController::SpawnZone(const TVoxelIndex& Index, const TTerrainLodMask TerrainLodMask) {
 	//UE_LOG(LogSandboxTerrain, Log, TEXT("SpawnZone -> %d %d %d "), Index.X, Index.Y, Index.Z);
 
@@ -567,7 +559,9 @@ void ASandboxTerrainController::SpawnZone(const TVoxelIndex& Index, const TTerra
 	}
 
 	// if mesh data exist in file - load, apply and return
-	TMeshDataPtr MeshDataPtr = LoadMeshDataByIndex(Index);
+	TMeshDataPtr MeshDataPtr = nullptr;
+	TInstanceMeshTypeMap& ZoneInstanceObjectMap = *TerrainData->GetOrCreateInstanceObjectMap(Index);
+	LoadMeshAndObjectDataByIndex(Index, MeshDataPtr, ZoneInstanceObjectMap);
 	if (MeshDataPtr && VoxelDataInfoPtr->DataState != TVoxelDataState::GENERATED) {
 		if (bMeshExist) {
 			// just change lod mask
@@ -931,10 +925,12 @@ void ASandboxTerrainController::OnLoadZone(const TVoxelIndex& Index, UTerrainZon
 	TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(Index);
 	VdInfoPtr->Lock();
 	if (FoliageDataAsset) {
-		LoadFoliage(Zone);
+		TInstanceMeshTypeMap& ZoneInstanceObjectMap = *TerrainData->GetOrCreateInstanceObjectMap(Index);
+		Zone->SpawnAll(ZoneInstanceObjectMap);
 	}
 
 	OnFinishLoadZone(Index);
+	VdInfoPtr->ClearInstanceObjectMap();
 	Zone->bIsSpawnFinished = true;
 	VdInfoPtr->Unlock();
 }
@@ -995,16 +991,6 @@ float ASandboxTerrainController::NormalizedPerlinNoise(const FVector& Pos, const
 }
 
 //======================================================================================================================================================================
-// Sandbox Foliage
-//======================================================================================================================================================================
-
-void ASandboxTerrainController::LoadFoliage(UTerrainZoneComponent* Zone) {
-	TInstanceMeshTypeMap ZoneInstanceMeshMap;
-	LoadObjectDataByIndex(Zone, ZoneInstanceMeshMap);
-	Zone->SpawnAll(ZoneInstanceMeshMap);
-}
-
-//======================================================================================================================================================================
 // generate mesh
 //======================================================================================================================================================================
 
@@ -1047,13 +1033,12 @@ std::shared_ptr<TMeshData> ASandboxTerrainController::GenerateMesh(TVoxelData* V
 }
 
 
-int ASandboxTerrainController::GetCollisionMeshSectionLodIndex() {
-	if (CollisionSection > 6)
+int ASandboxTerrainController::GetCollisionMeshSectionLodIndex() const {
+	if (CollisionSection > 6) {
 		return 6;
+	}
 
 	return CollisionSection;
-
-	//return 0; // nolod
 }
 
 const FSandboxFoliage& ASandboxTerrainController::GetFoliageById(uint32 FoliageId) const {

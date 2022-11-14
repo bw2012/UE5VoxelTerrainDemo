@@ -206,11 +206,15 @@ TValueDataPtr Decompress(TValueDataPtr CompressedDataPtr) {
 	return Result;
 }
 
-TMeshDataPtr ASandboxTerrainController::LoadMeshDataByIndex(const TVoxelIndex& Index) {
-	double Start = FPlatformTime::Seconds();
-	TMeshDataPtr MeshDataPtr = nullptr;
+//======================================================================================================================================================================
+// 
+//======================================================================================================================================================================
 
-	bool bIsLoaded = LoadDataFromKvFile(TdFile, Index, [&](TValueDataPtr DataPtr) {
+bool ASandboxTerrainController::LoadMeshAndObjectDataByIndex(const TVoxelIndex& Index, TMeshDataPtr& MeshData, TInstanceMeshTypeMap& ZoneInstMeshMap) const {
+	double Start = FPlatformTime::Seconds();
+
+	TValueDataPtr DataPtr = LoadDataFromKvFile2(TdFile, Index);
+	if (DataPtr) {
 		usbt::TFastUnsafeDeserializer Deserializer(DataPtr->data());
 		TKvFileZodeData ZoneHeader;
 		Deserializer >> ZoneHeader;
@@ -220,42 +224,8 @@ TMeshDataPtr ASandboxTerrainController::LoadMeshDataByIndex(const TVoxelIndex& I
 			CompressedMdPtr->resize(ZoneHeader.LenMd);
 			Deserializer.read(CompressedMdPtr->data(), ZoneHeader.LenMd);
 			auto DecompressedDataPtr = Decompress(CompressedMdPtr);
-			MeshDataPtr = DeserializeMeshDataFast(*DecompressedDataPtr, GetCollisionMeshSectionLodIndex());
-		} 
-	});
-
-	//bIsLoaded = LoadDataFromKvFile(MdFile, Index, [&](TValueDataPtr DataPtr) {
-		//auto DecompressedDataPtr = Decompress(DataPtr);
-		//MeshDataPtr = DeserializeMeshDataFast(*DecompressedDataPtr, GetCollisionMeshSectionLodIndex());
-	//});
-
-	double End = FPlatformTime::Seconds();
-	double Time = (End - Start) * 1000;
-
-	if (bIsLoaded) {
-		//UE_LOG(LogSandboxTerrain, Log, TEXT("loading mesh data block -> %d %d %d -> %f ms"), Index.X, Index.Y, Index.Z, Time);
-	}
-
-	return MeshDataPtr;
-}
-
-void ASandboxTerrainController::LoadObjectDataByIndex(UTerrainZoneComponent* Zone, TInstanceMeshTypeMap& ZoneInstMeshMap) {
-	double Start = FPlatformTime::Seconds();
-	TVoxelIndex Index = GetZoneIndex(Zone->GetComponentLocation());
-
-	bool bIsLoaded = LoadDataFromKvFile(TdFile, Index, [&](TValueDataPtr DataPtr) {
-
-		usbt::TFastUnsafeDeserializer Deserializer(DataPtr->data());
-		TKvFileZodeData ZoneHeader;
-		Deserializer >> ZoneHeader;
-
-		auto CompressedMdPtr = std::make_shared<TValueData>();
-		CompressedMdPtr->resize(ZoneHeader.LenMd);
-		Deserializer.read(CompressedMdPtr->data(), ZoneHeader.LenMd);
-
-		auto VdPtr = std::make_shared<TValueData>();
-		VdPtr->resize(ZoneHeader.LenVd);
-		Deserializer.read(VdPtr->data(), ZoneHeader.LenVd);
+			MeshData = DeserializeMeshDataFast(*DecompressedDataPtr, GetCollisionMeshSectionLodIndex());
+		}
 
 		if (ZoneHeader.LenObj > 0) {
 			auto ObjDataPtr = std::make_shared<TValueData>();
@@ -263,14 +233,9 @@ void ASandboxTerrainController::LoadObjectDataByIndex(UTerrainZoneComponent* Zon
 			Deserializer.read(ObjDataPtr->data(), ZoneHeader.LenObj);
 			DeserializeInstancedMeshes(*ObjDataPtr, ZoneInstMeshMap);
 		}
-	});
-
-	double End = FPlatformTime::Seconds();
-	double Time = (End - Start) * 1000;
-
-	if (bIsLoaded) {
-		//UE_LOG(LogSandboxTerrain, Log, TEXT("loading inst-objects data block -> %d %d %d -> %f ms"), Index.X, Index.Y, Index.Z, Time);
 	}
+
+	return true;
 }
 
 //======================================================================================================================================================================
@@ -284,30 +249,17 @@ TVoxelData* ASandboxTerrainController::LoadVoxelDataByIndex(const TVoxelIndex& I
 	TVoxelData* Vd = NewVoxelData();
 	Vd->setOrigin(GetZonePos(Index));
 
-	TValueDataPtr DataPtr = LoadDataFromKvFile2(TdFile, Index);
+	TValueDataPtr DataPtr = LoadDataFromKvFile2(VdFile, Index);
 	if (DataPtr) {
-		usbt::TFastUnsafeDeserializer Deserializer(DataPtr->data());
-		TKvFileZodeData ZoneHeader;
-		Deserializer >> ZoneHeader;
-
-		auto CompressedMdPtr = std::make_shared<TValueData>();
-		CompressedMdPtr->resize(ZoneHeader.LenMd);
-		Deserializer.read(CompressedMdPtr->data(), ZoneHeader.LenMd);
-
-		if (ZoneHeader.LenVd > 0) {
-			auto VdPtr = std::make_shared<TValueData>();
-			VdPtr->resize(ZoneHeader.LenVd);
-			Deserializer.read(VdPtr->data(), ZoneHeader.LenVd);
-			DeserializeVd(VdPtr, Vd);
-		} else {
-			UE_LOG(LogSandboxTerrain, Warning, TEXT("no vd"));
-			return nullptr;
-		}
+		DeserializeVd(DataPtr, Vd);
+	} else {
+		UE_LOG(LogSandboxTerrain, Warning, TEXT("LoadVoxelDataByIndex error: no vd found in file"));
+		return nullptr;
 	}
 
 	double End = FPlatformTime::Seconds();
 	double Time = (End - Start) * 1000;
-	UE_LOG(LogSandboxTerrain, Log, TEXT("loading voxel data block -> %d %d %d -> %f ms"), Index.X, Index.Y, Index.Z, Time);
+	UE_LOG(LogSandboxTerrain, Log, TEXT("Loading voxel data block -> %d %d %d -> %f ms"), Index.X, Index.Y, Index.Z, Time);
 	return Vd;
 }
 
@@ -385,8 +337,8 @@ bool ASandboxTerrainController::OpenFile() {
 	// open vd file 	
 	FString FileNameTd = TEXT("terrain.dat");
 	FString FileNameVd = TEXT("terrain_voxeldata.dat");
-	FString FileNameMd = TEXT("terrain_mesh.dat");
-	FString FileNameObj = TEXT("terrain_objects.dat");
+	//FString FileNameMd = TEXT("terrain_mesh.dat");
+	//FString FileNameObj = TEXT("terrain_objects.dat");
 
 
 	FString SaveDir = GetSaveDir();
@@ -400,22 +352,25 @@ bool ASandboxTerrainController::OpenFile() {
 		return false;
 	}
 
+	if (!OpenKvFile(VdFile, FileNameVd, SaveDir)) {
+		return false;
+	}
+
 	return true;
 }
 
 void ASandboxTerrainController::CloseFile() {
 	TdFile.close();
+	VdFile.close();
 }
 
 //======================================================================================================================================================================
 // save
 //======================================================================================================================================================================
 
-uint32 SaveZoneToFile(TKvFile& File, const TVoxelIndex& Index, const TValueDataPtr DataVd, const TValueDataPtr DataMd, const TValueDataPtr DataObj) {
+uint32 SaveZoneToFile(TKvFile& TerrainDataFile, TKvFile& VoxelDataFile, const TVoxelIndex& Index, const TValueDataPtr DataVd, const TValueDataPtr DataMd, const TValueDataPtr DataObj) {
 	TKvFileZodeData ZoneHeader;
-	if (DataVd) {
-		ZoneHeader.LenVd = DataVd->size();
-	} else {
+	if (!DataVd) {
 		ZoneHeader.SetFlag((int)TZoneFlag::NoVoxelData);
 	}
 
@@ -436,10 +391,6 @@ uint32 SaveZoneToFile(TKvFile& File, const TVoxelIndex& Index, const TValueDataP
 		ZoneSerializer.write(DataMd->data(), DataMd->size());
 	}
 
-	if (DataVd) {
-		ZoneSerializer.write(DataVd->data(), DataVd->size());
-	}
-
 	if (DataObj) {
 		ZoneSerializer.write(DataObj->data(), DataObj->size());
 	}
@@ -453,11 +404,16 @@ uint32 SaveZoneToFile(TKvFile& File, const TVoxelIndex& Index, const TValueDataP
 	uint32 CRC = 0;
 #endif
 
-	File.save(Index, *DataPtr);
+	TerrainDataFile.save(Index, *DataPtr);
+
+	if (DataVd) {
+		VoxelDataFile.save(Index, *DataVd);
+	}
+
 	return CRC;
 }
 
-
+// TODO finish. use it in level generator 
 void ASandboxTerrainController::ForceSave(const TVoxelIndex& ZoneIndex, TVoxelData* Vd, TMeshDataPtr MeshDataPtr, const TInstanceMeshTypeMap& InstanceObjectMap) {
 	TValueDataPtr DataVd = nullptr;
 	TValueDataPtr DataMd = nullptr;
@@ -475,13 +431,14 @@ void ASandboxTerrainController::ForceSave(const TVoxelIndex& ZoneIndex, TVoxelDa
 		DataObj = UTerrainZoneComponent::SerializeInstancedMesh(InstanceObjectMap);
 	}
 
-	SaveZoneToFile(TdFile, ZoneIndex, DataVd, DataMd, DataObj);
+	//SaveZoneToFile(TdFile, ZoneIndex, DataVd, DataMd, DataObj);
 }
 
 void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgress, std::function<void(uint32)> OnFinish) {
 	const std::lock_guard<std::mutex> lock(SaveMutex);
 
-	if (!TdFile.isOpen()) {
+	if (!TdFile.isOpen() || !VdFile.isOpen()) {
+		// TODO error message
 		return;
 	}
 
@@ -525,10 +482,6 @@ void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgr
 							DataMd = std::make_shared<TValueData>();
 							DataMd->resize(ZoneHeader.LenMd);
 							Deserializer.read(DataMd->data(), ZoneHeader.LenMd);
-
-							DataVd = std::make_shared<TValueData>();
-							DataVd->resize(ZoneHeader.LenVd);
-							Deserializer.read(DataVd->data(), ZoneHeader.LenVd);
 						});
 					}
 				} else {
@@ -539,7 +492,7 @@ void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgr
 				}
 			}
 
-			uint32 CRC = SaveZoneToFile(TdFile, Index, DataVd, DataMd, DataObj);
+			uint32 CRC = SaveZoneToFile(TdFile, VdFile, Index, DataVd, DataMd, DataObj);
 
 			SavedCount++;
 			VdInfoPtr->ResetLastSave();
@@ -693,7 +646,7 @@ void ASandboxTerrainController::LoadTerrainMetadata() {
 // inst. meshes
 //======================================================================================================================================================================
 
-void ASandboxTerrainController::DeserializeInstancedMeshes(std::vector<uint8>& Data, TInstanceMeshTypeMap& ZoneInstMeshMap) {
+void ASandboxTerrainController::DeserializeInstancedMeshes(std::vector<uint8>& Data, TInstanceMeshTypeMap& ZoneInstMeshMap) const {
 	usbt::TFastUnsafeDeserializer Deserializer(Data.data());
 
 	int32 MeshCount;

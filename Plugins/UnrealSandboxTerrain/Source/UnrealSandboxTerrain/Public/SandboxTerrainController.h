@@ -227,7 +227,7 @@ enum class TZoneFlag : int {
 typedef struct TKvFileZodeData {
 	uint32 Flags = 0x0;
 	uint32 LenMd = 0;
-	uint32 LenVd = 0;
+	//uint32 LenVd = 0;
 	uint32 LenObj = 0;
 
 	bool Is(TZoneFlag Flag) {
@@ -526,7 +526,7 @@ private:
 
 	void DeserializeVd(TValueDataPtr Data, TVoxelData* Vd) const;
 
-	void DeserializeInstancedMeshes(std::vector<uint8>& Data, TInstanceMeshTypeMap& ZoneInstMeshMap);
+	void DeserializeInstancedMeshes(std::vector<uint8>& Data, TInstanceMeshTypeMap& ZoneInstMeshMap) const;
 
 	//===============================================================================
 	// async tasks
@@ -558,7 +558,9 @@ private:
         
     TTerrainData* TerrainData;
 
-	TKvFile TdFile;
+	mutable TKvFile TdFile;
+
+	TKvFile VdFile;
 
 	std::shared_ptr<TVoxelDataInfo> GetVoxelDataInfo(const TVoxelIndex& Index);
 
@@ -568,9 +570,7 @@ private:
 	// mesh data storage
 	//===============================================================================
 
-	TMeshDataPtr LoadMeshDataByIndex(const TVoxelIndex& Index);
-
-	void LoadObjectDataByIndex(UTerrainZoneComponent* Zone, TInstanceMeshTypeMap& ZoneInstMeshMap);
+	bool LoadMeshAndObjectDataByIndex(const TVoxelIndex& Index, TMeshDataPtr& MeshData, TInstanceMeshTypeMap& ZoneInstMeshMap) const;
 
 	//===============================================================================
 	// inst. meshes
@@ -583,8 +583,6 @@ private:
 	//===============================================================================
 
 	TMap<uint32, FSandboxFoliage> FoliageMap;
-
-	void LoadFoliage(UTerrainZoneComponent* Zone);
 
 	void SpawnFoliage(int32 FoliageTypeId, FSandboxFoliage& FoliageType, FVector& v, FRandomStream& rnd, UTerrainZoneComponent* Zone);
 
@@ -604,7 +602,7 @@ private:
 	// collision
 	//===============================================================================
 
-	int GetCollisionMeshSectionLodIndex();
+	int GetCollisionMeshSectionLodIndex() const;
 
 	//===============================================================================
 	// 
@@ -695,8 +693,6 @@ protected:
 	//===============================================================================
 	// voxel data storage
 	//===============================================================================
-
-	bool IsVdExistsInFile(const TVoxelIndex& ZoneIndex);
 
 	std::shared_ptr<TMeshData> GenerateMesh(TVoxelData* Vd);
 

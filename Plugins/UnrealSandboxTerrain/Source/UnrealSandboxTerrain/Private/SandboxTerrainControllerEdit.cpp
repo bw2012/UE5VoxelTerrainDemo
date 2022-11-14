@@ -562,6 +562,7 @@ void ASandboxTerrainController::EditTerrain(const H& ZoneHandler) {
 				VoxelDataInfo->Vd = Vd;
 				VoxelDataInfo->DataState = TVoxelDataState::LOADED;
 			} else {
+				// TODO check ungenerated flags
 				VoxelDataInfo->DataState = TVoxelDataState::UNGENERATED;
 			}
 		}
