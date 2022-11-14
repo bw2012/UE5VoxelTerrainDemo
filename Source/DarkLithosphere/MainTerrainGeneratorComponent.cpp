@@ -229,12 +229,9 @@ float UMainTerrainGeneratorComponent::FunctionMakeCaveLayer(float Density, const
 
 	static const float scale0 = 0.005f; // small
 	static const float scale1 = 0.001f; // small
-	static const float scale2 = 0.0003f; // big
 
 	const FVector v0(WorldPos.X * scale0, WorldPos.Y * scale0, WorldPos.Z * 0.0002); // Stalactite
-	const FVector v1(WorldPos.X * scale1, WorldPos.Y * scale1, WorldPos.Z * scale1); // just noise
 	const float Noise0 = PerlinNoise(v0);
-	const float Noise1 = PerlinNoise(v1);
 
 	// cave height
 	static const float scale3 = 0.001f;
@@ -261,8 +258,7 @@ float UMainTerrainGeneratorComponent::FunctionMakeCaveLayer(float Density, const
 
 	if (WorldPos.Z < -(BaseCaveLevel - 1200) && WorldPos.Z > -(BaseCaveLevel + 1200)) {
 		const float CaveLayerN = 1 - CaveLayer;
-		//Density1 = CaveLayer + CaveLayerN * Noise0 * 0.2 + Noise1 * 0.5 / 3;
-		Density1 = CaveLayer + CaveLayerN * Noise0 * 0.1;
+		Density1 = CaveLayer + CaveLayerN * Noise0 * 0.05;
 	}
 
 	if (Density1 < 0) {
@@ -299,11 +295,6 @@ float UMainTerrainGeneratorComponent::FunctionMakeCaveLayer(float Density, const
 		Density2 = 1;
 	}
 
-
-	//float ttt = 1 - exp(-pow((WorldPos.X + 0), 2) / 1000000);
-	//float ttt2 = 1 - exp(-pow((WorldPos.Y + 0), 2) / 1000000);
-	//float ttt3 = ttt2 + ttt + CaveLayer;
-
 	float ttt3 = Density1 + Density2;
 
 	if (ttt3 < 0) {
@@ -315,14 +306,6 @@ float UMainTerrainGeneratorComponent::FunctionMakeCaveLayer(float Density, const
 	}
 
 	return ttt3;
-
-	/*
-	if (noise_big > -test && noise_big < test) {
-		
-	} else {
-
-	}
-	*/
 }
 
 float UMainTerrainGeneratorComponent::DensityFunctionExt(float Density, const TVoxelIndex& ZoneIndex, const FVector& WorldPos, const FVector& LocalPos) const {
