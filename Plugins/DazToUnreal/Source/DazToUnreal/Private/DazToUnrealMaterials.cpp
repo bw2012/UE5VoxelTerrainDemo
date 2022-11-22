@@ -459,6 +459,8 @@ UMaterialInstanceConstant* FDazToUnrealMaterials::CreateMaterial(const FString C
 				}
 				if (MaterialProperty.Type == TEXT("Switch"))
 				{
+					// UE 5.1 compilation errors
+					/*
 					FStaticParameterSet StaticParameters;
 					UnrealMaterialConstant->GetStaticParameterValues(StaticParameters);
 
@@ -476,6 +478,7 @@ UMaterialInstanceConstant* FDazToUnrealMaterials::CreateMaterial(const FString C
 						}
 					}
 					UnrealMaterialConstant->UpdateStaticPermutation(StaticParameters);
+					*/
 				}
 			}
 		}

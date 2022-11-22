@@ -11,6 +11,6 @@ public class DarkLithosphere : ModuleRules
 
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", 
 															"HeadMountedDisplay", "UnrealSandboxToolkit", "UnrealSandboxTerrain", 
-															"Json", "JsonUtilities", "AIModule", "UMG", "ALSV4_CPP", "NavigationSystem", "GameplayTasks" });
+															"Json", "JsonUtilities", "AIModule", "UMG", "ALSV4_CPP", "NavigationSystem", "GameplayTasks", "HTTP" });
 	}
 }

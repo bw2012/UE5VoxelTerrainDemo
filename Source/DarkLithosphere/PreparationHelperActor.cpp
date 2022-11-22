@@ -1,11 +1,11 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "PreparationHelperActor.h"
+#include "HttpModule.h"
+#include "Interfaces/IHttpRequest.h"
+#include "Interfaces/IHttpResponse.h"
 
-// Sets default values
-APreparationHelperActor::APreparationHelperActor()
-{
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+
+APreparationHelperActor::APreparationHelperActor() {
 	PrimaryActorTick.bCanEverTick = true;
 
 }
@@ -25,7 +25,8 @@ bool CheckSaveDirLocal(FString SaveDir) {
 	return true;
 }
 
-// Called when the game starts or when spawned
+FString GetVersionString();
+
 void APreparationHelperActor::BeginPlay()
 {
 	Super::BeginPlay();
@@ -43,11 +44,36 @@ void APreparationHelperActor::BeginPlay()
 	if (!CheckSaveDirLocal(SaveDirWorld0)) {
 		// log error
 	}
+
+
+	FString Url = TEXT("http://192.168.1.109:8080/api/v1/lastversion?v=") + GetVersionString();
+	FHttpModule& HttpModule = FHttpModule::Get();
+	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> RestRequest = HttpModule.CreateRequest();
+	RestRequest->SetVerb(TEXT("GET"));
+	//pRequest->SetHeader(TEXT("Content-Type"), TEXT("application/x-www-form-urlencoded"));
+	//FString RequestContent = TEXT("identity=") + NewUser + TEXT("&password=") + NewPassword + TEXT("&query=") + uriQuery;
+	//pRequest->SetContentAsString(RequestContent);
+
+	RestRequest->SetURL(Url);
+	RestRequest->OnProcessRequestComplete().BindLambda(
+		[&](FHttpRequestPtr Request, FHttpResponsePtr Response, bool connectedSuccessfully) mutable {
+				if (connectedSuccessfully) {
+					FString ResponseString = Response->GetContentAsString();
+					UE_LOG(LogTemp, Warning, TEXT("%s"), *ResponseString);
+				} else {
+					switch (Request->GetStatus()) {
+					case EHttpRequestStatus::Failed_ConnectionError:
+						UE_LOG(LogTemp, Error, TEXT("Connection failed."));
+					default:
+						UE_LOG(LogTemp, Error, TEXT("Request failed."));
+					}
+				}
+		});
+
+	RestRequest->ProcessRequest();
 }
 
-// Called every frame
-void APreparationHelperActor::Tick(float DeltaTime)
-{
+void APreparationHelperActor::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
 }

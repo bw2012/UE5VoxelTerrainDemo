@@ -26,3 +26,7 @@ void FDarkLithosphereGameModule::StartupModule() {
 void FDarkLithosphereGameModule::ShutdownModule() {
 
 }
+
+FString GetVersionString() {
+	return TEXT("v0.0.32-alpha-L");
+}

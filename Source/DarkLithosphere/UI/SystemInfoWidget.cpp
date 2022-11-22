@@ -3,8 +3,10 @@
 #include "SystemInfoWidget.h"
 #include "../TerrainController.h"
 
+FString GetVersionString();
+
 FString USystemInfoWidget::SandboxVersionInfoText() {
-	return TEXT("v0.0.31-alpha-L");
+	return GetVersionString();
 }
 
 
