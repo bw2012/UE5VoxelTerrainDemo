@@ -2,12 +2,14 @@
 
 #include "SystemInfoWidget.h"
 #include "../TerrainController.h"
-
-FString GetVersionString();
+#include "../Globals.h"
 
 FString USystemInfoWidget::SandboxVersionInfoText() {
 	return GetVersionString();
 }
 
+FString USystemInfoWidget::SandboxPlayerIdText() {
+	return GetSandboxPlayerId();
+}
 
 

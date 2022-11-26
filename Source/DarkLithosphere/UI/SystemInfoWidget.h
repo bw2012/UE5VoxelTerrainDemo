@@ -23,6 +23,9 @@ class DARKLITHOSPHERE_API USystemInfoWidget : public UUserWidget {
 protected:
 	UFUNCTION(BlueprintCallable, Category = "Sandbox System info")
 	FString SandboxVersionInfoText();
+
+	UFUNCTION(BlueprintCallable, Category = "Sandbox System info")
+	FString SandboxPlayerIdText();
 	
 private:
 

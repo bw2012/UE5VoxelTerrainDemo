@@ -4,8 +4,6 @@
 #include "Modules/ModuleManager.h"
 
 IMPLEMENT_PRIMARY_GAME_MODULE( FDarkLithosphereGameModule, DarkLithosphere, "DarkLithosphere" );
- 
-
 
 void FDarkLithosphereGameModule::StartupModule() {
 	UE_LOG(LogTemp, Warning, TEXT("FDarkLithosphereGameModule::StartupModule()"));
@@ -29,4 +27,14 @@ void FDarkLithosphereGameModule::ShutdownModule() {
 
 FString GetVersionString() {
 	return TEXT("v0.0.32-alpha-L");
+}
+
+FString GlobalSandboxPlayerId;
+
+FString GetSandboxPlayerId() {
+	return GlobalSandboxPlayerId;
+}
+
+void SetSandboxPlayerId(const FString& SandboxPlayerId) {
+	GlobalSandboxPlayerId = SandboxPlayerId;
 }
