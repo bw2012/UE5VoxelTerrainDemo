@@ -64,9 +64,9 @@ public:
 
 	ASandboxObject* GetSandboxObject(uint64 ClassId);
 
-	static ASandboxObject* ASandboxLevelController::GetDefaultSandboxObject(uint64 ClassId);
+	static ASandboxObject* GetDefaultSandboxObject(uint64 ClassId);
 
-	static ASandboxLevelController* ASandboxLevelController::GetInstance();
+	static ASandboxLevelController* GetInstance();
 
 	void PrepareMetaData();
 

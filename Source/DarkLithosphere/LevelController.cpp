@@ -234,7 +234,7 @@ void ALevelController::LoadLevelJsonExt(TSharedPtr<FJsonObject> JsonParsed) {
 			}
 
 			if (CharacterMap->CharacterTypeMap.Contains(TempCharacterInfo.TypeId)) {
-				TSubclassOf<ABaseCharacter> BaseCharacterSubclass = CharacterMap->CharacterTypeMap[TempCharacterInfo.TypeId];
+				TSubclassOf<ABaseCharacter> BaseCharacterSubclass = (TSubclassOf<ABaseCharacter>)CharacterMap->CharacterTypeMap[TempCharacterInfo.TypeId];
 				if (BaseCharacterSubclass) {
 					TempCharacterList.Add(TempCharacterInfo);
 				}
@@ -247,7 +247,7 @@ void ALevelController::LoadLevelJsonExt(TSharedPtr<FJsonObject> JsonParsed) {
 
 void ALevelController::SpawnTempCharacterList() {
 	for (const FTempCharacterLoadInfo& TempCharacterInfo : TempCharacterList) {
-		TSubclassOf<ABaseCharacter> BaseCharacterSubclass = CharacterMap->CharacterTypeMap[TempCharacterInfo.TypeId];
+		TSubclassOf<ABaseCharacter> BaseCharacterSubclass = (TSubclassOf<ABaseCharacter>)CharacterMap->CharacterTypeMap[TempCharacterInfo.TypeId];
 
 		FVector Pos(TempCharacterInfo.Location.X, TempCharacterInfo.Location.Y, TempCharacterInfo.Location.Z + 90);// ALS spawn issue woraround
 		ABaseCharacter* BaseCharacter = (ABaseCharacter*)GetWorld()->SpawnActor(BaseCharacterSubclass, &Pos, &TempCharacterInfo.Rotation);

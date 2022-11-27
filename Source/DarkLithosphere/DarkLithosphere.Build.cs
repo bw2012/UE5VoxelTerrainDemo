@@ -8,6 +8,7 @@ public class DarkLithosphere : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 		bUseRTTI = true;
+		CppStandard = CppStandardVersion.Cpp20;
 
 		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", 
 															"HeadMountedDisplay", "UnrealSandboxToolkit", "UnrealSandboxTerrain", 
