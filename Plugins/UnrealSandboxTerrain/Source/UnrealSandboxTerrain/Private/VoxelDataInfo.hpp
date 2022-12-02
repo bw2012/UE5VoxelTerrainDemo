@@ -219,3 +219,26 @@ public:
 };
 
 typedef std::shared_ptr<TVoxelDataInfo> TVoxelDataInfoPtr;
+
+
+class TVdInfoLockGuard {
+
+private:
+
+    TVoxelDataInfoPtr VdInfoPtr = nullptr;
+
+public:
+
+    TVdInfoLockGuard(const TVdInfoLockGuard&) = delete;
+
+    TVdInfoLockGuard& operator=(TVdInfoLockGuard&) = delete;
+
+    TVdInfoLockGuard(TVoxelDataInfoPtr VdiPtr) {
+        VdiPtr->Lock();
+        VdInfoPtr = VdiPtr;
+    }
+
+    ~TVdInfoLockGuard() {
+        VdInfoPtr->Unlock();
+    }
+};

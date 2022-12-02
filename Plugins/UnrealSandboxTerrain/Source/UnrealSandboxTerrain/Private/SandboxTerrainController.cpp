@@ -588,6 +588,7 @@ void ASandboxTerrainController::BatchGenerateZone(const TArray<TSpawnZoneParam>&
 	int Idx = 0;
 	for (const auto& P : GenerationList) {
 		TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(P.Index);
+
 		VdInfoPtr->Lock();
 		VdInfoPtr->Vd = NewVdArray[Idx].Vd;
 		FVector v = VdInfoPtr->Vd->getOrigin();
