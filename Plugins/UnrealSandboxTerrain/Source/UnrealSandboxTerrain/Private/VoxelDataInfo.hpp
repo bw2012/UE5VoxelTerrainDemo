@@ -46,6 +46,8 @@ private:
 
 	//std::shared_timed_mutex ZoneMutex;
 	std::atomic<UTerrainZoneComponent*> ZoneComponentAtomicPtr = nullptr;
+    std::atomic<bool> bNeedTerrainSave{ false };
+    std::atomic<bool> bNeedObjectsSave{ false };
 
 	std::shared_timed_mutex InstanceObjectMapMutex;
 	std::shared_ptr<TInstanceMeshTypeMap> InstanceMeshTypeMapPtr = nullptr;
@@ -94,7 +96,31 @@ public:
         VdMutex.Unlock();
     }
 
-    bool CanSave() const {
+    bool IsNeedObjectsSave() {
+        return bNeedObjectsSave;
+    }
+
+    void SetNeedObjectsSave() {
+        bNeedObjectsSave = true;
+    }
+
+    void ResetNeedObjectsSave() {
+        bNeedObjectsSave = false;
+    }
+
+    bool IsNeedTerrainSave() {
+        return bNeedTerrainSave;
+    }
+
+    void SetNeedTerrainSave() {
+        bNeedTerrainSave = true;;
+    }
+
+    void ResetNeedTerrainSave() {
+        bNeedTerrainSave = false;;
+    }
+
+    bool CanSaveVd() const {
         return DataState == TVoxelDataState::GENERATED || DataState == TVoxelDataState::LOADED;
     }
 
@@ -191,6 +217,5 @@ public:
         InstanceMeshTypeMapPtr = nullptr;
     }
 };
-
 
 typedef std::shared_ptr<TVoxelDataInfo> TVoxelDataInfoPtr;

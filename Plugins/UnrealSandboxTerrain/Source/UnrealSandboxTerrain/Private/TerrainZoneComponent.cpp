@@ -18,7 +18,6 @@ UTerrainInstancedStaticMesh::UTerrainInstancedStaticMesh(const FObjectInitialize
 UTerrainZoneComponent::UTerrainZoneComponent(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer) {
 	PrimaryComponentTick.bCanEverTick = false;
     CurrentTerrainLodMask = 0xff;
-	bIsObjectsNeedSave = false;
 }
 
 void UTerrainZoneComponent::ApplyTerrainMesh(TMeshDataPtr MeshDataPtr, const TTerrainLodMask TerrainLodMask) {
@@ -71,7 +70,6 @@ void UTerrainZoneComponent::ApplyTerrainMesh(TMeshDataPtr MeshDataPtr, const TTe
 TValueDataPtr UTerrainZoneComponent::SerializeAndResetObjectData(){
     const std::lock_guard<std::mutex> lock(InstancedMeshMutex);
     TValueDataPtr Data = SerializeInstancedMeshes();
-    bIsObjectsNeedSave = false;
     return Data;
 }
 
@@ -243,14 +241,6 @@ void UTerrainZoneComponent::SpawnInstancedMesh(const FTerrainInstancedMeshType& 
 
 	InstancedStaticMeshComponent->AddInstances(InstMeshTransArray.TransformArray, false);
 	//UE_LOG(LogSandboxTerrain, Warning, TEXT("AddInstances -> %d"), InstMeshTransArray.TransformArray.Num());
-}
-
-void UTerrainZoneComponent::SetObjectsNeedSave() {
-	bIsObjectsNeedSave = true;
-}
-
-bool UTerrainZoneComponent::IsObjectsNeedSave() {
-	return bIsObjectsNeedSave;
 }
 
 TTerrainLodMask UTerrainZoneComponent::GetTerrainLodMask() {

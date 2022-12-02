@@ -408,10 +408,9 @@ void ASandboxTerrainController::RemoveInstanceAtMesh(UHierarchicalInstancedStati
 	if (Parents.Num() > 0) {
 		UTerrainZoneComponent* Zone = Cast<UTerrainZoneComponent>(Parents[0]);
 		if (Zone) {
-			Zone->SetObjectsNeedSave(); // TODO check condition racing
 			FVector ZonePos = Zone->GetComponentLocation();
 			TVoxelIndex ZoneIndex = GetZoneIndex(ZonePos);
-			MarkZoneNeedsToSave(ZoneIndex);
+			MarkZoneNeedsToSaveObjects(ZoneIndex);
 		}
 	}
 }
@@ -582,6 +581,15 @@ void ASandboxTerrainController::EditTerrain(const H& ZoneHandler) {
 
 			GetTerrainGenerator()->ForceGenerateZone(VoxelDataInfo->Vd, ZoneIndex);
 			VoxelDataInfo->DataState = TVoxelDataState::GENERATED;
+
+			// FIXME
+			// редкий случай. когда генерируем зону, но не используем ее далее дл€ редактировани€, то meshdatacache будет пустой
+			// тогда зона криво сохранитьс€ ибо vd есть, а md нету
+			// дл€ этого генерим тут меш и кладем его в кэш. это лишн€€ генераци€. потом пофикшу
+			TerrainData->PutMeshDataToCache(ZoneIndex, GenerateMesh(VoxelDataInfo->Vd));
+
+			VoxelDataInfo->SetNeedTerrainSave();
+			TerrainData->AddSaveIndex(ZoneIndex);
 		}
 
 		if (VoxelDataInfo->DataState == TVoxelDataState::LOADED || VoxelDataInfo->DataState == TVoxelDataState::GENERATED) {
@@ -590,22 +598,20 @@ void ASandboxTerrainController::EditTerrain(const H& ZoneHandler) {
 				PerformZoneEditHandler(VoxelDataInfo, ZoneHandler, [&](TMeshDataPtr MeshDataPtr) {
 					TerrainData->PutMeshDataToCache(ZoneIndex, MeshDataPtr);
 					ExecGameThreadAddZoneAndApplyMesh(ZoneIndex, MeshDataPtr);
-					TerrainData->AddSaveIndex(ZoneIndex);
+					//TerrainData->AddSaveIndex(ZoneIndex);
 				});
 			} else {
 				PerformZoneEditHandler(VoxelDataInfo, ZoneHandler, [&](TMeshDataPtr MeshDataPtr) {
 					TerrainData->PutMeshDataToCache(ZoneIndex, MeshDataPtr);
-					ExecGameThreadZoneApplyMesh(Zone, MeshDataPtr);
-					TerrainData->AddSaveIndex(ZoneIndex);
+					ExecGameThreadZoneApplyMesh(ZoneIndex, Zone, MeshDataPtr);
+					//TerrainData->AddSaveIndex(ZoneIndex);
 				});
 			}
 		}
 
-		TerrainData->AddSaveIndex(ZoneIndex);
+		//TerrainData->AddSaveIndex(ZoneIndex); // TODO check
 		VoxelDataInfo->Unlock();
 	});
-
-
 
 	double End = FPlatformTime::Seconds();
 	double Time = (End - Start) * 1000;

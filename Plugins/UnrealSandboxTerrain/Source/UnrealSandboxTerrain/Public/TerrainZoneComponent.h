@@ -69,23 +69,10 @@ public:
 
 	void SpawnInstancedMesh(const FTerrainInstancedMeshType& MeshType, const TInstanceMeshArray& InstMeshTransArray);
 
-	//TMeshData const * GetCachedMeshData();
-    //TMeshDataPtr GetCachedMeshData();
-    
-    //bool HasCachedMeshData();
-    
-    //TValueDataPtr SerializeAndClearCachedMeshData();
-
-	//void ClearCachedMeshData();
-
     TValueDataPtr SerializeAndResetObjectData();
 
 	static TValueDataPtr SerializeInstancedMesh(const TInstanceMeshTypeMap& InstanceMeshMap);
     
-	void SetObjectsNeedSave();
-
-	bool IsObjectsNeedSave();
-
 	TTerrainLodMask GetTerrainLodMask();
     
 	volatile bool bIsSpawnFinished = false;
@@ -99,8 +86,4 @@ private:
     std::mutex InstancedMeshMutex;
     
     TTerrainLodMask CurrentTerrainLodMask;
-
-	//TMeshDataPtr CachedMeshDataPtr;
-
-	volatile bool bIsObjectsNeedSave = false;
 };
