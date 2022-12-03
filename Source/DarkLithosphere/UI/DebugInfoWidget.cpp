@@ -27,5 +27,16 @@ FString UDebugInfoWidget::SandboxDebugInfo1Text() {
 	return FString(TEXT("no terrain"));
 }
 
+FString UDebugInfoWidget::SandboxDebugInfo2Text() {
+	if (TerrainController) {
+		FTerrainDebugInfo Memstat = TerrainController->GetMemstat();
+
+		FString Res = FString::Printf(TEXT("conv: %d"), Memstat.ConveyorSize);
+		return Res;
+	}
+
+	return FString(TEXT(""));
+}
+
 
 

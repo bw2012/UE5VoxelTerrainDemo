@@ -162,7 +162,7 @@ void ASandboxTerrainController::ShutdownThreads() {
 		while (!TerrainControllerEvent->IsComplete()) {};
 	}
 
-	UE_LOG(LogSandboxTerrain, Warning, TEXT("ConveyorList -> %d threads. Waiting for finish..."), ConveyorList.size());
+	//UE_LOG(LogSandboxTerrain, Warning, TEXT("ConveyorList -> %d threads. Waiting for finish..."), ConveyorList.size());
 	//while (ConveyorList.size() > 0) {
 	//	UE_LOG(LogSandboxTerrain, Warning, TEXT("ConveyorList -> %d threads"), ConveyorList.size());
 	//};
@@ -190,11 +190,20 @@ void ASandboxTerrainController::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
 	const std::lock_guard<std::mutex> Lock(ConveyorMutex);
-	for (auto Idx = 0; Idx < MaxConveyorTasks; Idx++) {
+
+	double ConvTime = 0;
+	while (ConvTime < ConveyorMaxTime) {
 		if (ConveyorList.size() > 0) {
+			double Start = FPlatformTime::Seconds();
+
 			const auto& Function = ConveyorList.front();
 			Function();
 			ConveyorList.pop_front();
+
+			double End = FPlatformTime::Seconds();
+			ConvTime += (End - Start);
+		} else {
+			break;
 		}
 	}
 }
@@ -336,7 +345,8 @@ void ASandboxTerrainController::UnloadFarZones(FVector PlayerLocation, float Rad
 void ASandboxTerrainController::ZoneHardUnload(UTerrainZoneComponent* ZoneComponent, const TVoxelIndex& ZoneIndex) {
 	//UE_LOG(LogSandboxTerrain, Log, TEXT("ZoneHardUnload"));
 	TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(ZoneIndex);
-	VdInfoPtr->Lock();
+	TVdInfoLockGuard Lock(VdInfoPtr);
+
 	if (VdInfoPtr->IsSoftUnload() && !VdInfoPtr->IsNeedObjectsSave()) {
 		if (ZoneComponent->bIsSpawnFinished) {
 			RemoveAllChilds(ZoneComponent);
@@ -347,7 +357,6 @@ void ASandboxTerrainController::ZoneHardUnload(UTerrainZoneComponent* ZoneCompon
 			DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
 		}
 	} 
-	VdInfoPtr->Unlock();
 }
 
 void ASandboxTerrainController::ZoneSoftUnload(UTerrainZoneComponent* ZoneComponent, const TVoxelIndex& ZoneIndex) {
@@ -588,8 +597,8 @@ void ASandboxTerrainController::BatchGenerateZone(const TArray<TSpawnZoneParam>&
 	int Idx = 0;
 	for (const auto& P : GenerationList) {
 		TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(P.Index);
+		TVdInfoLockGuard Lock(VdInfoPtr);
 
-		VdInfoPtr->Lock();
 		VdInfoPtr->Vd = NewVdArray[Idx].Vd;
 		FVector v = VdInfoPtr->Vd->getOrigin();
 
@@ -615,7 +624,6 @@ void ASandboxTerrainController::BatchGenerateZone(const TArray<TSpawnZoneParam>&
 		TInstanceMeshTypeMap& ZoneInstanceObjectMap = *TerrainData->GetOrCreateInstanceObjectMap(P.Index);
 		GeneratorComponent->GenerateInstanceObjects(P.Index, VdInfoPtr->Vd, ZoneInstanceObjectMap);
 		//TerrainData->AddSaveIndex(P.Index);
-		VdInfoPtr->Unlock();
 		Idx++;
 	}
 }
@@ -632,40 +640,44 @@ void ASandboxTerrainController::BatchSpawnZone(const TArray<TSpawnZoneParam>& Sp
 
 		//check voxel data in memory
 		bool bNewVdGeneration = false;
-		TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(Index);
-		VdInfoPtr->Lock();
-		if (VdInfoPtr->DataState == TVoxelDataState::UNDEFINED) {
-			if (TdFile.isExist(Index)) {
-				TValueDataPtr DataPtr = TdFile.loadData(Index);
-				usbt::TFastUnsafeDeserializer Deserializer(DataPtr->data());
-				TKvFileZodeData ZoneHeader;
-				Deserializer >> ZoneHeader;
 
-				bIsNoMesh = ZoneHeader.Is(TZoneFlag::NoMesh);
-				bool bIsNoVd = ZoneHeader.Is(TZoneFlag::NoVoxelData);
-				if (bIsNoVd) {
-					//UE_LOG(LogSandboxTerrain, Log, TEXT("NoVoxelData"));
-					VdInfoPtr->DataState = TVoxelDataState::UNGENERATED;
-				} else {
-					//voxel data exist in file
-					VdInfoPtr->DataState = TVoxelDataState::READY_TO_LOAD;
+		{
+			TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(Index);
+			TVdInfoLockGuard Lock(VdInfoPtr);
+
+			if (VdInfoPtr->DataState == TVoxelDataState::UNDEFINED) {
+				if (TdFile.isExist(Index)) {
+					TValueDataPtr DataPtr = TdFile.loadData(Index);
+					usbt::TFastUnsafeDeserializer Deserializer(DataPtr->data());
+					TKvFileZodeData ZoneHeader;
+					Deserializer >> ZoneHeader;
+
+					bIsNoMesh = ZoneHeader.Is(TZoneFlag::NoMesh);
+					bool bIsNoVd = ZoneHeader.Is(TZoneFlag::NoVoxelData);
+					if (bIsNoVd) {
+						//UE_LOG(LogSandboxTerrain, Log, TEXT("NoVoxelData"));
+						VdInfoPtr->DataState = TVoxelDataState::UNGENERATED;
+					}
+					else {
+						//voxel data exist in file
+						VdInfoPtr->DataState = TVoxelDataState::READY_TO_LOAD;
+					}
 				}
-			} else {
-				// generate new voxel data
+				else {
+					// generate new voxel data
+					VdInfoPtr->DataState = TVoxelDataState::GENERATION_IN_PROGRESS;
+					bNewVdGeneration = true;
+				}
+			}
+
+			/*
+			if (VdInfoPtr->DataState == TVoxelDataState::UNGENERATED && TerrainLodMask == 0) {
 				VdInfoPtr->DataState = TVoxelDataState::GENERATION_IN_PROGRESS;
+				UE_LOG(LogSandboxTerrain, Log, TEXT("bNewVdGeneration"))
 				bNewVdGeneration = true;
 			}
+			*/
 		}
-
-		/*
-		if (VdInfoPtr->DataState == TVoxelDataState::UNGENERATED && TerrainLodMask == 0) {
-			VdInfoPtr->DataState = TVoxelDataState::GENERATION_IN_PROGRESS;
-			UE_LOG(LogSandboxTerrain, Log, TEXT("bNewVdGeneration"))
-			bNewVdGeneration = true;
-		}
-		*/
-
-		VdInfoPtr->Unlock();
 
 		if (bNewVdGeneration) {
 			GenerationList.Add(SpawnZoneParam);
@@ -686,8 +698,7 @@ void ASandboxTerrainController::BatchSpawnZone(const TArray<TSpawnZoneParam>& Sp
 
 	for (const auto& P : GenerationList) {
 		TVoxelDataInfoPtr VoxelDataInfoPtr = GetVoxelDataInfo(P.Index);
-
-		VoxelDataInfoPtr->Lock();
+		TVdInfoLockGuard Lock(VoxelDataInfoPtr);
 
 		if (VoxelDataInfoPtr->Vd && VoxelDataInfoPtr->Vd->getDensityFillState() == TVoxelDataFillState::MIXED) {
 			TMeshDataPtr MeshDataPtr = GenerateMesh(VoxelDataInfoPtr->Vd);
@@ -698,8 +709,6 @@ void ASandboxTerrainController::BatchSpawnZone(const TArray<TSpawnZoneParam>& Sp
 			VoxelDataInfoPtr->SetNeedTerrainSave();
 			TerrainData->AddSaveIndex(P.Index);
 		}
-
-		VoxelDataInfoPtr->Unlock();
 	}
 }
 
@@ -834,11 +843,11 @@ void ASandboxTerrainController::ExecGameThreadZoneApplyMesh(const TVoxelIndex& I
 		if (!bIsGameShutdown) {
 			if (MeshDataPtr) {
 				TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(Index);
-				VdInfoPtr->Lock();
+				TVdInfoLockGuard Lock(VdInfoPtr);
+
 				Zone->ApplyTerrainMesh(MeshDataPtr, TerrainLodMask);
 				VdInfoPtr->SetNeedTerrainSave();
 				TerrainData->AddSaveIndex(Index);
-				VdInfoPtr->Unlock();
 			}
 		} else {
 			UE_LOG(LogSandboxTerrain, Log, TEXT("ASandboxTerrainController::ExecGameThreadZoneApplyMesh - game shutdown"));
@@ -890,7 +899,7 @@ void ASandboxTerrainController::RunThread(TUniqueFunction<void()> Function) {
 
 void ASandboxTerrainController::OnGenerateNewZone(const TVoxelIndex& Index, UTerrainZoneComponent* Zone) {
 	TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(Index);
-	VdInfoPtr->Lock();
+	TVdInfoLockGuard Lock(VdInfoPtr);
 
     if (FoliageDataAsset) {
 		TInstanceMeshTypeMap& ZoneInstanceObjectMap = *TerrainData->GetOrCreateInstanceObjectMap(Index);
@@ -903,12 +912,12 @@ void ASandboxTerrainController::OnGenerateNewZone(const TVoxelIndex& Index, UTer
 	Zone->bIsSpawnFinished = true;
 	VdInfoPtr->SetNeedTerrainSave();
 	TerrainData->AddSaveIndex(Index);
-	VdInfoPtr->Unlock();
 }
 
 void ASandboxTerrainController::OnLoadZone(const TVoxelIndex& Index, UTerrainZoneComponent* Zone) {
 	TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(Index);
-	VdInfoPtr->Lock();
+	TVdInfoLockGuard Lock(VdInfoPtr);
+
 	if (FoliageDataAsset) {
 		TInstanceMeshTypeMap& ZoneInstanceObjectMap = *TerrainData->GetOrCreateInstanceObjectMap(Index);
 		Zone->SpawnAll(ZoneInstanceObjectMap);
@@ -917,7 +926,6 @@ void ASandboxTerrainController::OnLoadZone(const TVoxelIndex& Index, UTerrainZon
 	OnFinishLoadZone(Index);
 	VdInfoPtr->ClearInstanceObjectMap();
 	Zone->bIsSpawnFinished = true;
-	VdInfoPtr->Unlock();
 }
 
 void ASandboxTerrainController::OnFinishAsyncPhysicsCook(const TVoxelIndex& ZoneIndex) {
@@ -1033,11 +1041,12 @@ const FSandboxFoliage& ASandboxTerrainController::GetFoliageById(uint32 FoliageI
 void ASandboxTerrainController::MarkZoneNeedsToSaveObjects(const TVoxelIndex& ZoneIndex) {
 	//TODO check
 	TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(ZoneIndex);
-	VdInfoPtr->Lock();
+	TVdInfoLockGuard Lock(VdInfoPtr);
+
 	VdInfoPtr->SetChanged();
 	VdInfoPtr->SetNeedObjectsSave();
 	TerrainData->AddSaveIndex(ZoneIndex);
-	VdInfoPtr->Unlock();
+
 	//UE_LOG(LogSandboxTerrain, Log, TEXT("MarkZoneNeedsToSaveObjects -> %d %d %d"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
 }
 
@@ -1116,5 +1125,5 @@ float ASandboxTerrainController::GetGroundLevel(const FVector& Pos) {
 }
 
 FTerrainDebugInfo ASandboxTerrainController::GetMemstat() {
-	return FTerrainDebugInfo{ vd::tools::memory::getVdCount(), md_counter.load(), cd_counter.load() };
+	return FTerrainDebugInfo{ vd::tools::memory::getVdCount(), md_counter.load(), cd_counter.load(), (int)ConveyorList.size()};
 }

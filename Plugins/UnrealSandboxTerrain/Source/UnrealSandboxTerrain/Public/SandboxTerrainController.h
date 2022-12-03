@@ -71,6 +71,9 @@ struct FTerrainDebugInfo {
 
 	UPROPERTY()
 	int CountCd = 0;
+
+	UPROPERTY()
+	int ConveyorSize = 0;
 };
 
 USTRUCT()
@@ -400,7 +403,7 @@ public:
 	USandboxTarrainFoliageMap* FoliageDataAsset;
 
 	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain Foliage")
-	int MaxConveyorTasks = 5;
+	double ConveyorMaxTime = 0.05;
    
     //========================================================================================
     // networking
