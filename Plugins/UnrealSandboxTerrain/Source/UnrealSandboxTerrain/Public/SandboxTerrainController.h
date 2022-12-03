@@ -59,6 +59,23 @@ struct FMapInfo {
 	FString Status;
 };
 
+USTRUCT(BlueprintType, Blueprintable)
+struct FTerrainDebugInfo {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	int CountVd = 0;
+
+	UPROPERTY()
+	int CountMd = 0;
+
+	UPROPERTY()
+	int CountCd = 0;
+
+	UPROPERTY()
+	int ConveyorSize = 0;
+};
+
 USTRUCT()
 struct FTerrainInstancedMeshType {
 	GENERATED_BODY()
@@ -386,7 +403,7 @@ public:
 	USandboxTarrainFoliageMap* FoliageDataAsset;
 
 	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain Foliage")
-	int MaxConveyorTasks = 5;
+	double ConveyorMaxTime = 0.05;
    
     //========================================================================================
     // networking
@@ -479,6 +496,13 @@ public:
 
 	float GetGroundLevel(const FVector& Pos);
 
+	//===============================================================================
+	// debug / memory stat
+	//===============================================================================
+
+	UFUNCTION(BlueprintCallable, Category = "UnrealSandbox")
+	FTerrainDebugInfo GetMemstat();
+
 private:
 
 	bool bForcePerformHardUnload = false;
@@ -538,7 +562,7 @@ private:
 
 	void AddTaskToConveyor(std::function<void()> Function);
 
-	void ExecGameThreadZoneApplyMesh(UTerrainZoneComponent* Zone, TMeshDataPtr MeshDataPtr, const TTerrainLodMask TerrainLodMask = 0x0);
+	void ExecGameThreadZoneApplyMesh(const TVoxelIndex& Index, UTerrainZoneComponent* Zone, TMeshDataPtr MeshDataPtr, const TTerrainLodMask TerrainLodMask = 0x0);
 
 	void ExecGameThreadAddZoneAndApplyMesh(const TVoxelIndex& Index, TMeshDataPtr MeshDataPtr, const TTerrainLodMask TerrainLodMask = 0x0, const bool bIsNewGenerated = false);
 
@@ -678,7 +702,7 @@ protected:
 
 	void Save(std::function<void(uint32, uint32)> OnProgress = nullptr, std::function<void(uint32)> OnFinish = nullptr);
 
-	void MarkZoneNeedsToSave(TVoxelIndex ZoneIndex);
+	void MarkZoneNeedsToSaveObjects(const TVoxelIndex& ZoneIndex);
 
 	void ZoneHardUnload(UTerrainZoneComponent* ZoneComponent, const TVoxelIndex& ZoneIndex);
 

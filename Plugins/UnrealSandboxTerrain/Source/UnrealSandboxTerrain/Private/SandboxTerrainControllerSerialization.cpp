@@ -455,51 +455,68 @@ void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgr
 		TValueDataPtr DataObj = nullptr;
 
 		VdInfoPtr->Lock();
-		if (VdInfoPtr->IsChanged()) {
 
-			if (VdInfoPtr->Vd && VdInfoPtr->CanSave()) {
+		if (VdInfoPtr->IsNeedTerrainSave()) {
+			if (VdInfoPtr->Vd && VdInfoPtr->CanSaveVd()) {
 				DataVd = SerializeVd(VdInfoPtr->Vd);
 			}
 
 			auto MeshDataPtr = VdInfoPtr->PopMeshDataCache();
 			if (MeshDataPtr) {
 				DataMd = SerializeMeshData(MeshDataPtr);
-			} 
+			}
 
 			if (FoliageDataAsset) {
 				UTerrainZoneComponent* Zone = VdInfoPtr->GetZone();
-				if (Zone && (Zone->IsObjectsNeedSave() || VdInfoPtr->IsChanged())) {
+				if (Zone) {
+					// IsNeedTerrainSave means zone was changed or generated therefore we not need to load mesh data 
+					DataObj = Zone->SerializeAndResetObjectData();
+				}
+			}
+
+			VdInfoPtr->ResetNeedTerrainSave();
+		} else if (VdInfoPtr->IsNeedObjectsSave()) {
+			if (FoliageDataAsset) {
+				UTerrainZoneComponent* Zone = VdInfoPtr->GetZone();
+				if (Zone) {
 					DataObj = Zone->SerializeAndResetObjectData();
 
-					if (!VdInfoPtr->CanSave()) {
-						bool bIsLoaded = LoadDataFromKvFile(TdFile, Index, [&](TValueDataPtr DataPtr) {
-							// TODO refactor
-							UE_LOG(LogSandboxTerrain, Warning, TEXT("Only objects was changed. Load mesh and voxel data -> %d %d %d"), Index.X, Index.Y, Index.Z);
-							usbt::TFastUnsafeDeserializer Deserializer(DataPtr->data());
-							TKvFileZodeData ZoneHeader;
-							Deserializer >> ZoneHeader;
+					// IsNeedObjectsSave means terrain was not changed, only objects
+					// load mesh and resave obj+mesh
+					bool bIsLoaded = LoadDataFromKvFile(TdFile, Index, [&](TValueDataPtr DataPtr) {
+						// TODO refactor
+						UE_LOG(LogSandboxTerrain, Warning, TEXT("Only objects was changed. Load mesh data -> %d %d %d"), Index.X, Index.Y, Index.Z);
+						usbt::TFastUnsafeDeserializer Deserializer(DataPtr->data());
+						TKvFileZodeData ZoneHeader;
+						Deserializer >> ZoneHeader;
 
-							DataMd = std::make_shared<TValueData>();
-							DataMd->resize(ZoneHeader.LenMd);
-							Deserializer.read(DataMd->data(), ZoneHeader.LenMd);
-						});
+						DataMd = std::make_shared<TValueData>();
+						DataMd->resize(ZoneHeader.LenMd);
+						Deserializer.read(DataMd->data(), ZoneHeader.LenMd);
+					});
+
+					if (!bIsLoaded) {
+						// TODO fix it later
+						UE_LOG(LogSandboxTerrain, Error, TEXT("Load mesh fail -> %d %d %d"), Index.X, Index.Y, Index.Z);
 					}
-				} else {
+				} 
+				// legacy
+				/*else {
 					auto InstanceObjectMapPtr = VdInfoPtr->GetOrCreateInstanceObjectMap();
 					if (InstanceObjectMapPtr) {
 						DataObj = UTerrainZoneComponent::SerializeInstancedMesh(*InstanceObjectMapPtr);
 					}
-				}
+				}*/
 			}
+		}
 
-			uint32 CRC = SaveZoneToFile(TdFile, VdFile, Index, DataVd, DataMd, DataObj);
+		uint32 CRC = SaveZoneToFile(TdFile, VdFile, Index, DataVd, DataMd, DataObj);
 
-			SavedCount++;
-			VdInfoPtr->ResetLastSave();
+		SavedCount++;
+		VdInfoPtr->ResetLastSave();
 
-			if (OnProgress) {
-				OnProgress(SavedCount, Total);
-			}
+		if (OnProgress) {
+			OnProgress(SavedCount, Total);
 		}
 
 		VdInfoPtr->Unload();

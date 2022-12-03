@@ -170,11 +170,9 @@ void ATerrainController::MakeFlattenGrassTrace(const FHitResult& Overlap) {
 			if (Parents.Num() > 0) {
 				UTerrainZoneComponent* Zone = Cast<UTerrainZoneComponent>(Parents[0]);
 				if (Zone) {
-					Zone->SetObjectsNeedSave(); // TODO check condition racing
-
 					FVector ZonePos = Zone->GetComponentLocation();
 					TVoxelIndex ZoneIndex = GetZoneIndex(ZonePos);
-					MarkZoneNeedsToSave(ZoneIndex);
+					MarkZoneNeedsToSaveObjects(ZoneIndex);
 				}
 			}
 		}
