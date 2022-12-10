@@ -93,7 +93,7 @@ void ATerrainController::ShutdownAndSaveMap() {
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("Start save terrain manual"));
-	RunThread([&]() {
+	auto SaveFunction = [&]() {
 		std::function<void(uint32, uint32)> OnProgress = [=](uint32 Processed, uint32 Total) {
 			if (Processed == Total) {
 				AsyncTask(ENamedThreads::GameThread, [=]() { OnProgressSaveTerrain(1.f); });
@@ -109,7 +109,9 @@ void ATerrainController::ShutdownAndSaveMap() {
 		};
 
 		Save(OnProgress, OnFinish);
-	});
+	};
+
+	FFunctionGraphTask::CreateAndDispatchWhenReady(MoveTemp(SaveFunction), TStatId(), nullptr, ENamedThreads::AnyBackgroundThreadNormalTask);
 }
 
 void ATerrainController::OnStartBackgroundSaveTerrain() {

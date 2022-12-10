@@ -31,6 +31,8 @@ class TTerrainLoadPipeline;
 class UTerrainClientComponent;
 class UTerrainServerComponent;
 
+class TThreadPool;
+
 typedef TMap<uint64, TInstanceMeshArray> TInstanceMeshTypeMap;
 typedef std::shared_ptr<TMeshData> TMeshDataPtr;
 typedef kvdb::KvFile<TVoxelIndex, TValueData> TKvFile;
@@ -74,6 +76,9 @@ struct FTerrainDebugInfo {
 
 	UPROPERTY()
 	int ConveyorSize = 0;
+
+	UPROPERTY()
+	int TaskPoolSize = 0;
 };
 
 USTRUCT()
@@ -466,7 +471,7 @@ public:
 	// async tasks
 	//===============================================================================
 
-	void RunThread(TUniqueFunction<void()> Function);
+	void RunThread(std::function<void()> Function);
 
 	//========================================================================================
 	// network
@@ -572,9 +577,7 @@ private:
 	// threads
 	//===============================================================================
 
-	std::shared_timed_mutex ThreadListMutex;
-
-	FGraphEventArray TerrainControllerEventList;
+	TThreadPool* ThreadPool = nullptr;
 
 	//===============================================================================
 	// voxel data storage

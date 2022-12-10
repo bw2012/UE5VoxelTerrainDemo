@@ -20,12 +20,9 @@
 #include "TerrainData.hpp"
 #include "TerrainAreaPipeline.hpp"
 #include "TerrainEdit.hpp"
+#include "ThreadPool.hpp"
 
 #include "memstat.h"
-
-
-
-TValueDataPtr SerializeMeshData(TMeshDataPtr MeshDataPtr);
 
 
 // ====================================
@@ -104,6 +101,8 @@ void ASandboxTerrainController::BeginPlay() {
 	Super::BeginPlay();
 	UE_LOG(LogSandboxTerrain, Log, TEXT("ASandboxTerrainController::BeginPlay()"));
 
+	ThreadPool = new TThreadPool(5);
+
 	GeneratorComponent = NewTerrainGenerator();
 	GeneratorComponent->RegisterComponent();
 
@@ -156,11 +155,14 @@ void ASandboxTerrainController::BeginPlay() {
 void ASandboxTerrainController::ShutdownThreads() {
 	bIsWorkFinished = true;
 
-	std::unique_lock<std::shared_timed_mutex> Lock(ThreadListMutex);
-	UE_LOG(LogSandboxTerrain, Warning, TEXT("TerrainControllerEventList -> %d threads. Waiting for finish..."), TerrainControllerEventList.Num());
-	for (auto& TerrainControllerEvent : TerrainControllerEventList) {
-		while (!TerrainControllerEvent->IsComplete()) {};
-	}
+	UE_LOG(LogSandboxTerrain, Warning, TEXT("Shutdown thread pool..."));
+	ThreadPool->shutdownAndWait();
+
+	//std::unique_lock<std::shared_timed_mutex> Lock(ThreadListMutex);
+	//UE_LOG(LogSandboxTerrain, Warning, TEXT("TerrainControllerEventList -> %d threads. Waiting for finish..."), TerrainControllerEventList.Num());
+	//for (auto& TerrainControllerEvent : TerrainControllerEventList) {
+	//	while (!TerrainControllerEvent->IsComplete()) {};
+	//}
 
 	//UE_LOG(LogSandboxTerrain, Warning, TEXT("ConveyorList -> %d threads. Waiting for finish..."), ConveyorList.size());
 	//while (ConveyorList.size() > 0) {
@@ -184,6 +186,8 @@ void ASandboxTerrainController::EndPlay(const EEndPlayReason::Type EndPlayReason
 
 	SaveTerrainMetadata();
 	ModifiedVdMap.Empty();
+
+	delete ThreadPool;
 }
 
 void ASandboxTerrainController::Tick(float DeltaTime) {
@@ -507,19 +511,18 @@ void ASandboxTerrainController::OnProgressBackgroundSaveTerrain(float Progress) 
 void ASandboxTerrainController::SaveMapAsync() {
 	UE_LOG(LogSandboxTerrain, Log, TEXT("Start save terrain async"));
 	RunThread([&]() {
-
 		std::function<void(uint32, uint32)> OnProgress = [=](uint32 Processed, uint32 Total) {
 			if (Processed % 10 == 0) {
 				float Progress = (float)Processed / (float)Total;
 				//UE_LOG(LogSandboxTerrain, Log, TEXT("Save terrain: %d / %d - %f%%"), Processed, Total, Progress * 100);
-				OnProgressBackgroundSaveTerrain(Progress);
+				AsyncTask(ENamedThreads::GameThread, [=]() { OnProgressBackgroundSaveTerrain(Progress); });
 			}
 		};
 
-		OnStartBackgroundSaveTerrain();
+		AsyncTask(ENamedThreads::GameThread, [=]() { OnStartBackgroundSaveTerrain(); });
 		Save(OnProgress);
 		bForcePerformHardUnload = true;
-		OnFinishBackgroundSaveTerrain();
+		AsyncTask(ENamedThreads::GameThread, [=]() { OnFinishBackgroundSaveTerrain(); });
 
 		UE_LOG(LogSandboxTerrain, Log, TEXT("Finish save terrain async"));
 		//UE_LOG(LogSandboxTerrain, Warning, TEXT("vd -> %d, md -> %d, cd -> %d"), vd::tools::memory::getVdCount(), md_counter.load(), cd_counter.load());
@@ -888,9 +891,8 @@ void ASandboxTerrainController::ExecGameThreadAddZoneAndApplyMesh(const TVoxelIn
 	InvokeSafe(Function);
 }
 
-void ASandboxTerrainController::RunThread(TUniqueFunction<void()> Function) {
-    std::unique_lock<std::shared_timed_mutex> Lock(ThreadListMutex);
-    TerrainControllerEventList.Add(FFunctionGraphTask::CreateAndDispatchWhenReady(MoveTemp(Function), TStatId(), nullptr, ENamedThreads::AnyBackgroundThreadNormalTask));
+void ASandboxTerrainController::RunThread(std::function<void()> Function) {
+	ThreadPool->addTask(Function);
 }
 
 //======================================================================================================================================================================
@@ -1125,5 +1127,5 @@ float ASandboxTerrainController::GetGroundLevel(const FVector& Pos) {
 }
 
 FTerrainDebugInfo ASandboxTerrainController::GetMemstat() {
-	return FTerrainDebugInfo{ vd::tools::memory::getVdCount(), md_counter.load(), cd_counter.load(), (int)ConveyorList.size()};
+	return FTerrainDebugInfo{ vd::tools::memory::getVdCount(), md_counter.load(), cd_counter.load(), (int)ConveyorList.size(), ThreadPool->size()};
 }
