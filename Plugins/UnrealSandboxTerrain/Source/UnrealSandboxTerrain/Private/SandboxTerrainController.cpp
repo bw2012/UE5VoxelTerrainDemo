@@ -1,6 +1,4 @@
 #include "SandboxTerrainController.h"
-//#include "Serialization/ArchiveLoadCompressedProxy.h"
-//#include "Serialization/ArchiveSaveCompressedProxy.h"
 #include "Async/Async.h"
 #include "DrawDebugHelpers.h"
 #include "kvdb.hpp"
@@ -18,7 +16,7 @@
 #include "utils.hpp"
 #include "VoxelDataInfo.hpp"
 #include "TerrainData.hpp"
-#include "TerrainAreaPipeline.hpp"
+#include "TerrainAreaHelper.hpp"
 #include "TerrainEdit.hpp"
 #include "ThreadPool.hpp"
 
@@ -254,13 +252,13 @@ void ASandboxTerrainController::PerformCheckArea() {
                                 
                 if(CheckAreaMap->PlayerStreamingHandler.Contains(PlayerId)){
                     // cancel old
-                    std::shared_ptr<TTerrainLoadPipeline> HandlerPtr2 = CheckAreaMap->PlayerStreamingHandler[PlayerId];
+                    std::shared_ptr<TTerrainLoadHelper> HandlerPtr2 = CheckAreaMap->PlayerStreamingHandler[PlayerId];
                     HandlerPtr2->Cancel();
                     CheckAreaMap->PlayerStreamingHandler.Remove(PlayerId);
                 }
                 
                 // start new
-                std::shared_ptr<TTerrainLoadPipeline> HandlerPtr = std::make_shared<TTerrainLoadPipeline>();
+                std::shared_ptr<TTerrainLoadHelper> HandlerPtr = std::make_shared<TTerrainLoadHelper>();
 				CheckAreaMap->PlayerStreamingHandler.Add(PlayerId, HandlerPtr);
 
                 if(bShowStartSwapPos){
@@ -269,7 +267,7 @@ void ASandboxTerrainController::PerformCheckArea() {
                     DrawDebugCylinder(GetWorld(), FVector(Tmp.X, Tmp.Y, Len), FVector(Tmp.X, Tmp.Y, -Len), DynamicLoadArea.Radius, 128, FColor(255, 0, 255, 128), false, 30);
                 }
                 
-				TTerrainAreaPipelineParams Params;
+				TTerrainAreaLoadParams Params;
                 Params.FullLodDistance = DynamicLoadArea.FullLodDistance;
                 Params.Radius = DynamicLoadArea.Radius;
                 Params.TerrainSizeMinZ = LocationIndex.Z + DynamicLoadArea.TerrainSizeMinZ;
@@ -405,37 +403,10 @@ void ASandboxTerrainController::BeginPlayServer() {
 		TerrainServerComponent->RegisterComponent();
 		TerrainServerComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
 	}
-
-	// debug
-	/*
-	TVoxelIndex TestIndex(2, 0, 0);
-	FVector TestZonePos = GetZonePos(TestIndex);
-	DrawDebugBox(GetWorld(), TestZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(0, 0, 255, 100), true);
-	bool bIsLoaded = LoadDataFromKvFile(TdFile, TestIndex, [&](TValueDataPtr DataPtr) {
-		UE_LOG(LogTemp, Warning, TEXT("TEST LOAD -> %d %d %d"), TestIndex.X, TestIndex.Y, TestIndex.Z);
-		usbt::TFastUnsafeDeserializer Deserializer(DataPtr->data());
-		TKvFileZodeData ZoneHeader;
-		Deserializer >> ZoneHeader;
-
-		UE_LOG(LogTemp, Warning, TEXT("TEST -> LenVd=%d LenMd=%d LenObj=%d"), ZoneHeader.LenVd, ZoneHeader.LenMd, ZoneHeader.LenObj);
-
-		if (ZoneHeader.Is(TZoneFlag::NoVoxelData)) {
-			UE_LOG(LogTemp, Warning, TEXT("NoVoxelData"));
-		}
-
-		if (ZoneHeader.Is(TZoneFlag::NoMesh)) {
-			UE_LOG(LogTemp, Warning, TEXT("NoMesh"));
-		}
-
-		TZoneModificationData& Data = ModifiedVdMap.FindOrAdd(TestIndex);
-		UE_LOG(LogTemp, Warning, TEXT("Zone: %d %d %d -> ChangeCounter = %d"), TestIndex.X, TestIndex.Y, TestIndex.Z, Data.ChangeCounter);
-
-	});
-	*/
 }
 
 void ASandboxTerrainController::BeginClientTerrainLoad(const TVoxelIndex& ZoneIndex, const TSet<TVoxelIndex>& Ignore) {
-	TTerrainAreaPipelineParams Params;
+	TTerrainAreaLoadParams Params;
 	Params.FullLodDistance = InitialLoadArea.FullLodDistance;
 	Params.Radius = InitialLoadArea.Radius;
 	Params.TerrainSizeMinZ = InitialLoadArea.TerrainSizeMinZ;
@@ -445,7 +416,7 @@ void ASandboxTerrainController::BeginClientTerrainLoad(const TVoxelIndex& ZoneIn
 	RunThread([=]() {
 		const TVoxelIndex Index = ZoneIndex;
 		UE_LOG(LogSandboxTerrain, Warning, TEXT("Client: Begin terrain load at location: %f %f %f"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
-		TTerrainLoadPipeline Loader(TEXT("test_job"), this, Params);
+		TTerrainLoadHelper Loader(TEXT("test_job"), this, Params);
 		Loader.LoadArea(Index);
 	});
 }
@@ -455,7 +426,7 @@ void ASandboxTerrainController::BeginServerTerrainLoad() {
     
     if (!bGenerateOnlySmallSpawnPoint) {
         // async loading other zones
-		TTerrainAreaPipelineParams Params;
+		TTerrainAreaLoadParams Params;
 		Params.FullLodDistance = InitialLoadArea.FullLodDistance;
 		Params.Radius = InitialLoadArea.Radius;
 		Params.TerrainSizeMinZ = InitialLoadArea.TerrainSizeMinZ;
@@ -464,15 +435,13 @@ void ASandboxTerrainController::BeginServerTerrainLoad() {
         RunThread([=]() {            
 			UE_LOG(LogSandboxTerrain, Warning, TEXT("Server: Begin terrain load at location: %f %f %f"), BeginServerTerrainLoadLocation.X, BeginServerTerrainLoadLocation.Y, BeginServerTerrainLoadLocation.Z);
 
-			TTerrainLoadPipeline Loader(TEXT("Initial_Load_Task"), this, Params);
+			TTerrainLoadHelper Loader(TEXT("Initial_Load_Task"), this, Params);
             Loader.LoadArea(BeginServerTerrainLoadLocation);
 
 			//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Blue, TEXT("Finish initial terrain load"));
 			UE_LOG(LogSandboxTerrain, Warning, TEXT("======= Finish initial terrain load ======="));
 
 			//GetTerrainGenerator()->Clean();
-
-			//UE_LOG(LogSandboxTerrain, Warning, TEXT("vd -> %d, md -> %d, cd -> %d"), vd::tools::memory::getVdCount(), md_counter.load(), cd_counter.load());
 
 			if (!bIsWorkFinished) {
 				if (bSaveAfterInitialLoad) {

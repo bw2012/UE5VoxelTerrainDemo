@@ -7,7 +7,7 @@
 //
 //======================================================================================================================================================================
 
-typedef struct TTerrainAreaPipelineParams {
+typedef struct TTerrainAreaLoadParams {
 	float Radius = 3000;
 	float FullLodDistance = 1000;
 	int32 TerrainSizeMinZ = 5;
@@ -17,30 +17,30 @@ typedef struct TTerrainAreaPipelineParams {
 
 	std::function<void(uint32, uint32)> OnProgress = nullptr;
 
-} TTerrainAreaPipelineParams;
+} TTerrainAreaLoadParams;
 
 
-class TTerrainAreaPipeline {
+class TTerrainAreaHelper {
 
 public:
 
-	TTerrainAreaPipeline() {}
+	TTerrainAreaHelper() {}
 
-	virtual ~TTerrainAreaPipeline() { 
+	virtual ~TTerrainAreaHelper() { 
 		// UE_LOG(LogSandboxTerrain, Log, TEXT("~TTerrainLoadHandler()")); 
 	}
 
-	TTerrainAreaPipeline(FString Name_, ASandboxTerrainController* Controller_) :
+	TTerrainAreaHelper(FString Name_, ASandboxTerrainController* Controller_) :
 		Name(Name_), Controller(Controller_) {}
 
-	TTerrainAreaPipeline(FString Name_, ASandboxTerrainController* Controller_, TTerrainAreaPipelineParams Params_) :
+	TTerrainAreaHelper(FString Name_, ASandboxTerrainController* Controller_, TTerrainAreaLoadParams Params_) :
 		Name(Name_), Controller(Controller_), Params(Params_) {
 	}
 
 protected:
 	FString Name;
 	ASandboxTerrainController* Controller;
-	TTerrainAreaPipelineParams Params;
+	TTerrainAreaLoadParams Params;
 	FVector AreaOrigin;
 	TVoxelIndex OriginIndex;
 	uint32 Total = 0;
@@ -108,7 +108,7 @@ public:
 		this->bIsStopped = true;
 	}
 
-	void SetParams(FString NewName, ASandboxTerrainController* NewController, TTerrainAreaPipelineParams NewParams) {
+	void SetParams(FString NewName, ASandboxTerrainController* NewController, TTerrainAreaLoadParams NewParams) {
 		this->Name = NewName;
 		this->Controller = NewController;
 		this->Params = NewParams;
@@ -132,11 +132,11 @@ public:
 };
 
 
-class TTerrainLoadPipeline : public TTerrainAreaPipeline  {
+class TTerrainLoadHelper : public TTerrainAreaHelper  {
 
 public:
 
-	using TTerrainAreaPipeline::TTerrainAreaPipeline;
+	using TTerrainAreaHelper::TTerrainAreaHelper;
 
 protected :
 
@@ -145,16 +145,6 @@ protected :
 		FVector ZonePos = Controller->GetZonePos(Index);
 		FVector ZonePosXY(ZonePos.X, ZonePos.Y, 0);
 		float Distance = FVector::Distance(AreaOrigin, ZonePosXY);
-
-		/*
-		if (Distance > Params.FullLodDistance) {
-			float Delta = Distance - Params.FullLodDistance;
-			if (Delta > Controller->LodDistance.Distance2) {
-				TerrainLodMask = (TTerrainLodMask)ETerrainLodMaskPreset::Medium;
-			} if (Delta > Controller->LodDistance.Distance5) {
-				TerrainLodMask = (TTerrainLodMask)ETerrainLodMaskPreset::Far;
-			}
-		}*/
 
 		double Start = FPlatformTime::Seconds();
 
@@ -175,7 +165,7 @@ protected :
 
 class TCheckAreaMap {
 public:
-	TMap<uint32, std::shared_ptr<TTerrainLoadPipeline>> PlayerStreamingHandler;
+	TMap<uint32, std::shared_ptr<TTerrainLoadHelper>> PlayerStreamingHandler;
 	TMap<uint32, FVector> PlayerStreamingPosition;
 };
 

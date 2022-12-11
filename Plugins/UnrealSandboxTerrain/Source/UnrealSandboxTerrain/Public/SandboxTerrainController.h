@@ -25,8 +25,8 @@ class TTerrainData;
 class TCheckAreaMap;
 
 class TVoxelDataInfo;
-class TTerrainAreaPipeline;
-class TTerrainLoadPipeline;
+class TTerrainAreaHelper;
+class TTerrainLoadHelper;
 
 class UTerrainClientComponent;
 class UTerrainServerComponent;
@@ -290,8 +290,8 @@ public:
     ASandboxTerrainController();
     
     friend UTerrainZoneComponent;
-	friend TTerrainAreaPipeline;
-	friend TTerrainLoadPipeline;
+	friend TTerrainAreaHelper;
+	friend TTerrainLoadHelper;
 	friend UTerrainGeneratorComponent;
 	friend UTerrainClientComponent;
 	friend UTerrainServerComponent;
