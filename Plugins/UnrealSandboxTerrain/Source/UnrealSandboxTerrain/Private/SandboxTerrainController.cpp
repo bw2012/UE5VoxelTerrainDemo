@@ -438,10 +438,10 @@ void ASandboxTerrainController::BeginServerTerrainLoad() {
 			TTerrainLoadHelper Loader(TEXT("Initial_Load_Task"), this, Params);
             Loader.LoadArea(BeginServerTerrainLoadLocation);
 
-			//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Blue, TEXT("Finish initial terrain load"));
+			GEngine->AddOnScreenDebugMessage(-1, 10, FColor::White, TEXT("Finish initial terrain load"));
 			UE_LOG(LogSandboxTerrain, Warning, TEXT("======= Finish initial terrain load ======="));
 
-			//GetTerrainGenerator()->Clean();
+			GetTerrainGenerator()->Clean();
 
 			if (!bIsWorkFinished) {
 				if (bSaveAfterInitialLoad) {
