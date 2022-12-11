@@ -54,11 +54,11 @@ protected:
 
 	}
 
-	virtual void EndChunk(int x, int y) {
-
+	virtual void EndChunk(int X, int Y) {
+		Controller->GetTerrainGenerator()->Clean(TVoxelIndex(X, Y, 0));
 	}
 
-	virtual void BeginChunk(int x, int y) {
+	virtual void BeginChunk(int X, int Y) {
 
 	}
 
@@ -89,12 +89,12 @@ private:
 		Total = (AreaRadius * 2 + 1) * (AreaRadius * 2 + 1) * (Params.TerrainSizeMinZ + Params.TerrainSizeMaxZ + 1);
 		auto List = ReverseSpiralWalkthrough(AreaRadius);
 		for (auto& Itm : List) {
-			int x = Itm.X;
-			int y = Itm.Y;
+			int RelX = Itm.X;
+			int RelY = Itm.Y;
 
-			BeginChunk(x, y);
-			PerformChunk(x, y);
-			EndChunk(x, y);
+			BeginChunk(RelX + OriginIndex.X, RelY + OriginIndex.Y);
+			PerformChunk(RelX, RelY);
+			EndChunk(RelX + OriginIndex.X, RelY + OriginIndex.Y);
 
 			if (Controller->IsWorkFinished() || bIsStopped) {
 				return;

@@ -24,6 +24,8 @@ struct TInstanceMeshArray;
 struct FSandboxFoliage;
 
 typedef std::shared_ptr<TChunkData> TChunkDataPtr;
+typedef const std::shared_ptr<const TChunkData> TConstChunkData;
+
 typedef TMap<uint64, TInstanceMeshArray> TInstanceMeshTypeMap;
 
 
@@ -221,7 +223,7 @@ private:
 
 	ResultA A(const TVoxelIndex& ZoneIndex, const TVoxelIndex& VoxelIndex, TVoxelData* VoxelData, const TGenerateVdTempItm& Itm) const;
 
-	float B(const TVoxelIndex& Index, TVoxelData* VoxelData, const TChunkDataPtr ChunkData) const;
+	float B(const TVoxelIndex& Index, TVoxelData* VoxelData, TConstChunkData ChunkData) const;
 
 	void GenerateLandscapeZoneSlight(const TGenerateVdTempItm& Itm) const;
 

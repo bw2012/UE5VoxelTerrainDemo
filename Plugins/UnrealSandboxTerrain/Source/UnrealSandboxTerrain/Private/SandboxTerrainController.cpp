@@ -441,8 +441,6 @@ void ASandboxTerrainController::BeginServerTerrainLoad() {
 			GEngine->AddOnScreenDebugMessage(-1, 10, FColor::White, TEXT("Finish initial terrain load"));
 			UE_LOG(LogSandboxTerrain, Warning, TEXT("======= Finish initial terrain load ======="));
 
-			GetTerrainGenerator()->Clean();
-
 			if (!bIsWorkFinished) {
 				if (bSaveAfterInitialLoad) {
 					SaveMapAsync();

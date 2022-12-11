@@ -478,7 +478,7 @@ public:
 void UTerrainGeneratorComponent::GenerateLandscapeZoneSlight(const TGenerateVdTempItm& Itm) const {
     const TVoxelIndex& ZoneIndex = Itm.ZoneIndex;
     TVoxelData* VoxelData = Itm.Vd;
-    /* const */ TChunkDataPtr ChunkData = Itm.ChunkData;
+    TConstChunkData ChunkData = Itm.ChunkData;
 
     //DrawDebugBox(GetWorld(), VoxelData->getOrigin(), FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
 
@@ -552,7 +552,7 @@ void UTerrainGeneratorComponent::ForceGenerateZone(TVoxelData* VoxelData, const 
     GenerateZoneVolume(Itm);
 }
 
-bool IsLandscapeZone(const FVector& Pos, const TChunkDataPtr ChunkData) {
+bool IsLandscapeZone(const FVector& Pos, TConstChunkData ChunkData) {
     float ZoneHigh = Pos.Z + ZoneHalfSize;
     float ZoneLow = Pos.Z - ZoneHalfSize;
     float TerrainHigh = ChunkData->GetMaxHeightLevel();
@@ -565,7 +565,7 @@ void UTerrainGeneratorComponent::GenerateZoneVolumeWithFunction(const TGenerateV
 
     const TVoxelIndex& ZoneIndex = Itm.ZoneIndex;
     TVoxelData* VoxelData = Itm.Vd;
-    /* const */ TChunkDataPtr ChunkData = Itm.ChunkData;
+    TConstChunkData ChunkData = Itm.ChunkData;
     const int LOD = Itm.GenerationLOD;
     int zc = 0;
     int fc = 0;
@@ -658,7 +658,7 @@ void UTerrainGeneratorComponent::GenerateZoneVolume(const TGenerateVdTempItm& It
 
     const TVoxelIndex& ZoneIndex = Itm.ZoneIndex;
     TVoxelData* VoxelData = Itm.Vd;
-    /* const */ TChunkDataPtr ChunkData = Itm.ChunkData;
+    TConstChunkData ChunkData = Itm.ChunkData;
     const int LOD = Itm.GenerationLOD;
     int zc = 0;
     int fc = 0;
@@ -744,7 +744,7 @@ ResultA UTerrainGeneratorComponent::A(const TVoxelIndex& ZoneIndex, const TVoxel
     return Result;
 };
 
-float UTerrainGeneratorComponent::B(const TVoxelIndex& Index, TVoxelData* VoxelData, const TChunkDataPtr ChunkData) const {
+float UTerrainGeneratorComponent::B(const TVoxelIndex& Index, TVoxelData* VoxelData, TConstChunkData ChunkData) const {
     const FVector& LocalPos = VoxelData->voxelIndexToVector(Index.X, Index.Y, Index.Z);
     const FVector& WorldPos = LocalPos + VoxelData->getOrigin();
     const float GroundLevel = ChunkData->GetHeightLevel(Index.X, Index.Y);
@@ -945,6 +945,10 @@ void UTerrainGeneratorComponent::Clean() {
 void UTerrainGeneratorComponent::Clean(const TVoxelIndex& Index) {
     const std::lock_guard<std::mutex> lock(ChunkDataMapMutex);
     ChunkDataCollection.erase(Index);
+
+    //if (ChunkDataCollection.find(Index) != ChunkDataCollection.end()) {
+    //    ChunkDataCollection[Index] = nullptr;
+    //}
 }
 
 //======================================================================================================================================================================
