@@ -471,7 +471,7 @@ public:
 	// async tasks
 	//===============================================================================
 
-	void RunThread(std::function<void()> Function);
+	void AddAsyncTask(std::function<void()> Function);
 
 	//========================================================================================
 	// network

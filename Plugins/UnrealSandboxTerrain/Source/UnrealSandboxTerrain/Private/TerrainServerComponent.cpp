@@ -70,7 +70,8 @@ bool UTerrainServerComponent::OnConnectionAccepted(FSocket* SocketPtr, const FIP
 	//SendVdByIndex(SocketPtr, TestIndex);
 	// test
 
-	GetTerrainController()->RunThread([=]() {
+	// TODO use native threads 
+	GetTerrainController()->AddAsyncTask([=]() {
 		FSimpleAbstractSocket_FSocket SimpleAbstractSocket(SocketPtr);
 		while (true) {
 			if (SocketPtr->GetConnectionState() != ESocketConnectionState::SCS_Connected) {

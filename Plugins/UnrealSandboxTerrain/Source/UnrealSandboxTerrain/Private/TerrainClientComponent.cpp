@@ -64,7 +64,9 @@ void UTerrainClientComponent::BeginPlay() {
 				if (isConnected) {
 					UE_LOG(LogSandboxTerrain, Log, TEXT("Client: Connected to voxel data server"));
 					ClientSocketPtr = SocketPtr;
-					GetTerrainController()->RunThread([=]() {
+
+					// TODO use native threads 
+					GetTerrainController()->AddAsyncTask([=]() {
 						GetTerrainController()->OnClientConnected();
 
 						while (true) {

@@ -274,7 +274,7 @@ void ASandboxTerrainController::PerformCheckArea() {
                 Params.TerrainSizeMaxZ = LocationIndex.Z + DynamicLoadArea.TerrainSizeMaxZ;
                 HandlerPtr->SetParams(TEXT("Player_Swap_Terrain_Task"), this, Params);
                                
-                RunThread([=]() {
+                AddAsyncTask([=]() {
                     HandlerPtr->LoadArea(PlayerLocation);
                 });
 
@@ -413,7 +413,7 @@ void ASandboxTerrainController::BeginClientTerrainLoad(const TVoxelIndex& ZoneIn
 	Params.TerrainSizeMaxZ = InitialLoadArea.TerrainSizeMaxZ;
 	Params.Ignore = Ignore;
 
-	RunThread([=]() {
+	AddAsyncTask([=]() {
 		const TVoxelIndex Index = ZoneIndex;
 		UE_LOG(LogSandboxTerrain, Warning, TEXT("Client: Begin terrain load at location: %f %f %f"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
 		TTerrainLoadHelper Loader(TEXT("test_job"), this, Params);
@@ -432,7 +432,7 @@ void ASandboxTerrainController::BeginServerTerrainLoad() {
 		Params.TerrainSizeMinZ = InitialLoadArea.TerrainSizeMinZ;
 		Params.TerrainSizeMaxZ = InitialLoadArea.TerrainSizeMaxZ;
 
-        RunThread([=]() {            
+        AddAsyncTask([=]() {            
 			UE_LOG(LogSandboxTerrain, Warning, TEXT("Server: Begin terrain load at location: %f %f %f"), BeginServerTerrainLoadLocation.X, BeginServerTerrainLoadLocation.Y, BeginServerTerrainLoadLocation.Z);
 
 			TTerrainLoadHelper Loader(TEXT("Initial_Load_Task"), this, Params);
@@ -479,7 +479,7 @@ void ASandboxTerrainController::OnProgressBackgroundSaveTerrain(float Progress) 
 
 void ASandboxTerrainController::SaveMapAsync() {
 	UE_LOG(LogSandboxTerrain, Log, TEXT("Start save terrain async"));
-	RunThread([&]() {
+	AddAsyncTask([&]() {
 		std::function<void(uint32, uint32)> OnProgress = [=](uint32 Processed, uint32 Total) {
 			if (Processed % 10 == 0) {
 				float Progress = (float)Processed / (float)Total;
@@ -860,7 +860,7 @@ void ASandboxTerrainController::ExecGameThreadAddZoneAndApplyMesh(const TVoxelIn
 	InvokeSafe(Function);
 }
 
-void ASandboxTerrainController::RunThread(std::function<void()> Function) {
+void ASandboxTerrainController::AddAsyncTask(std::function<void()> Function) {
 	ThreadPool->addTask(Function);
 }
 
