@@ -456,6 +456,12 @@ void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgr
 
 		VdInfoPtr->Lock();
 
+		UE_LOG(LogSandboxTerrain, Warning, TEXT("save -> %d %d %d"), Index.X, Index.Y, Index.Z);
+
+		if (Index.X == -44 && Index.Y == -23 && Index.Z == -1) {
+			UE_LOG(LogSandboxTerrain, Warning, TEXT("test -> %d %d %d"), Index.X, Index.Y, Index.Z);
+		}
+
 		if (VdInfoPtr->IsNeedTerrainSave()) {
 			if (VdInfoPtr->Vd && VdInfoPtr->CanSaveVd()) {
 				DataVd = SerializeVd(VdInfoPtr->Vd);

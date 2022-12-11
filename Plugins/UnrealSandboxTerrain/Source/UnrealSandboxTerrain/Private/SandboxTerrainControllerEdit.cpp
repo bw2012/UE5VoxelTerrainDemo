@@ -582,7 +582,9 @@ void ASandboxTerrainController::EditTerrain(const H& ZoneHandler) {
 				PerformZoneEditHandler(VoxelDataInfo, ZoneHandler, [&](TMeshDataPtr MeshDataPtr) {
 					TerrainData->PutMeshDataToCache(ZoneIndex, MeshDataPtr);
 					ExecGameThreadAddZoneAndApplyMesh(ZoneIndex, MeshDataPtr);
-					//TerrainData->AddSaveIndex(ZoneIndex);
+
+					TerrainData->AddSaveIndex(ZoneIndex); // TODO wait conv
+					VoxelDataInfo->SetNeedTerrainSave();
 				});
 			} else {
 				PerformZoneEditHandler(VoxelDataInfo, ZoneHandler, [&](TMeshDataPtr MeshDataPtr) {

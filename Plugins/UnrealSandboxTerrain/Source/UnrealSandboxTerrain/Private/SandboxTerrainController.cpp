@@ -403,6 +403,23 @@ void ASandboxTerrainController::BeginPlayServer() {
 		TerrainServerComponent->RegisterComponent();
 		TerrainServerComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
 	}
+
+
+	TVoxelIndex T(-44, -23, -1);
+	FVector ZonePos = GetZonePos(T);
+	DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
+
+	/*
+	{
+		TVoxelIndex T(-17, -3, 0);
+		FVector ZonePos = GetZonePos(T);
+		DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
+		auto* tvd = LoadVoxelDataByIndex(T);
+		if (tvd) {
+			UE_LOG(LogSandboxTerrain, Warning, TEXT("TEST: %d"), (int)tvd->getDensityFillState());
+		}
+	}
+	*/
 }
 
 void ASandboxTerrainController::BeginClientTerrainLoad(const TVoxelIndex& ZoneIndex, const TSet<TVoxelIndex>& Ignore) {
@@ -827,7 +844,7 @@ void ASandboxTerrainController::ExecGameThreadZoneApplyMesh(const TVoxelIndex& I
 	InvokeSafe(Function);
 }
 
-//TODO use mesh from cache
+//TODO move to conveyor
 void ASandboxTerrainController::ExecGameThreadAddZoneAndApplyMesh(const TVoxelIndex& Index, TMeshDataPtr MeshDataPtr, const TTerrainLodMask TerrainLodMask, const bool bIsNewGenerated) {
 	FVector ZonePos = GetZonePos(Index);
 	ASandboxTerrainController* Controller = this;
