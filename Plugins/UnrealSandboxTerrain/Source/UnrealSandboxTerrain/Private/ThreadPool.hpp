@@ -54,10 +54,16 @@ public:
         shutdownAndWait();
     };
 
-    void addTask(const std::function<void()> task) {
+    void addTask(const std::function<void()> task, bool bHiPrio = false) {
         std::lock_guard<std::mutex> lock(mutex);
         task_size++;
-        task_list.push_back(task);
+
+        if (bHiPrio) {
+            task_list.push_front(task);
+        } else {
+            task_list.push_back(task);
+        }
+
         cv.notify_one();
     }
 
