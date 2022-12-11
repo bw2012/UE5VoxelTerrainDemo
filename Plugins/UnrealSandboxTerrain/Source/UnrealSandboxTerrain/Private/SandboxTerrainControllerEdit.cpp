@@ -389,18 +389,6 @@ void ASandboxTerrainController::FillTerrainRound(const FVector& Origin, float Ex
 // Edit Terrain
 //======================================================================================================================================================================
 
-template<class H>
-class FTerrainEditThread : public FRunnable {
-public:
-	H ZoneHandler;
-	ASandboxTerrainController* ControllerInstance;
-
-	virtual uint32 Run() {
-		ControllerInstance->EditTerrain(ZoneHandler);
-		return 0;
-	}
-};
-
 void ASandboxTerrainController::RemoveInstanceAtMesh(UHierarchicalInstancedStaticMeshComponent* InstancedMeshComp, int32 ItemIndex) {
 	InstancedMeshComp->RemoveInstance(ItemIndex);
 	TArray<USceneComponent*> Parents;
@@ -417,13 +405,9 @@ void ASandboxTerrainController::RemoveInstanceAtMesh(UHierarchicalInstancedStati
 
 template<class H>
 void ASandboxTerrainController::PerformTerrainChange(H Handler) {
-	FTerrainEditThread<H>* EditThread = new FTerrainEditThread<H>();
-	EditThread->ZoneHandler = Handler;
-	EditThread->ControllerInstance = this;
-
-	FString ThreadName = FString::Printf(TEXT("terrain_change-thread-%d"), FPlatformTime::Seconds());
-	FRunnableThread* Thread = FRunnableThread::Create(EditThread, *ThreadName);
-	//FIXME delete thread after finish
+	AddAsyncTask([=] {
+		EditTerrain(Handler);
+	});
 
 	TArray<struct FOverlapResult> Result;
 	FCollisionQueryParams CollisionQueryParams = FCollisionQueryParams::DefaultQueryParam;

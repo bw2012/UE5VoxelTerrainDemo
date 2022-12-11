@@ -36,7 +36,7 @@ bool CheckSaveDirLocal(FString SaveDir) {
 }
 
 void APreparationHelperActor::CheckUpdates() {
-	FString Url = TEXT("http://172.86.122.78:8080/api/v1/lastversion?v=") + GetVersionString();
+	FString Url = FString::Printf(TEXT("http://172.86.122.78:8080/api/v1/lastversion?v=%s&p=%s"), *GetVersionString(), *GetSandboxPlayerId());
 	FHttpModule& HttpModule = FHttpModule::Get();
 	TSharedRef<IHttpRequest, ESPMode::ThreadSafe> RestRequest = HttpModule.CreateRequest();
 	RestRequest->SetVerb(TEXT("GET"));
