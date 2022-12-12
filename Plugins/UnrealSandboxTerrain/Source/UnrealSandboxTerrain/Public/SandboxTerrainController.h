@@ -25,11 +25,13 @@ class TTerrainData;
 class TCheckAreaMap;
 
 class TVoxelDataInfo;
-class TTerrainAreaPipeline;
-class TTerrainLoadPipeline;
+class TTerrainAreaHelper;
+class TTerrainLoadHelper;
 
 class UTerrainClientComponent;
 class UTerrainServerComponent;
+
+class TThreadPool;
 
 typedef TMap<uint64, TInstanceMeshArray> TInstanceMeshTypeMap;
 typedef std::shared_ptr<TMeshData> TMeshDataPtr;
@@ -74,6 +76,9 @@ struct FTerrainDebugInfo {
 
 	UPROPERTY()
 	int ConveyorSize = 0;
+
+	UPROPERTY()
+	int TaskPoolSize = 0;
 };
 
 USTRUCT()
@@ -285,8 +290,8 @@ public:
     ASandboxTerrainController();
     
     friend UTerrainZoneComponent;
-	friend TTerrainAreaPipeline;
-	friend TTerrainLoadPipeline;
+	friend TTerrainAreaHelper;
+	friend TTerrainLoadHelper;
 	friend UTerrainGeneratorComponent;
 	friend UTerrainClientComponent;
 	friend UTerrainServerComponent;
@@ -466,7 +471,7 @@ public:
 	// async tasks
 	//===============================================================================
 
-	void RunThread(TUniqueFunction<void()> Function);
+	void AddAsyncTask(std::function<void()> Function);
 
 	//========================================================================================
 	// network
@@ -572,9 +577,7 @@ private:
 	// threads
 	//===============================================================================
 
-	std::shared_timed_mutex ThreadListMutex;
-
-	FGraphEventArray TerrainControllerEventList;
+	TThreadPool* ThreadPool = nullptr;
 
 	//===============================================================================
 	// voxel data storage

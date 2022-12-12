@@ -38,5 +38,16 @@ FString UDebugInfoWidget::SandboxDebugInfo2Text() {
 	return FString(TEXT(""));
 }
 
+FString UDebugInfoWidget::SandboxDebugInfo3Text() {
+	if (TerrainController) {
+		FTerrainDebugInfo Memstat = TerrainController->GetMemstat();
+
+		FString Res = FString::Printf(TEXT("tasks: %d"), Memstat.TaskPoolSize);
+		return Res;
+	}
+
+	return FString(TEXT(""));
+}
+
 
 

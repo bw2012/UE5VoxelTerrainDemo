@@ -1,6 +1,4 @@
 #include "SandboxTerrainController.h"
-//#include "Serialization/ArchiveLoadCompressedProxy.h"
-//#include "Serialization/ArchiveSaveCompressedProxy.h"
 #include "Async/Async.h"
 #include "DrawDebugHelpers.h"
 #include "kvdb.hpp"
@@ -18,14 +16,11 @@
 #include "utils.hpp"
 #include "VoxelDataInfo.hpp"
 #include "TerrainData.hpp"
-#include "TerrainAreaPipeline.hpp"
+#include "TerrainAreaHelper.hpp"
 #include "TerrainEdit.hpp"
+#include "ThreadPool.hpp"
 
 #include "memstat.h"
-
-
-
-TValueDataPtr SerializeMeshData(TMeshDataPtr MeshDataPtr);
 
 
 // ====================================
@@ -104,6 +99,8 @@ void ASandboxTerrainController::BeginPlay() {
 	Super::BeginPlay();
 	UE_LOG(LogSandboxTerrain, Log, TEXT("ASandboxTerrainController::BeginPlay()"));
 
+	ThreadPool = new TThreadPool(5);
+
 	GeneratorComponent = NewTerrainGenerator();
 	GeneratorComponent->RegisterComponent();
 
@@ -156,11 +153,14 @@ void ASandboxTerrainController::BeginPlay() {
 void ASandboxTerrainController::ShutdownThreads() {
 	bIsWorkFinished = true;
 
-	std::unique_lock<std::shared_timed_mutex> Lock(ThreadListMutex);
-	UE_LOG(LogSandboxTerrain, Warning, TEXT("TerrainControllerEventList -> %d threads. Waiting for finish..."), TerrainControllerEventList.Num());
-	for (auto& TerrainControllerEvent : TerrainControllerEventList) {
-		while (!TerrainControllerEvent->IsComplete()) {};
-	}
+	UE_LOG(LogSandboxTerrain, Warning, TEXT("Shutdown thread pool..."));
+	ThreadPool->shutdownAndWait();
+
+	//std::unique_lock<std::shared_timed_mutex> Lock(ThreadListMutex);
+	//UE_LOG(LogSandboxTerrain, Warning, TEXT("TerrainControllerEventList -> %d threads. Waiting for finish..."), TerrainControllerEventList.Num());
+	//for (auto& TerrainControllerEvent : TerrainControllerEventList) {
+	//	while (!TerrainControllerEvent->IsComplete()) {};
+	//}
 
 	//UE_LOG(LogSandboxTerrain, Warning, TEXT("ConveyorList -> %d threads. Waiting for finish..."), ConveyorList.size());
 	//while (ConveyorList.size() > 0) {
@@ -184,6 +184,8 @@ void ASandboxTerrainController::EndPlay(const EEndPlayReason::Type EndPlayReason
 
 	SaveTerrainMetadata();
 	ModifiedVdMap.Empty();
+
+	delete ThreadPool;
 }
 
 void ASandboxTerrainController::Tick(float DeltaTime) {
@@ -250,13 +252,13 @@ void ASandboxTerrainController::PerformCheckArea() {
                                 
                 if(CheckAreaMap->PlayerStreamingHandler.Contains(PlayerId)){
                     // cancel old
-                    std::shared_ptr<TTerrainLoadPipeline> HandlerPtr2 = CheckAreaMap->PlayerStreamingHandler[PlayerId];
+                    std::shared_ptr<TTerrainLoadHelper> HandlerPtr2 = CheckAreaMap->PlayerStreamingHandler[PlayerId];
                     HandlerPtr2->Cancel();
                     CheckAreaMap->PlayerStreamingHandler.Remove(PlayerId);
                 }
                 
                 // start new
-                std::shared_ptr<TTerrainLoadPipeline> HandlerPtr = std::make_shared<TTerrainLoadPipeline>();
+                std::shared_ptr<TTerrainLoadHelper> HandlerPtr = std::make_shared<TTerrainLoadHelper>();
 				CheckAreaMap->PlayerStreamingHandler.Add(PlayerId, HandlerPtr);
 
                 if(bShowStartSwapPos){
@@ -265,14 +267,14 @@ void ASandboxTerrainController::PerformCheckArea() {
                     DrawDebugCylinder(GetWorld(), FVector(Tmp.X, Tmp.Y, Len), FVector(Tmp.X, Tmp.Y, -Len), DynamicLoadArea.Radius, 128, FColor(255, 0, 255, 128), false, 30);
                 }
                 
-				TTerrainAreaPipelineParams Params;
+				TTerrainAreaLoadParams Params;
                 Params.FullLodDistance = DynamicLoadArea.FullLodDistance;
                 Params.Radius = DynamicLoadArea.Radius;
                 Params.TerrainSizeMinZ = LocationIndex.Z + DynamicLoadArea.TerrainSizeMinZ;
                 Params.TerrainSizeMaxZ = LocationIndex.Z + DynamicLoadArea.TerrainSizeMaxZ;
                 HandlerPtr->SetParams(TEXT("Player_Swap_Terrain_Task"), this, Params);
                                
-                RunThread([=]() {
+                AddAsyncTask([=]() {
                     HandlerPtr->LoadArea(PlayerLocation);
                 });
 
@@ -402,46 +404,36 @@ void ASandboxTerrainController::BeginPlayServer() {
 		TerrainServerComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
 	}
 
-	// debug
+
+	TVoxelIndex T(-44, -23, -1);
+	FVector ZonePos = GetZonePos(T);
+	DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
+
 	/*
-	TVoxelIndex TestIndex(2, 0, 0);
-	FVector TestZonePos = GetZonePos(TestIndex);
-	DrawDebugBox(GetWorld(), TestZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(0, 0, 255, 100), true);
-	bool bIsLoaded = LoadDataFromKvFile(TdFile, TestIndex, [&](TValueDataPtr DataPtr) {
-		UE_LOG(LogTemp, Warning, TEXT("TEST LOAD -> %d %d %d"), TestIndex.X, TestIndex.Y, TestIndex.Z);
-		usbt::TFastUnsafeDeserializer Deserializer(DataPtr->data());
-		TKvFileZodeData ZoneHeader;
-		Deserializer >> ZoneHeader;
-
-		UE_LOG(LogTemp, Warning, TEXT("TEST -> LenVd=%d LenMd=%d LenObj=%d"), ZoneHeader.LenVd, ZoneHeader.LenMd, ZoneHeader.LenObj);
-
-		if (ZoneHeader.Is(TZoneFlag::NoVoxelData)) {
-			UE_LOG(LogTemp, Warning, TEXT("NoVoxelData"));
+	{
+		TVoxelIndex T(-17, -3, 0);
+		FVector ZonePos = GetZonePos(T);
+		DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
+		auto* tvd = LoadVoxelDataByIndex(T);
+		if (tvd) {
+			UE_LOG(LogSandboxTerrain, Warning, TEXT("TEST: %d"), (int)tvd->getDensityFillState());
 		}
-
-		if (ZoneHeader.Is(TZoneFlag::NoMesh)) {
-			UE_LOG(LogTemp, Warning, TEXT("NoMesh"));
-		}
-
-		TZoneModificationData& Data = ModifiedVdMap.FindOrAdd(TestIndex);
-		UE_LOG(LogTemp, Warning, TEXT("Zone: %d %d %d -> ChangeCounter = %d"), TestIndex.X, TestIndex.Y, TestIndex.Z, Data.ChangeCounter);
-
-	});
+	}
 	*/
 }
 
 void ASandboxTerrainController::BeginClientTerrainLoad(const TVoxelIndex& ZoneIndex, const TSet<TVoxelIndex>& Ignore) {
-	TTerrainAreaPipelineParams Params;
+	TTerrainAreaLoadParams Params;
 	Params.FullLodDistance = InitialLoadArea.FullLodDistance;
 	Params.Radius = InitialLoadArea.Radius;
 	Params.TerrainSizeMinZ = InitialLoadArea.TerrainSizeMinZ;
 	Params.TerrainSizeMaxZ = InitialLoadArea.TerrainSizeMaxZ;
 	Params.Ignore = Ignore;
 
-	RunThread([=]() {
+	AddAsyncTask([=]() {
 		const TVoxelIndex Index = ZoneIndex;
 		UE_LOG(LogSandboxTerrain, Warning, TEXT("Client: Begin terrain load at location: %f %f %f"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
-		TTerrainLoadPipeline Loader(TEXT("test_job"), this, Params);
+		TTerrainLoadHelper Loader(TEXT("test_job"), this, Params);
 		Loader.LoadArea(Index);
 	});
 }
@@ -451,24 +443,20 @@ void ASandboxTerrainController::BeginServerTerrainLoad() {
     
     if (!bGenerateOnlySmallSpawnPoint) {
         // async loading other zones
-		TTerrainAreaPipelineParams Params;
+		TTerrainAreaLoadParams Params;
 		Params.FullLodDistance = InitialLoadArea.FullLodDistance;
 		Params.Radius = InitialLoadArea.Radius;
 		Params.TerrainSizeMinZ = InitialLoadArea.TerrainSizeMinZ;
 		Params.TerrainSizeMaxZ = InitialLoadArea.TerrainSizeMaxZ;
 
-        RunThread([=]() {            
+        AddAsyncTask([=]() {            
 			UE_LOG(LogSandboxTerrain, Warning, TEXT("Server: Begin terrain load at location: %f %f %f"), BeginServerTerrainLoadLocation.X, BeginServerTerrainLoadLocation.Y, BeginServerTerrainLoadLocation.Z);
 
-			TTerrainLoadPipeline Loader(TEXT("Initial_Load_Task"), this, Params);
+			TTerrainLoadHelper Loader(TEXT("Initial_Load_Task"), this, Params);
             Loader.LoadArea(BeginServerTerrainLoadLocation);
 
-			//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Blue, TEXT("Finish initial terrain load"));
+			GEngine->AddOnScreenDebugMessage(-1, 10, FColor::White, TEXT("Finish initial terrain load"));
 			UE_LOG(LogSandboxTerrain, Warning, TEXT("======= Finish initial terrain load ======="));
-
-			//GetTerrainGenerator()->Clean();
-
-			//UE_LOG(LogSandboxTerrain, Warning, TEXT("vd -> %d, md -> %d, cd -> %d"), vd::tools::memory::getVdCount(), md_counter.load(), cd_counter.load());
 
 			if (!bIsWorkFinished) {
 				if (bSaveAfterInitialLoad) {
@@ -506,20 +494,19 @@ void ASandboxTerrainController::OnProgressBackgroundSaveTerrain(float Progress) 
 
 void ASandboxTerrainController::SaveMapAsync() {
 	UE_LOG(LogSandboxTerrain, Log, TEXT("Start save terrain async"));
-	RunThread([&]() {
-
+	AddAsyncTask([&]() {
 		std::function<void(uint32, uint32)> OnProgress = [=](uint32 Processed, uint32 Total) {
 			if (Processed % 10 == 0) {
 				float Progress = (float)Processed / (float)Total;
 				//UE_LOG(LogSandboxTerrain, Log, TEXT("Save terrain: %d / %d - %f%%"), Processed, Total, Progress * 100);
-				OnProgressBackgroundSaveTerrain(Progress);
+				AsyncTask(ENamedThreads::GameThread, [=]() { OnProgressBackgroundSaveTerrain(Progress); });
 			}
 		};
 
-		OnStartBackgroundSaveTerrain();
+		AsyncTask(ENamedThreads::GameThread, [=]() { OnStartBackgroundSaveTerrain(); });
 		Save(OnProgress);
 		bForcePerformHardUnload = true;
-		OnFinishBackgroundSaveTerrain();
+		AsyncTask(ENamedThreads::GameThread, [=]() { OnFinishBackgroundSaveTerrain(); });
 
 		UE_LOG(LogSandboxTerrain, Log, TEXT("Finish save terrain async"));
 		//UE_LOG(LogSandboxTerrain, Warning, TEXT("vd -> %d, md -> %d, cd -> %d"), vd::tools::memory::getVdCount(), md_counter.load(), cd_counter.load());
@@ -857,7 +844,7 @@ void ASandboxTerrainController::ExecGameThreadZoneApplyMesh(const TVoxelIndex& I
 	InvokeSafe(Function);
 }
 
-//TODO use mesh from cache
+//TODO move to conveyor
 void ASandboxTerrainController::ExecGameThreadAddZoneAndApplyMesh(const TVoxelIndex& Index, TMeshDataPtr MeshDataPtr, const TTerrainLodMask TerrainLodMask, const bool bIsNewGenerated) {
 	FVector ZonePos = GetZonePos(Index);
 	ASandboxTerrainController* Controller = this;
@@ -888,9 +875,8 @@ void ASandboxTerrainController::ExecGameThreadAddZoneAndApplyMesh(const TVoxelIn
 	InvokeSafe(Function);
 }
 
-void ASandboxTerrainController::RunThread(TUniqueFunction<void()> Function) {
-    std::unique_lock<std::shared_timed_mutex> Lock(ThreadListMutex);
-    TerrainControllerEventList.Add(FFunctionGraphTask::CreateAndDispatchWhenReady(MoveTemp(Function), TStatId(), nullptr, ENamedThreads::AnyBackgroundThreadNormalTask));
+void ASandboxTerrainController::AddAsyncTask(std::function<void()> Function) {
+	ThreadPool->addTask(Function);
 }
 
 //======================================================================================================================================================================
@@ -1125,5 +1111,5 @@ float ASandboxTerrainController::GetGroundLevel(const FVector& Pos) {
 }
 
 FTerrainDebugInfo ASandboxTerrainController::GetMemstat() {
-	return FTerrainDebugInfo{ vd::tools::memory::getVdCount(), md_counter.load(), cd_counter.load(), (int)ConveyorList.size()};
+	return FTerrainDebugInfo{ vd::tools::memory::getVdCount(), md_counter.load(), cd_counter.load(), (int)ConveyorList.size(), ThreadPool->size()};
 }
