@@ -191,7 +191,7 @@ void ASandboxTerrainController::EndPlay(const EEndPlayReason::Type EndPlayReason
 void ASandboxTerrainController::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
-	const std::lock_guard<std::mutex> Lock(ConveyorMutex);
+	const std::lock_guard<std::recursive_mutex> Lock(ConveyorMutex);
 
 	double ConvTime = 0;
 	while (ConvTime < ConveyorMaxTime) {
@@ -819,14 +819,14 @@ void ASandboxTerrainController::InvokeSafe(std::function<void()> Function) {
 }
 
 void ASandboxTerrainController::AddTaskToConveyor(std::function<void()> Function) {
-	const std::lock_guard<std::mutex> Lock(ConveyorMutex);
+	const std::lock_guard<std::recursive_mutex> Lock(ConveyorMutex);
 	ConveyorList.push_back(Function);
 }
 
 void ASandboxTerrainController::ExecGameThreadZoneApplyMesh(const TVoxelIndex& Index, UTerrainZoneComponent* Zone, TMeshDataPtr MeshDataPtr,const TTerrainLodMask TerrainLodMask) {
 	ASandboxTerrainController* Controller = this;
 
-	TFunction<void()> Function = [=]() {
+	std::function<void()> Function = [=]() {
 		if (!bIsGameShutdown) {
 			if (MeshDataPtr) {
 				TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(Index);
@@ -841,7 +841,8 @@ void ASandboxTerrainController::ExecGameThreadZoneApplyMesh(const TVoxelIndex& I
 		}
 	};
 
-	InvokeSafe(Function);
+	//InvokeSafe(Function);
+	AddTaskToConveyor(Function);
 }
 
 //TODO move to conveyor
@@ -849,7 +850,7 @@ void ASandboxTerrainController::ExecGameThreadAddZoneAndApplyMesh(const TVoxelIn
 	FVector ZonePos = GetZonePos(Index);
 	ASandboxTerrainController* Controller = this;
 
-	TFunction<void()> Function = [=]() {
+	std::function<void()> Function = [=]() {
 		if (!bIsGameShutdown) {
 			if (MeshDataPtr) {
 				UTerrainZoneComponent* Zone = AddTerrainZone(ZonePos);
@@ -872,7 +873,8 @@ void ASandboxTerrainController::ExecGameThreadAddZoneAndApplyMesh(const TVoxelIn
 		}
 	};
 
-	InvokeSafe(Function);
+	//InvokeSafe(Function);
+	AddTaskToConveyor(Function);
 }
 
 void ASandboxTerrainController::AddAsyncTask(std::function<void()> Function) {
@@ -915,20 +917,7 @@ void ASandboxTerrainController::OnLoadZone(const TVoxelIndex& Index, UTerrainZon
 }
 
 void ASandboxTerrainController::OnFinishAsyncPhysicsCook(const TVoxelIndex& ZoneIndex) {
-    /*
-	InvokeSafe([=]() {
-		UTerrainZoneComponent* Zone = GetZoneByVectorIndex(ZoneIndex);
-		if (Zone) {
-			TVoxelDataInfo* VoxelDataInfo = GetVoxelDataInfo(ZoneIndex);
-			if (VoxelDataInfo->IsNewGenerated()) {
-				if (TerrainGeneratorComponent && FoliageDataAsset) {
-					TerrainGeneratorComponent->GenerateNewFoliage(Zone);
-				}
-				OnGenerateNewZone(Zone);
-			}
-		}
-	});
-     */
+
 }
 
 

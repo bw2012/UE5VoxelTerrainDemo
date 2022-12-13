@@ -561,7 +561,7 @@ private:
 	// async tasks
 	//===============================================================================
 
-	std::mutex ConveyorMutex;
+	std::recursive_mutex ConveyorMutex;
 
 	std::list<std::function<void()>> ConveyorList;
 
