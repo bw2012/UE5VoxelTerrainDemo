@@ -32,6 +32,7 @@ class UTerrainClientComponent;
 class UTerrainServerComponent;
 
 class TThreadPool;
+class TConveyour;
 
 typedef TMap<uint64, TInstanceMeshArray> TInstanceMeshTypeMap;
 typedef std::shared_ptr<TMeshData> TMeshDataPtr;
@@ -561,9 +562,7 @@ private:
 	// async tasks
 	//===============================================================================
 
-	std::mutex ConveyorMutex;
-
-	std::list<std::function<void()>> ConveyorList;
+	TConveyour* Conveyor;
 
 	void AddTaskToConveyor(std::function<void()> Function);
 

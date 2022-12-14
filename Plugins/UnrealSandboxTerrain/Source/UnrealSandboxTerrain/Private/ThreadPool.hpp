@@ -6,6 +6,44 @@
 #include <mutex>
 #include <functional>
 
+class TConveyour {
+
+private:
+    std::mutex m;
+
+    std::list<std::function<void()>> list;
+
+    std::atomic<int> s{0};
+
+public:
+
+    void push(std::function<void()> f) {
+        const std::lock_guard<std::mutex> lock(m);
+        list.push_back(f);
+        s++;
+    }
+
+    bool pop(std::function<void()>& f) {
+        const std::lock_guard<std::mutex> lock(m);
+
+        if (list.size() == 0) {
+            return false;
+        }
+
+        f = list.front();
+        list.pop_front();
+        s--;
+
+        return true;
+    }
+
+    int size() {
+        return s.load();
+    }
+
+};
+
+
 class TThreadPool {
 
 private:
