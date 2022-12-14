@@ -100,6 +100,7 @@ void ASandboxTerrainController::BeginPlay() {
 	UE_LOG(LogSandboxTerrain, Log, TEXT("ASandboxTerrainController::BeginPlay()"));
 
 	ThreadPool = new TThreadPool(5);
+	Conveyor = new TConveyour();
 
 	GeneratorComponent = NewTerrainGenerator();
 	GeneratorComponent->RegisterComponent();
@@ -186,22 +187,18 @@ void ASandboxTerrainController::EndPlay(const EEndPlayReason::Type EndPlayReason
 	ModifiedVdMap.Empty();
 
 	delete ThreadPool;
+	delete Conveyor;
 }
 
 void ASandboxTerrainController::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
-	const std::lock_guard<std::recursive_mutex> Lock(ConveyorMutex);
-
 	double ConvTime = 0;
 	while (ConvTime < ConveyorMaxTime) {
-		if (ConveyorList.size() > 0) {
+		std::function<void()> Function;
+		if (Conveyor->pop(Function)) {
 			double Start = FPlatformTime::Seconds();
-
-			const auto& Function = ConveyorList.front();
 			Function();
-			ConveyorList.pop_front();
-
 			double End = FPlatformTime::Seconds();
 			ConvTime += (End - Start);
 		} else {
@@ -819,8 +816,7 @@ void ASandboxTerrainController::InvokeSafe(std::function<void()> Function) {
 }
 
 void ASandboxTerrainController::AddTaskToConveyor(std::function<void()> Function) {
-	const std::lock_guard<std::recursive_mutex> Lock(ConveyorMutex);
-	ConveyorList.push_back(Function);
+	Conveyor->push(Function);
 }
 
 void ASandboxTerrainController::ExecGameThreadZoneApplyMesh(const TVoxelIndex& Index, UTerrainZoneComponent* Zone, TMeshDataPtr MeshDataPtr,const TTerrainLodMask TerrainLodMask) {
@@ -1100,5 +1096,5 @@ float ASandboxTerrainController::GetGroundLevel(const FVector& Pos) {
 }
 
 FTerrainDebugInfo ASandboxTerrainController::GetMemstat() {
-	return FTerrainDebugInfo{ vd::tools::memory::getVdCount(), md_counter.load(), cd_counter.load(), (int)ConveyorList.size(), ThreadPool->size()};
+	return FTerrainDebugInfo{ vd::tools::memory::getVdCount(), md_counter.load(), cd_counter.load(), (int)Conveyor->size(), ThreadPool->size()};
 }
