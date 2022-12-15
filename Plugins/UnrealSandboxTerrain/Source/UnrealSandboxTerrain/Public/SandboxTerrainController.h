@@ -566,9 +566,9 @@ private:
 
 	void AddTaskToConveyor(std::function<void()> Function);
 
-	void ExecGameThreadZoneApplyMesh(const TVoxelIndex& Index, UTerrainZoneComponent* Zone, TMeshDataPtr MeshDataPtr, const TTerrainLodMask TerrainLodMask = 0x0);
+	void ExecGameThreadZoneApplyMesh(const TVoxelIndex& Index, UTerrainZoneComponent* Zone, TMeshDataPtr MeshDataPtr);
 
-	void ExecGameThreadAddZoneAndApplyMesh(const TVoxelIndex& Index, TMeshDataPtr MeshDataPtr, const TTerrainLodMask TerrainLodMask = 0x0, const bool bIsNewGenerated = false);
+	void ExecGameThreadAddZoneAndApplyMesh(const TVoxelIndex& Index, TMeshDataPtr MeshDataPtr, const bool bIsNewGenerated = false, const bool bIsChanged = false);
 
 	//void ExecGameThreadRestoreSoftUnload(const TVoxelIndex& ZoneIndex);
 

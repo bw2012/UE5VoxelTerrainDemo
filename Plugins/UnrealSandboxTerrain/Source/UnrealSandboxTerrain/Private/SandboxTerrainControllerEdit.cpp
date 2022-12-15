@@ -488,13 +488,13 @@ void ASandboxTerrainController::PerformEachZone(const FVector& Origin, const flo
 template<class H>
 void ASandboxTerrainController::PerformZoneEditHandler(TVoxelDataInfoPtr VdInfoPtr, H Handler, std::function<void(TMeshDataPtr)> OnComplete) {
 	bool bIsChanged = Handler(VdInfoPtr->Vd);
-	if (bIsChanged) {
+	//if (bIsChanged) {
 		VdInfoPtr->SetChanged();
 		VdInfoPtr->Vd->setCacheToValid();
 		TMeshDataPtr MeshDataPtr = GenerateMesh(VdInfoPtr->Vd);
 		VdInfoPtr->ResetLastMeshRegenerationTime();
 		OnComplete(MeshDataPtr);
-	}
+	//}
 }
 
 void ASandboxTerrainController::IncrementChangeCounter(const TVoxelIndex& ZoneIndex) {
@@ -565,15 +565,6 @@ void ASandboxTerrainController::EditTerrain(const H& ZoneHandler) {
 
 			GetTerrainGenerator()->ForceGenerateZone(VoxelDataInfo->Vd, ZoneIndex);
 			VoxelDataInfo->DataState = TVoxelDataState::GENERATED;
-
-			// FIXME
-			// редкий случай. когда генерируем зону, но не используем ее далее дл€ редактировани€, то meshdatacache будет пустой
-			// тогда зона криво сохранитьс€ ибо vd есть, а md нету
-			// дл€ этого генерим тут меш и кладем его в кэш. это лишн€€ генераци€. потом пофикшу
-			TerrainData->PutMeshDataToCache(ZoneIndex, GenerateMesh(VoxelDataInfo->Vd));
-
-			VoxelDataInfo->SetNeedTerrainSave();
-			TerrainData->AddSaveIndex(ZoneIndex);
 		}
 
 		if (VoxelDataInfo->DataState == TVoxelDataState::LOADED || VoxelDataInfo->DataState == TVoxelDataState::GENERATED) {
@@ -581,21 +572,16 @@ void ASandboxTerrainController::EditTerrain(const H& ZoneHandler) {
 			if (Zone == nullptr) {
 				PerformZoneEditHandler(VoxelDataInfo, ZoneHandler, [&](TMeshDataPtr MeshDataPtr) {
 					TerrainData->PutMeshDataToCache(ZoneIndex, MeshDataPtr);
-					ExecGameThreadAddZoneAndApplyMesh(ZoneIndex, MeshDataPtr);
-
-					TerrainData->AddSaveIndex(ZoneIndex); // TODO wait conv
-					VoxelDataInfo->SetNeedTerrainSave();
+					ExecGameThreadAddZoneAndApplyMesh(ZoneIndex, MeshDataPtr, false, true);
 				});
 			} else {
 				PerformZoneEditHandler(VoxelDataInfo, ZoneHandler, [&](TMeshDataPtr MeshDataPtr) {
 					TerrainData->PutMeshDataToCache(ZoneIndex, MeshDataPtr);
 					ExecGameThreadZoneApplyMesh(ZoneIndex, Zone, MeshDataPtr);
-					//TerrainData->AddSaveIndex(ZoneIndex);
 				});
 			}
 		}
 
-		//TerrainData->AddSaveIndex(ZoneIndex); // TODO check
 		VoxelDataInfo->Unlock();
 	});
 
