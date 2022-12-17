@@ -197,7 +197,7 @@ private:
 
 	std::mutex ChunkDataMapMutex;
 
-	std::unordered_map<TVoxelIndex, TChunkDataPtr> ChunkDataCollection;
+	std::unordered_map<TVoxelIndex, std::atomic<TChunkDataPtr>> ChunkDataCollection;
 
 	TChunkDataPtr GetChunkData(int X, int Y);
 

@@ -356,7 +356,7 @@ TChunkDataPtr UTerrainGeneratorComponent::GetChunkData(int X, int Y) {
 
     if (ChunkDataCollection.find(Index) == ChunkDataCollection.end()) {
         ChunkData = GenerateChunkData(Index);
-        ChunkDataCollection.insert({ Index, ChunkData });
+        ChunkDataCollection[Index] = ChunkData;
     } else {
         ChunkData = ChunkDataCollection[Index];
     }
