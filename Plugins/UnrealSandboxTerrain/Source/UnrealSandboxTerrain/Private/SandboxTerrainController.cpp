@@ -345,16 +345,24 @@ void ASandboxTerrainController::ZoneHardUnload(UTerrainZoneComponent* ZoneCompon
 	TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(ZoneIndex);
 	TVdInfoLockGuard Lock(VdInfoPtr);
 
+	FVector ZonePos = ZoneComponent->GetComponentLocation();
+	//DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), false, 3);
+
 	if (VdInfoPtr->IsSoftUnload() && !VdInfoPtr->IsNeedObjectsSave()) {
 		if (ZoneComponent->bIsSpawnFinished) {
 			RemoveAllChilds(ZoneComponent);
 			TerrainData->RemoveZone(ZoneIndex);
 			ZoneComponent->DestroyComponent(true);
-		} else {
-			FVector ZonePos = ZoneComponent->GetComponentLocation();
-			DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
 		}
-	} 
+	} else {
+		if (!VdInfoPtr->IsSoftUnload()) {
+			//DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 0, 0, 0), true);
+		}
+
+		if (VdInfoPtr->IsNeedObjectsSave()) {
+			//DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(0, 0, 255, 0), true);
+		}
+	}
 }
 
 void ASandboxTerrainController::ZoneSoftUnload(UTerrainZoneComponent* ZoneComponent, const TVoxelIndex& ZoneIndex) {

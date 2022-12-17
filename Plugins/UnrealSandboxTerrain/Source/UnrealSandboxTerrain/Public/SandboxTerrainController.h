@@ -511,7 +511,7 @@ public:
 
 private:
 
-	bool bForcePerformHardUnload = false;
+	volatile bool bForcePerformHardUnload = false;
     
 	std::unordered_set<TVoxelIndex> InitialLoadSet;
 

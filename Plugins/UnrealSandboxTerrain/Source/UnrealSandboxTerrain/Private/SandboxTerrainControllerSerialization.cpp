@@ -474,6 +474,7 @@ void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgr
 			}
 
 			VdInfoPtr->ResetNeedTerrainSave();
+			VdInfoPtr->ResetNeedObjectsSave();
 		} else if (VdInfoPtr->IsNeedObjectsSave()) {
 			if (FoliageDataAsset) {
 				UTerrainZoneComponent* Zone = VdInfoPtr->GetZone();
@@ -507,6 +508,8 @@ void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgr
 					}
 				}*/
 			}
+
+			VdInfoPtr->ResetNeedObjectsSave();
 		}
 
 		uint32 CRC = SaveZoneToFile(TdFile, VdFile, Index, DataVd, DataMd, DataObj);
