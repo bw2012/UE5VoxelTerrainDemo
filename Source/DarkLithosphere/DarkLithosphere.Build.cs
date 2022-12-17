@@ -10,7 +10,7 @@ public class DarkLithosphere : ModuleRules
 		bUseRTTI = true;
 		CppStandard = CppStandardVersion.Cpp20;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", 
+        PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", 
 															"HeadMountedDisplay", "UnrealSandboxToolkit", "UnrealSandboxTerrain", 
 															"Json", "JsonUtilities", "AIModule", "UMG", "ALSV4_CPP", "NavigationSystem", "GameplayTasks", "HTTP" });
 	}

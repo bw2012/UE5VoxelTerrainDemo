@@ -444,12 +444,14 @@ void ASandboxTerrainController::BeginServerTerrainLoad() {
 	SpawnInitialZone();
     
     if (!bGenerateOnlySmallSpawnPoint) {
+		TVoxelIndex B = GetZoneIndex(BeginServerTerrainLoadLocation);
+
         // async loading other zones
 		TTerrainAreaLoadParams Params;
 		Params.FullLodDistance = InitialLoadArea.FullLodDistance;
 		Params.Radius = InitialLoadArea.Radius;
-		Params.TerrainSizeMinZ = InitialLoadArea.TerrainSizeMinZ;
-		Params.TerrainSizeMaxZ = InitialLoadArea.TerrainSizeMaxZ;
+		Params.TerrainSizeMinZ = InitialLoadArea.TerrainSizeMinZ + B.Z;
+		Params.TerrainSizeMaxZ = InitialLoadArea.TerrainSizeMaxZ + B.Z;
 
         AddAsyncTask([=]() {            
 			UE_LOG(LogSandboxTerrain, Warning, TEXT("Server: Begin terrain load at location: %f %f %f"), BeginServerTerrainLoadLocation.X, BeginServerTerrainLoadLocation.Y, BeginServerTerrainLoadLocation.Z);
