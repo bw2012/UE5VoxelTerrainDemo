@@ -22,10 +22,11 @@ UE5 version: [UE5VoxelTerrain-0.0.34.zip](https://cutt.ly/60TsLU1)
 * Up to 65535 terrain materials
 
 # Attention
-* Work in progress. Some features is not finished/buggy/has ugly code/do not meet your expectations.
+* Work in progress. Some features is not finished
+* Project uses C++20 features
 
 # Usage
-1. Install MS Visual Studio 2019
+1. Install MS Visual Studio 2022
 2. Download last stable project or clone repository ```git clone https://github.com/bw2012/UE5VoxelTerrainDemo.git```
 3. Open project directory 
 4. Download [Content.rar](https://drive.google.com/file/d/14xYyljW5u0MZfPWHGrLSjX2E8rLA4ZIQ/view?usp=share_link) (2Gb) and unzip it to ```Content``` folder
