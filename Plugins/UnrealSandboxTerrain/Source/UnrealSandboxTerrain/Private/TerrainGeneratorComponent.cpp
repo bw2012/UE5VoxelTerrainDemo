@@ -968,8 +968,6 @@ void UTerrainGeneratorComponent::GenerateInstanceObjects(const TVoxelIndex& Inde
         if (Type == TZoneGenerationType::Landscape) {
             GenerateNewFoliageLandscape(Index, ZoneInstanceMeshMap);
         }
-
-        GenerateNewFoliageCustom(Index, Vd, ZoneInstanceMeshMap);
     }
 
     PostGenerateNewInstanceObjects(Index, Type, Vd, ZoneInstanceMeshMap);
@@ -1157,76 +1155,7 @@ void UTerrainGeneratorComponent::SpawnFoliage(int32 FoliageTypeId, FSandboxFolia
 
 }
 
-void UTerrainGeneratorComponent::GenerateNewFoliageCustom(const TVoxelIndex& Index, TVoxelData* Vd, TInstanceMeshTypeMap& ZoneInstanceMeshMap) {
-
-    // TODO refactor all. use GenerateRandomInstMesh
-    /*
-    if (GetController()->FoliageMap.Num() == 0) {
-        return;
-    }
-
-    if (!UseCustomFoliage(Index)) {
-        return;
-    }
-
-    FVector ZonePos = GetController()->GetZonePos(Index);
-    int32 Hash = ZoneHash(ZonePos);
-    FRandomStream rnd = FRandomStream();
-    rnd.Initialize(Hash);
-    rnd.Reset();
-
-
-    for (auto& Elem : GetController()->FoliageMap) {
-        FSandboxFoliage FoliageType = Elem.Value;
-
-        if (FoliageType.Type != ESandboxFoliageType::Custom) {
-            continue;
-        }
-
-        Vd->forEachCacheItem(0, [&](const TSubstanceCacheItem& itm) {
-            uint32 x;
-            uint32 y;
-            uint32 z;
-
-            Vd->clcVoxelIndex(itm.index, x, y, z);
-            FVector WorldPos = Vd->voxelIndexToVector(x, y, z) + Vd->getOrigin();
-            int32 FoliageTypeId = Elem.Key;
-
-            FTransform Transform;
-
-            bool bSpawn = SpawnCustomFoliage(Index, WorldPos, FoliageTypeId, FoliageType, rnd, Transform);
-            if (bSpawn) {
-                if (FoliageType.MeshVariants.Num() > 0) {
-                    uint32 MeshVariantId = 0;
-                    if (FoliageType.MeshVariants.Num() > 1) {
-                        MeshVariantId = rnd.RandRange(0, FoliageType.MeshVariants.Num() - 1);
-                        //UE_LOG(LogSandboxTerrain, Log, TEXT("TEST2 -> %d"), MeshVariantId);
-                    }
-
-                    FTerrainInstancedMeshType MeshType;
-                    MeshType.MeshTypeId = FoliageTypeId;
-                    MeshType.MeshVariantId = MeshVariantId;
-                    MeshType.Mesh = FoliageType.MeshVariants[MeshVariantId];
-                    MeshType.StartCullDistance = FoliageType.StartCullDistance;
-                    MeshType.EndCullDistance = FoliageType.EndCullDistance;
-
-                    auto& InstanceMeshContainer = ZoneInstanceMeshMap.FindOrAdd(MeshType.GetMeshTypeCode());
-                    InstanceMeshContainer.MeshType = MeshType;
-                    InstanceMeshContainer.TransformArray.Add(Transform);
-                }
-            }
-
-            });
-    }
-    */
-}
-
-
 bool UTerrainGeneratorComponent::UseCustomFoliage(const TVoxelIndex& Index) {
-    return false;
-}
-
-bool UTerrainGeneratorComponent::SpawnCustomFoliage(const TVoxelIndex& Index, const FVector& WorldPos, int32 FoliageTypeId, FSandboxFoliage FoliageType, FRandomStream& Rnd, FTransform& Transform) {
     return false;
 }
 
