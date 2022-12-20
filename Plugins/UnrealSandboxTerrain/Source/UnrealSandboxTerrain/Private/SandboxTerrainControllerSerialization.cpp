@@ -60,9 +60,6 @@ TValueDataPtr Compress(TValueDataPtr CompressedDataPtr) {
 	Compressor << BinaryArray;
 	Compressor.Flush();
 
-	//float CompressionRatio = (CompressedDataPtr->size() / DecompressedData.Num()) * 100.f;
-	//UE_LOG(LogSandboxTerrain, Log, TEXT("CompressedData -> %d bytes -> %f%%"), DecompressedData.Num(), CompressionRatio);
-
 	Result->resize(CompressedData.Num());
 	FMemory::Memcpy(Result->data(), CompressedData.GetData(), CompressedData.Num());
 	CompressedData.Empty();
@@ -276,7 +273,6 @@ TValueDataPtr ASandboxTerrainController::SerializeVd(TVoxelData* Vd) const {
 	size_t TTT = sizeof(TVoxelDataHeader) + sizeof(uint32);
 	if (DataSize > TTT) {
 		TValueDataPtr CompressedData = Compress(Data);
-		//UE_LOG(LogSandboxTerrain, Log, TEXT("SerializeVd -> %d compressed bytes "), CompressedData->size());
 		return CompressedData;
 	}
 
@@ -557,7 +553,6 @@ void ASandboxTerrainController::SaveJson() {
 	UE_LOG(LogSandboxTerrain, Log, TEXT("%s"), *FullPath);
 
 	FJsonObjectConverter::UStructToJsonObjectString(MapInfo, JsonStr);
-	//UE_LOG(LogSandboxTerrain, Log, TEXT("%s"), *JsonStr);
 	FFileHelper::SaveStringToFile(*JsonStr, *FullPath);
 }
 

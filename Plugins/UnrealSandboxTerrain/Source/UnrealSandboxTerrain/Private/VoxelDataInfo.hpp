@@ -44,7 +44,6 @@ private:
 
 	TMeshDataPtr MeshDataCachePtr = nullptr;
 
-	//std::shared_timed_mutex ZoneMutex;
 	std::atomic<UTerrainZoneComponent*> ZoneComponentAtomicPtr = nullptr;
     std::atomic<bool> bNeedTerrainSave{ false };
     std::atomic<bool> bNeedObjectsSave{ false };
@@ -64,7 +63,6 @@ public:
     volatile TVoxelDataState DataState = TVoxelDataState::UNDEFINED;
     
     TVoxelDataInfo() {
-		//VdMutexPtr = std::make_shared<std::mutex>();
 		LastChange = 0;
 		LastSave = 0;
 		LastMeshGeneration = 0;
@@ -72,7 +70,6 @@ public:
     }
     
     ~TVoxelDataInfo() { 
-		//UE_LOG(LogSandboxTerrain, Log, TEXT("~TVoxelDataInfo()"));
 		if (Vd != nullptr) {
 			delete Vd;
 			Vd = nullptr;

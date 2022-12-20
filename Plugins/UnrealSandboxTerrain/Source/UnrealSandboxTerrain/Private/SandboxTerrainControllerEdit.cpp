@@ -197,7 +197,6 @@ void ASandboxTerrainController::DigTerrainCubeHoleComplex(const FVector& Origin,
 						const float DensityXN = 1 / (1 + exp((-ExtendXN + P.X) / D));
 						const float DensityX = (DensityXP + DensityXN);
 						R = DensityX + Noise(L);
-						//DrawDebugPoint(World, vd->voxelIndexToVector(x, y, z) + vd->getOrigin(), 3.f, FColor(255, 255, 255, 0), true);
 					}
 
 					if (FMath::Abs(P.Y - ExtendYP) < T || FMath::Abs(-P.Y + ExtendYN) < T) {
@@ -206,7 +205,6 @@ void ASandboxTerrainController::DigTerrainCubeHoleComplex(const FVector& Origin,
 							const float DensityYN = 1 / (1 + exp((-ExtendYN + P.Y) / D));
 							const float DensityY = (DensityYP + DensityYN);
 							R = DensityY + Noise(L);
-							//DrawDebugPoint(World, vd->voxelIndexToVector(x, y, z) + vd->getOrigin(), 3.f, FColor(255, 255, 255, 0), true);
 						}
 					}
 
@@ -287,12 +285,7 @@ void ASandboxTerrainController::DigTerrainCubeHole(const FVector& Origin, float 
 					const float DensityZP = 1 / (1 + exp((Extend - o.Z) / 10));
 					const float DensityZN = 1 / (1 + exp((-Extend - o.Z) / 10));
 					const float Density = DensityXP * DensityXN * DensityYP * DensityYN * DensityZP * DensityZN;
-					//float OldDensity = vd->getDensity(x, y, z);
-
-					//if (OldDensity > Density) {
 					vd->setDensity(x, y, z, Density);
-					//}
-
 					changed = true;
 				}
 			}, USBT_ENABLE_LOD);
@@ -415,7 +408,7 @@ void ASandboxTerrainController::PerformTerrainChange(H Handler) {
 	CollisionQueryParams.bSkipNarrowPhase = true;
 
 	double Start = FPlatformTime::Seconds();
-	//DrawDebugSphere(GetWorld(), Handler.Origin, Handler.Extend * 1.5f, 24, FColor(255, 255, 255, 100), false, 10);
+
 	bool bIsOverlap = GetWorld()->OverlapMultiByChannel(Result, Handler.Origin, FQuat(), ECC_Visibility, FCollisionShape::MakeSphere(Handler.Extend * 1.5f)); // ECC_Visibility
 	double End = FPlatformTime::Seconds();
 	double Time = (End - Start) * 1000;
@@ -502,7 +495,6 @@ void ASandboxTerrainController::IncrementChangeCounter(const TVoxelIndex& ZoneIn
 	const std::lock_guard<std::mutex> Lock(ModifiedVdMapMutex);
 	TZoneModificationData& Data = ModifiedVdMap.FindOrAdd(ZoneIndex);
 	Data.ChangeCounter++;
-	//UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> ChangeCounter = %d"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z, Data.ChangeCounter);
 }
 
 TMap<TVoxelIndex, TZoneModificationData> ModifiedVdMap;
@@ -531,7 +523,6 @@ void ASandboxTerrainController::EditTerrain(const H& ZoneHandler) {
 	PerformEachZone(ZoneHandler.Origin, ZoneHandler.Extend, [&](TVoxelIndex ZoneIndex, FVector Origin, TVoxelDataInfoPtr VoxelDataInfo) {
 		VoxelDataInfo->Lock();
 		UTerrainZoneComponent* Zone = GetZoneByVectorIndex(ZoneIndex);
-		//UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> %d"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z, (int)VoxelDataInfo->DataState);
 
 		if (VoxelDataInfo->DataState == TVoxelDataState::UNDEFINED) {
 			UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> UNDEFINED"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);

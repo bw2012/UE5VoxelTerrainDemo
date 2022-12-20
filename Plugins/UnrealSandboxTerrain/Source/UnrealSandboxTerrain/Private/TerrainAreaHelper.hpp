@@ -27,7 +27,7 @@ public:
 	TTerrainAreaHelper() {}
 
 	virtual ~TTerrainAreaHelper() { 
-		// UE_LOG(LogSandboxTerrain, Log, TEXT("~TTerrainLoadHandler()")); 
+
 	}
 
 	TTerrainAreaHelper(FString Name_, ASandboxTerrainController* Controller_) :
@@ -159,7 +159,6 @@ protected :
 
 		double End = FPlatformTime::Seconds();
 		double Time = (End - Start) * 1000;
-		//UE_LOG(LogSandboxTerrain, Log, TEXT("BatchSpawnZone -> %f ms - %d %d %d"), Time, Index.X, Index.Y, Index.Z);
 	}
 };
 

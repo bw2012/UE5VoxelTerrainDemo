@@ -76,9 +76,6 @@ struct FTerrainMeshBatchInfo {
 	int ZoneLodIndex = 0;
 };
 
-
-//const float LOD[LOD_ARRAY_SIZE] = { 0, 1500, 3000, 6000, 12000, 24000, 48000 };
-//const float LOD[LOD_ARRAY_SIZE] = { 0, 1500, 3000, 6000, 9000, 12000, 15000 };
 float GlobalTerrainZoneLOD[LOD_ARRAY_SIZE];
 
 int CalculateLodIndex(const FVector& ZoneOrigin, const FVector& ViewOrigin) {
@@ -770,7 +767,6 @@ void UVoxelMeshComponent::CreateProcMeshBodySetup() {
 	}
 }
 
-
 void UVoxelMeshComponent::AddCollisionConvexMesh(TArray<FVector> ConvexVerts) {
 	if (ConvexVerts.Num() >= 4) {
 		// New element
@@ -785,7 +781,6 @@ void UVoxelMeshComponent::AddCollisionConvexMesh(TArray<FVector> ConvexVerts) {
 		UpdateCollision();
 	}
 }
-
 
 UBodySetup* UVoxelMeshComponent::CreateBodySetupHelper() {
 	// The body setup in a template needs to be public since the property is Tnstanced and thus is the archetype of the instance meaning there is a direct reference
