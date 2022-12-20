@@ -406,30 +406,7 @@ void ASandboxTerrainController::BeginPlayServer() {
 		TerrainServerComponent = NewObject<UTerrainServerComponent>(this, TEXT("TerrainServer"));
 		TerrainServerComponent->RegisterComponent();
 		TerrainServerComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
-	}
-
-	/*
-	{
-		TVoxelIndex T(-28, -12, 1);
-		FVector ZonePos = GetZonePos(T);
-		DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
-		auto* tvd = LoadVoxelDataByIndex(T);
-		if (tvd) {
-			UE_LOG(LogSandboxTerrain, Warning, TEXT("TEST: %d"), (int)tvd->getDensityFillState());
-		}
-
-		TMeshDataPtr MeshDataPtr = nullptr;
-		TInstanceMeshTypeMap ZoneInstanceObjectMap;
-		LoadMeshAndObjectDataByIndex(T, MeshDataPtr, ZoneInstanceObjectMap);
-
-		if (MeshDataPtr == nullptr) {
-			UE_LOG(LogSandboxTerrain, Warning, TEXT("NO MESH"));
-		}
-
-		TZoneModificationData& Data = ModifiedVdMap.FindOrAdd(T);
-		UE_LOG(LogSandboxTerrain, Warning, TEXT("ChangeCounter %d"), Data.ChangeCounter);
-	}
-	*/
+	}	
 }
 
 void ASandboxTerrainController::BeginClientTerrainLoad(const TVoxelIndex& ZoneIndex, const TSet<TVoxelIndex>& Ignore) {
@@ -607,22 +584,10 @@ void ASandboxTerrainController::BatchGenerateZone(const TArray<TSpawnZoneParam>&
 		} else {
 			VdInfoPtr->DataState = TVoxelDataState::GENERATED;
 		}
-/*
-#ifdef USBT_EXPERIMENTAL_UNGENERATED_ZONES 
-		if (P.TerrainLodMask == 0) {
-			VdInfoPtr->DataState = TVoxelDataState::GENERATED;
-		} else {
-			VdInfoPtr->DataState = TVoxelDataState::UNGENERATED;
-		}
-#else
-		VdInfoPtr->DataState = TVoxelDataState::GENERATED;
-#endif
-*/
 
 		VdInfoPtr->SetChanged();
 		TInstanceMeshTypeMap& ZoneInstanceObjectMap = *TerrainData->GetOrCreateInstanceObjectMap(P.Index);
 		GeneratorComponent->GenerateInstanceObjects(P.Index, VdInfoPtr->Vd, ZoneInstanceObjectMap);
-		//TerrainData->AddSaveIndex(P.Index);
 		Idx++;
 	}
 }
@@ -839,9 +804,11 @@ void ASandboxTerrainController::ExecGameThreadZoneApplyMesh(const TVoxelIndex& I
 
 	std::function<void()> Function = [=]() {
 		if (!bIsGameShutdown) {
-			if (MeshDataPtr) {
+			if (MeshDataPtr) {		
 				TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(Index);
 				TVdInfoLockGuard Lock(VdInfoPtr);
+
+				TerrainData->PutMeshDataToCache(Index, MeshDataPtr);
 
 				Zone->ApplyTerrainMesh(MeshDataPtr, 0);
 				VdInfoPtr->SetNeedTerrainSave();
@@ -864,24 +831,23 @@ void ASandboxTerrainController::ExecGameThreadAddZoneAndApplyMesh(const TVoxelIn
 	std::function<void()> Function = [=]() {
 		if (!bIsGameShutdown) {
 			if (MeshDataPtr) {
+				TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(Index);
+				TVdInfoLockGuard Lock(VdInfoPtr);
+				TerrainData->PutMeshDataToCache(Index, MeshDataPtr);
+
 				UTerrainZoneComponent* Zone = AddTerrainZone(ZonePos);
 				if (Zone) {
 					Zone->ApplyTerrainMesh(MeshDataPtr, 0);
 
 					if (bIsChanged) {
-						TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(Index);
 						VdInfoPtr->SetNeedTerrainSave();
 						TerrainData->AddSaveIndex(Index);
 					}
 
 					if (bIsNewGenerated) {
-						AddTaskToConveyor([=]() {
-							OnGenerateNewZone(Index, Zone);
-						});
+						OnGenerateNewZone(Index, Zone);
 					} else {
-						AddTaskToConveyor([=]() {
-							OnLoadZone(Index, Zone);
-						});
+						OnLoadZone(Index, Zone);
 					}
 				} 
 			}
@@ -904,7 +870,6 @@ void ASandboxTerrainController::AddAsyncTask(std::function<void()> Function) {
 
 void ASandboxTerrainController::OnGenerateNewZone(const TVoxelIndex& Index, UTerrainZoneComponent* Zone) {
 	TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(Index);
-	TVdInfoLockGuard Lock(VdInfoPtr);
 
     if (FoliageDataAsset) {
 		TInstanceMeshTypeMap& ZoneInstanceObjectMap = *TerrainData->GetOrCreateInstanceObjectMap(Index);
@@ -921,7 +886,6 @@ void ASandboxTerrainController::OnGenerateNewZone(const TVoxelIndex& Index, UTer
 
 void ASandboxTerrainController::OnLoadZone(const TVoxelIndex& Index, UTerrainZoneComponent* Zone) {
 	TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(Index);
-	TVdInfoLockGuard Lock(VdInfoPtr);
 
 	if (FoliageDataAsset) {
 		TInstanceMeshTypeMap& ZoneInstanceObjectMap = *TerrainData->GetOrCreateInstanceObjectMap(Index);
@@ -1038,8 +1002,6 @@ void ASandboxTerrainController::MarkZoneNeedsToSaveObjects(const TVoxelIndex& Zo
 	VdInfoPtr->SetChanged();
 	VdInfoPtr->SetNeedObjectsSave();
 	TerrainData->AddSaveIndex(ZoneIndex);
-
-	//UE_LOG(LogSandboxTerrain, Log, TEXT("MarkZoneNeedsToSaveObjects -> %d %d %d"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
 }
 
 /*

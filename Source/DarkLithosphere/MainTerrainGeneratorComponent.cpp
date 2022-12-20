@@ -513,7 +513,7 @@ void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxel
 	// rocks
 	if (ZoneType == TZoneGenerationType::Landscape) {
 		float Chance = Rnd.GetFraction();
-		if (Chance < 0.05f) {
+		if (Chance < 0.1f) {
 			GenerateRandomInstMesh(ZoneInstanceMeshMap, 900, Rnd, ZoneIndex, Vd);
 		}
 	}

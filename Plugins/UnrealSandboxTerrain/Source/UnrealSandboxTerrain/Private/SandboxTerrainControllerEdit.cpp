@@ -559,6 +559,7 @@ void ASandboxTerrainController::EditTerrain(const H& ZoneHandler) {
 				TVoxelData* NewVd = NewVoxelData();
 				NewVd->setOrigin(GetZonePos(ZoneIndex));
 				VoxelDataInfo->Vd = NewVd;
+
 			} else {
 				UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> UNGENERATED but Vd is not null"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
 			}
@@ -571,12 +572,10 @@ void ASandboxTerrainController::EditTerrain(const H& ZoneHandler) {
 			IncrementChangeCounter(ZoneIndex);
 			if (Zone == nullptr) {
 				PerformZoneEditHandler(VoxelDataInfo, ZoneHandler, [&](TMeshDataPtr MeshDataPtr) {
-					TerrainData->PutMeshDataToCache(ZoneIndex, MeshDataPtr);
 					ExecGameThreadAddZoneAndApplyMesh(ZoneIndex, MeshDataPtr, false, true);
 				});
 			} else {
 				PerformZoneEditHandler(VoxelDataInfo, ZoneHandler, [&](TMeshDataPtr MeshDataPtr) {
-					TerrainData->PutMeshDataToCache(ZoneIndex, MeshDataPtr);
 					ExecGameThreadZoneApplyMesh(ZoneIndex, Zone, MeshDataPtr);
 				});
 			}
