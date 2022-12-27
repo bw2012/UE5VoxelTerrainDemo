@@ -3,6 +3,7 @@
 #include "DebugInfoWidget.h"
 #include "../TerrainController.h"
 #include "../Globals.h"
+#include "../MainPlayerController.h"
 
 FString UDebugInfoWidget::SandboxDebugInfo1Text() {
 
@@ -49,5 +50,17 @@ FString UDebugInfoWidget::SandboxDebugInfo3Text() {
 	return FString(TEXT(""));
 }
 
+FString UDebugInfoWidget::SandboxPlayerCrdText() {
+	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
+	if (MainPlayerController) {
+		APawn* Pawn = MainPlayerController->GetPawn();
+		if (Pawn) {
+			FVector Pos = Pawn->GetActorLocation();
+			return FString::Printf(TEXT("X=%.1f, Y=%.1f, Z=%.1f"), Pos.X, Pos.Y, Pos.Z);
+		}
+	}
+
+	return FString(TEXT(""));
+}
 
 

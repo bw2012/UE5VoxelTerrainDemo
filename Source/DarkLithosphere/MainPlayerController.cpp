@@ -4,19 +4,18 @@
 #include "TerrainController.h"
 #include "SandboxCharacter.h"
 #include "VoxelIndex.h"
-//#include "Async.h"
 #include "MainHUD.h"
 #include "SpawnHelper.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 
 #include "SandboxObject.h"
 #include "BaseCharacter.h"
-//#include "CoreCharacter.h"
 #include "Objects/MiningTool.h"
 
-#include "DrawDebugHelpers.h"
+#include "NotificationHelper.h"
 
-//#include "SandboxTree.h"
+// draw debug
+#include "DrawDebugHelpers.h"
 
 // ALS
 #include "Character/ALSPlayerCameraManager.h"
@@ -38,10 +37,17 @@ AMainPlayerController::AMainPlayerController() {
 	bFirstStart = false;
 }
 
+void AMainPlayerController::OnFinishInitialLoad() {
+	AsyncTask(ENamedThreads::GameThread, [&] {
+		FindOrCreateCharacter();
+	});
+}
+
 void AMainPlayerController::BeginPlay() {
 	Super::BeginPlay();
 
 	bFirstStart = true;
+	TNotificationHelper::AddObserver(TCHAR_TO_UTF8(*GetName()), "finish_init_map_load", std::bind(&AMainPlayerController::OnFinishInitialLoad, this));
 
 	//warning C4996 : 'UWorld::IsClient' : Use GetNetMode or IsNetMode instead for more accurate results.Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.
 	if (GetWorld()->IsClient()) {
@@ -97,16 +103,9 @@ void AMainPlayerController::BeginPlay() {
 	}
 }
 
-/*
-void SetRenderCustomDepth(AActor* Actor, bool RenderCustomDepth) {
-	TArray<UMeshComponent*> MeshComponentList;
-	Actor->GetComponents<UMeshComponent>(MeshComponentList);
-
-	for (UMeshComponent* MeshComponent : MeshComponentList) {
-		MeshComponent->SetRenderCustomDepth(RenderCustomDepth);
-	}
+void AMainPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
+	TNotificationHelper::RemoveObserver(TCHAR_TO_UTF8(*GetName()));
 }
-*/
 
 APawn* PawnUnderCursor(const FHitResult& Hit) {
 	if (Hit.bBlockingHit) {
@@ -180,13 +179,6 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 	if (bFirstStart) {
 		FString PlayerUid = PlayerInfo.PlayerUid;
 		RegisterSandboxPlayerUid(PlayerUid);
-
-		if (GetNetMode() == NM_Client) {
-			FindOrCreateCharacter();
-		} else {
-			FindOrCreateCharacter();
-		}
-
 		bFirstStart = false;
 	}
 

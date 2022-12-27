@@ -431,6 +431,8 @@ void ASandboxTerrainController::BeginServerTerrainLoad() {
 			UE_LOG(LogSandboxTerrain, Warning, TEXT("======= Finish initial terrain load ======="));
 
 			if (!bIsWorkFinished) {
+				OnFinishInitialLoad();
+
 				if (bSaveAfterInitialLoad) {
 					SaveMapAsync();
 				}
@@ -878,11 +880,31 @@ FORCEINLINE float ASandboxTerrainController::ClcGroundLevel(const FVector& V) {
 
 
 
-FORCEINLINE void ASandboxTerrainController::OnOverlapActorTerrainEdit(const FOverlapResult& OverlapResult, const FVector& Pos) {
+void ASandboxTerrainController::OnOverlapActorTerrainEdit(const FOverlapResult& OverlapResult, const FVector& Pos) {
 
 }
 
-FORCEINLINE void ASandboxTerrainController::OnFinishGenerateNewZone(const TVoxelIndex& Index) {
+void ASandboxTerrainController::OnFinishGenerateNewZone(const TVoxelIndex& Index) {
+
+}
+
+bool ASandboxTerrainController::OnZoneSoftUnload(const TVoxelIndex& ZoneIndex) {
+	return true;
+}
+
+void ASandboxTerrainController::OnRestoreZoneSoftUnload(const TVoxelIndex& ZoneIndex) {
+
+}
+
+bool ASandboxTerrainController::OnZoneHardUnload(const TVoxelIndex& ZoneIndex) {
+	return true;
+}
+
+void ASandboxTerrainController::OnFinishLoadZone(const TVoxelIndex& Index) {
+
+}
+
+void ASandboxTerrainController::OnFinishInitialLoad() {
 
 }
 
@@ -961,22 +983,6 @@ void ASandboxTerrainController::MarkZoneNeedsToSaveObjects(const TVoxelIndex& Zo
 	VdInfoPtr->SetChanged();
 	VdInfoPtr->SetNeedObjectsSave();
 	TerrainData->AddSaveIndex(ZoneIndex);
-}
-
-bool ASandboxTerrainController::OnZoneSoftUnload(const TVoxelIndex& ZoneIndex) {
-	return true;
-}
-
-void ASandboxTerrainController::OnRestoreZoneSoftUnload(const TVoxelIndex& ZoneIndex) {
-
-}
-
-bool ASandboxTerrainController::OnZoneHardUnload(const TVoxelIndex& ZoneIndex) {
-	return true;
-}
-
-void ASandboxTerrainController::OnFinishLoadZone(const TVoxelIndex& Index) {
-
 }
 
 const FTerrainInstancedMeshType* ASandboxTerrainController::GetInstancedMeshType(uint32 MeshTypeId, uint32 MeshVariantId) const {

@@ -746,6 +746,8 @@ protected:
 
 	virtual void OnProgressBackgroundSaveTerrain(float Progress);
 
+	virtual void OnFinishInitialLoad();
+
 	//===============================================================================
 	// pipeline
 	//===============================================================================

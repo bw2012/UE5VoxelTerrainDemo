@@ -5,6 +5,7 @@
 #include "Components/HierarchicalInstancedStaticMeshComponent.h"
 #include "TerrainZoneComponent.h"
 #include "MainTerrainGeneratorComponent.h"
+#include "NotificationHelper.h"
 
 
 //======================================================================================================================================================================
@@ -311,4 +312,8 @@ TArray<FVector> ATerrainController::Test(FVector PlayerLocation, float Radius) {
 	//UE_LOG(LogSandboxTerrain, Log, TEXT("UnloadFarZones --> %f ms"), Time);
 
 	return Result;
+}
+
+void ATerrainController::OnFinishInitialLoad() {
+	TNotificationHelper::SendNotification("finish_init_map_load");
 }
