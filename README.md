@@ -11,7 +11,7 @@ This project provides tools to generate, visualize and in-game change volume ter
 **Work in progress. Contains some unfinished code and unoptimized parts**
 
 # Download playable demo
-UE5 version: [UE5VoxelTerrain-0.0.35.zip](https://cutt.ly/G06ISQ7) 
+UE5 version: [UE5VoxelTerrain-0.0.36.zip](https://cutt.ly/G06ISQ7) 
 
 
 # Features
