@@ -37,12 +37,6 @@ AMainPlayerController::AMainPlayerController() {
 	bFirstStart = false;
 }
 
-void AMainPlayerController::OnFinishInitialLoad() {
-	AsyncTask(ENamedThreads::GameThread, [&] {
-		FindOrCreateCharacter();
-	});
-}
-
 void AMainPlayerController::BeginPlay() {
 	Super::BeginPlay();
 
@@ -50,7 +44,7 @@ void AMainPlayerController::BeginPlay() {
 	TNotificationHelper::AddObserver(TCHAR_TO_UTF8(*GetName()), "finish_init_map_load", std::bind(&AMainPlayerController::OnFinishInitialLoad, this));
 
 	//warning C4996 : 'UWorld::IsClient' : Use GetNetMode or IsNetMode instead for more accurate results.Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.
-	if (GetWorld()->IsClient()) {
+	if (GetNetMode() == NM_Client) {
 		bClientPosses = true;
 	}
 
@@ -72,6 +66,7 @@ void AMainPlayerController::BeginPlay() {
 		}
 	}
 
+	//TODO refactor
 	if (IsLocalController()) {
 		UE_LOG(LogTemp, Log, TEXT("Load player json"));
 		FString FileName = TEXT("player.json");
@@ -82,7 +77,7 @@ void AMainPlayerController::BeginPlay() {
 			UE_LOG(LogTemp, Warning, TEXT("Error loading json file"));
 
 			// new player info
-			PlayerInfo.PlayerUid = TEXT("player") + FString::FromInt(FMath::FRandRange(0, 256));
+			PlayerInfo.PlayerUid = TEXT("player") + FString::FromInt(FMath::FRandRange(0, 255));
 
 			FString JsonStr;
 			FJsonObjectConverter::UStructToJsonObjectString(PlayerInfo, JsonStr);
@@ -177,9 +172,17 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 	Super::PlayerTick(DeltaTime);
 
 	if (bFirstStart) {
+		bFirstStart = false;
+
 		FString PlayerUid = PlayerInfo.PlayerUid;
 		RegisterSandboxPlayerUid(PlayerUid);
-		bFirstStart = false;
+
+		if (GetNetMode() == NM_Client || GetNetMode() == NM_Standalone) {
+			AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
+			if (MainHud) {
+				MainHud->OpenWidget(TEXT("loading_terrain"));
+			}
+		}
 	}
 
 	// OnPossess not works on client. workaround
@@ -269,6 +272,19 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 			}
 		}
 	}
+}
+
+void AMainPlayerController::OnFinishInitialLoad() {
+	AsyncTask(ENamedThreads::GameThread, [&] {
+		FindOrCreateCharacter();
+
+		if (GetNetMode() == NM_Client || GetNetMode() == NM_Standalone) {
+			AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
+			if (MainHud) {
+				MainHud->CloseWidget(TEXT("loading_terrain"));
+			}
+		}
+	});
 }
 
 void AMainPlayerController::ToggleToolMode() { 
@@ -365,7 +381,7 @@ void AMainPlayerController::OnAltActionPressed() {
 
 		MainPlayerControllerComponent->PerformAltAction();
 
-		if (GetWorld()->IsClient()) {
+		if (GetNetMode() == NM_Client) {
 			RebuildEquipment();
 		}
 	}

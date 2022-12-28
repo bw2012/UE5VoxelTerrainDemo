@@ -91,7 +91,7 @@ void APreparationHelperActor::BeginPlay() {
 		UE_LOG(LogTemp, Warning, TEXT("Error loading player json file"));
 
 		// new player info
-		PlayerInfo.PlayerUid = TEXT("player") + FString::FromInt(FMath::FRandRange(0, 256));
+		PlayerInfo.PlayerUid = TEXT("player") + FString::FromInt(FMath::FRandRange(0, 255));
 
 		FString JsonStr;
 		FJsonObjectConverter::UStructToJsonObjectString(PlayerInfo, JsonStr);

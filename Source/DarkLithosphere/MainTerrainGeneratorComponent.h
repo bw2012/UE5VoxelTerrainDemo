@@ -30,10 +30,11 @@ protected:
 
 public:
 
+	virtual ~TMetaStructure() { };
+
 	virtual TArray<TVoxelIndex> GetRelevantZones(UMainTerrainGeneratorComponent* Generator) const;
 	
 	virtual void MakeMetaData(UMainTerrainGeneratorComponent* Generator) const;
-
 };
 
 
