@@ -9,6 +9,7 @@
 #include "VoxelDataInfo.hpp"
 #include "TerrainData.hpp"
 
+
 //======================================================================================================================================================================
 // mesh data de/serealization
 //======================================================================================================================================================================
@@ -58,9 +59,6 @@ TValueDataPtr Compress(TValueDataPtr CompressedDataPtr) {
 	FArchiveSaveCompressedProxy Compressor = FArchiveSaveCompressedProxy(CompressedData, NAME_Zlib);
 	Compressor << BinaryArray;
 	Compressor.Flush();
-
-	//float CompressionRatio = (CompressedDataPtr->size() / DecompressedData.Num()) * 100.f;
-	//UE_LOG(LogSandboxTerrain, Log, TEXT("CompressedData -> %d bytes -> %f%%"), DecompressedData.Num(), CompressionRatio);
 
 	Result->resize(CompressedData.Num());
 	FMemory::Memcpy(Result->data(), CompressedData.GetData(), CompressedData.Num());
@@ -215,6 +213,7 @@ bool ASandboxTerrainController::LoadMeshAndObjectDataByIndex(const TVoxelIndex& 
 
 	TValueDataPtr DataPtr = LoadDataFromKvFile2(TdFile, Index);
 	if (DataPtr) {
+
 		usbt::TFastUnsafeDeserializer Deserializer(DataPtr->data());
 		TKvFileZodeData ZoneHeader;
 		Deserializer >> ZoneHeader;
@@ -274,7 +273,6 @@ TValueDataPtr ASandboxTerrainController::SerializeVd(TVoxelData* Vd) const {
 	size_t TTT = sizeof(TVoxelDataHeader) + sizeof(uint32);
 	if (DataSize > TTT) {
 		TValueDataPtr CompressedData = Compress(Data);
-		//UE_LOG(LogSandboxTerrain, Log, TEXT("SerializeVd -> %d compressed bytes "), CompressedData->size());
 		return CompressedData;
 	}
 
@@ -376,7 +374,8 @@ uint32 SaveZoneToFile(TKvFile& TerrainDataFile, TKvFile& VoxelDataFile, const TV
 
 	if (DataMd) {
 		ZoneHeader.LenMd = DataMd->size();
-	} else {
+	}
+	else {
 		ZoneHeader.SetFlag((int)TZoneFlag::NoMesh);
 	}
 
@@ -397,12 +396,8 @@ uint32 SaveZoneToFile(TKvFile& TerrainDataFile, TKvFile& VoxelDataFile, const TV
 
 	auto DataPtr = ZoneSerializer.data();
 
-#ifdef USBT_DEBUG_ZONE_CRC
-	uint32 CRC = kvdb::CRC32(DataPtr->data(), DataPtr->size());
-	UE_LOG(LogSandboxTerrain, Log, TEXT("Save zone -> %d %d %d -> CRC32 = 0x%x "), Index.X, Index.Y, Index.Z, CRC);
-#else
 	uint32 CRC = 0;
-#endif
+	//uint32 CRC = CRC32__(DataPtr->data(), DataPtr->size());
 
 	TerrainDataFile.save(Index, *DataPtr);
 
@@ -455,6 +450,8 @@ void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgr
 		TValueDataPtr DataObj = nullptr;
 
 		VdInfoPtr->Lock();
+		bool bSave = false;
+
 		if (VdInfoPtr->IsNeedTerrainSave()) {
 			if (VdInfoPtr->Vd && VdInfoPtr->CanSaveVd()) {
 				DataVd = SerializeVd(VdInfoPtr->Vd);
@@ -475,6 +472,7 @@ void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgr
 
 			VdInfoPtr->ResetNeedTerrainSave();
 			VdInfoPtr->ResetNeedObjectsSave();
+			bSave = true;
 		} else if (VdInfoPtr->IsNeedObjectsSave()) {
 			if (FoliageDataAsset) {
 				UTerrainZoneComponent* Zone = VdInfoPtr->GetZone();
@@ -509,10 +507,13 @@ void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgr
 				}*/
 			}
 
+			bSave = true;
 			VdInfoPtr->ResetNeedObjectsSave();
 		}
 
-		uint32 CRC = SaveZoneToFile(TdFile, VdFile, Index, DataVd, DataMd, DataObj);
+		if (bSave) {
+			uint32 CRC = SaveZoneToFile(TdFile, VdFile, Index, DataVd, DataMd, DataObj);
+		}
 
 		SavedCount++;
 		VdInfoPtr->ResetLastSave();
@@ -552,7 +553,6 @@ void ASandboxTerrainController::SaveJson() {
 	UE_LOG(LogSandboxTerrain, Log, TEXT("%s"), *FullPath);
 
 	FJsonObjectConverter::UStructToJsonObjectString(MapInfo, JsonStr);
-	//UE_LOG(LogSandboxTerrain, Log, TEXT("%s"), *JsonStr);
 	FFileHelper::SaveStringToFile(*JsonStr, *FullPath);
 }
 

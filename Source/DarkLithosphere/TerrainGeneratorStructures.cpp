@@ -3,6 +3,73 @@
 #include "UnrealSandboxTerrain.h"
 
 
+class TStructureSphereCavern : public TMetaStructure {
+
+private:
+
+	float Radius = 1500;
+
+public:
+
+	TStructureSphereCavern(TVoxelIndex OriginIndex_, float Radius_) : Radius(Radius_) {
+		OriginIndex = OriginIndex_;
+	};
+
+	TArray<TVoxelIndex> GetRelevantZones(UMainTerrainGeneratorComponent* Generator) const {
+		TArray<TVoxelIndex> Res;
+
+		const FVector Origin = Generator->GetController()->GetZonePos(OriginIndex);
+
+		const float R = Radius;
+
+		const FVector Max(Origin.X + R, Origin.Y + R, Origin.Z + R);
+		const FVector Min(Origin.X - R, Origin.Y - R, Origin.Z - R);
+
+		const TVoxelIndex MinIndex = Generator->GetController()->GetZoneIndex(Min);
+		const TVoxelIndex MaxIndex = Generator->GetController()->GetZoneIndex(Max);
+
+		for (auto X = MinIndex.X; X <= MaxIndex.X; X++) {
+			for (auto Y = MinIndex.Y; Y <= MaxIndex.Y; Y++) {
+				for (auto Z = MinIndex.Z; Z <= MaxIndex.Z; Z++) {
+					Res.Add(TVoxelIndex(X, Y, Z));
+				}
+			}
+		}
+
+		return Res;
+	}
+
+	void MakeMetaData(UMainTerrainGeneratorComponent* Generator) const {
+		const FVector Origin = Generator->GetController()->GetZonePos(OriginIndex);
+
+		const float Radius2 = Radius;
+		const UMainTerrainGeneratorComponent* Generator2 = Generator;
+
+		const auto Function = [=](const float InDensity, const TMaterialId InMaterialId, const TVoxelIndex& VoxelIndex, const FVector& LocalPos, const FVector& WorldPos) {
+			const float Density = Generator2->FunctionMakeSphere(InDensity, WorldPos, Origin, Radius2, 1);
+			return std::make_tuple(Density, InMaterialId);
+		};
+
+		const auto Function2 = [=](const TVoxelIndex& ZoneIndex, const FVector& WorldPos, const FVector& LocalPos) {
+			const FVector P = WorldPos - Origin;
+			const float R = std::sqrt(P.X * P.X + P.Y * P.Y + P.Z * P.Z);
+			if (R < Radius2) {
+				return false;
+			}
+			return true;
+		};
+
+		TZoneStructureHandler Str;
+		Str.Function = Function;
+		Str.LandscapeFoliageFilter = Function2;
+
+		for (TVoxelIndex Index : GetRelevantZones(Generator)) {
+			Generator->AddZoneStructure(Index, Str);
+		}
+	}
+};
+
+
 class TStructureGeoSphere : public TMetaStructure {
 
 private:
@@ -31,7 +98,6 @@ public:
 		for (auto X = MinIndex.X; X <= MaxIndex.X; X++) {
 			for (auto Y = MinIndex.Y; Y <= MaxIndex.Y; Y++) {
 				for (auto Z = MinIndex.Z; Z <= MaxIndex.Z; Z++) {
-					//Generator->AddZoneStructure(TVoxelIndex(X, Y, Z), Str);
 					Res.Add(TVoxelIndex(X, Y, Z));
 				}
 			}
@@ -187,12 +253,8 @@ public:
 
 	void MakeMetaData(UMainTerrainGeneratorComponent* Generator) const {
 		FVector Origin(OriginIndex.X * 1000, OriginIndex.Y * 1000, 0);
-
 		MakeLandscapeHill(Generator, Origin, 1);
 		Cavern->MakeMetaData(Generator);
-		//AsyncTask(ENamedThreads::GameThread, [=]() {
-			//DrawDebugBox(Generator->GetWorld(), Origin, FVector(USBT_ZONE_SIZE / 2), FColor(255, 0, 0, 0), true);
-		//});
 	}
 
 };
@@ -217,11 +279,6 @@ void StructureHotizontalBoxTunnel(UMainTerrainGeneratorComponent* Generator, con
 	for (auto X = MinIndex.X; X <= MaxIndex.X; X++) {
 		for (auto Y = MinIndex.Y; Y <= MaxIndex.Y; Y++) {
 			Generator->AddZoneStructure(TVoxelIndex(X, Y, MinIndex.Z), Str);
-
-			AsyncTask(ENamedThreads::GameThread, [=]() {
-				const FVector Pos0 = Generator->GetController()->GetZonePos(TVoxelIndex(X, Y, MinIndex.Z));
-				//DrawDebugBox(Generator->GetWorld(), Pos0, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
-				});
 		}
 	}
 }
@@ -328,7 +385,7 @@ void StructureDiagonalCylinderTunnel(UMainTerrainGeneratorComponent* Generator, 
 			//DrawDebugBox(Generator->GetWorld(), Pos0, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
 			//DrawDebugBox(Generator->GetWorld(), Pos1, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
 			//DrawDebugBox(Generator->GetWorld(), Pos2, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
-			});
+		});
 
 		T++;
 	}
@@ -457,94 +514,12 @@ void MakeDungeon1(UMainTerrainGeneratorComponent* Generator) {
 }
 
 
-void StructureSphereCavern(UMainTerrainGeneratorComponent* Generator, const TVoxelIndex& OriginIndex, const float Radius) {
-	const FVector Origin = Generator->GetController()->GetZonePos(OriginIndex);
+void UMainTerrainGeneratorComponent::RegionGenerateStructures(int RegionX, int RegionY) {
 
-	const auto Function = [=](const float InDensity, const TMaterialId InMaterialId, const TVoxelIndex& VoxelIndex, const FVector& LocalPos, const FVector& WorldPos) {
-		const float Density = Generator->FunctionMakeSphere(InDensity, WorldPos, Origin, Radius, 1);
-		return std::make_tuple(Density, InMaterialId);
-	};
-
-	const auto Function2 = [=](const TVoxelIndex& ZoneIndex, const FVector& WorldPos, const FVector& LocalPos) {
-		const FVector P = WorldPos - Origin;
-		const float R = std::sqrt(P.X * P.X + P.Y * P.Y + P.Z * P.Z);
-		if (R < Radius) {
-			return false;
-		}
-		return true;
-	};
-
-	TZoneStructureHandler Str;
-	Str.Function = Function;
-	Str.LandscapeFoliageFilter = Function2;
-
-	const float R = Radius;
-
-	const FVector Max(Origin.X + R, Origin.Y + R, Origin.Z + R);
-	const FVector Min(Origin.X - R, Origin.Y - R, Origin.Z - R);
-
-	const TVoxelIndex MinIndex = Generator->GetController()->GetZoneIndex(Min);
-	const TVoxelIndex MaxIndex = Generator->GetController()->GetZoneIndex(Max);
-
-	for (auto X = MinIndex.X; X <= MaxIndex.X; X++) {
-		for (auto Y = MinIndex.Y; Y <= MaxIndex.Y; Y++) {
-			for (auto Z = MinIndex.Z; Z <= MaxIndex.Z; Z++) {
-				Generator->AddZoneStructure(TVoxelIndex(X, Y, Z), Str);
-
-				/*
-				AsyncTask(ENamedThreads::GameThread, [=]() {
-					const FVector Pos0 = Generator->GetController()->GetZonePos(TVoxelIndex(X, Y, Z));
-					DrawDebugBox(Generator->GetWorld(), Pos0, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
-				});
-				*/
-			}
-		}
-	}
 }
-
-/*
-void StructureGeoSphere(UMainTerrainGeneratorComponent* Generator, const TVoxelIndex& OriginIndex, const float Radius) {
-	const FVector Origin = Generator->GetController()->GetZonePos(OriginIndex);
-
-	const auto Function = [=](const float InDensity, const TMaterialId InMaterialId, const TVoxelIndex& VoxelIndex, const FVector& LocalPos, const FVector& WorldPos) {
-		return Generator->FunctionMakeSolidSphere(InDensity, InMaterialId, WorldPos, Origin, Radius, 90);
-	};
-
-	const auto Function2 = [=](const TVoxelIndex& ZoneIndex, const FVector& WorldPos, const FVector& LocalPos) {
-		const FVector P = WorldPos - Origin;
-		const float R = std::sqrt(P.X * P.X + P.Y * P.Y + P.Z * P.Z);
-		if (R < Radius) {
-			return false;
-		}
-		return true;
-	};
-
-	TZoneStructureHandler Str;
-	Str.Function = Function;
-	Str.LandscapeFoliageFilter = Function2;
-
-	const float R = Radius;
-
-	const FVector Max(Origin.X + R, Origin.Y + R, Origin.Z + R);
-	const FVector Min(Origin.X - R, Origin.Y - R, Origin.Z - R);
-
-	const TVoxelIndex MinIndex = Generator->GetController()->GetZoneIndex(Min);
-	const TVoxelIndex MaxIndex = Generator->GetController()->GetZoneIndex(Max);
-
-	for (auto X = MinIndex.X; X <= MaxIndex.X; X++) {
-		for (auto Y = MinIndex.Y; Y <= MaxIndex.Y; Y++) {
-			for (auto Z = MinIndex.Z; Z <= MaxIndex.Z; Z++) {
-				Generator->AddZoneStructure(TVoxelIndex(X, Y, Z), Str);
-			}
-		}
-	}
-}
-*/
-
 
 
 void UMainTerrainGeneratorComponent::GenerateStructures() {
-
 	//TStructureGeoSphere TestGeoSphere(TVoxelIndex(0, -2, -1), 1500);
 	//TestGeoSphere.MakeMetaData(this);
 
@@ -569,9 +544,6 @@ void UMainTerrainGeneratorComponent::GenerateStructures() {
 			const float R = std::sqrt(X * X + Y * Y);
 
 			bIsValid = R > 15; // ignore spawn area
-
-			//UE_LOG(LogTemp, Warning, TEXT("TEST -> %d %d -> %f"), X, Y, R);
-
 			FVector Origin(X * 1000, Y * 1000, 0);
 
 			TStructureBigHill Bighill(TVoxelIndex(X, Y, 0));
@@ -580,22 +552,17 @@ void UMainTerrainGeneratorComponent::GenerateStructures() {
 		} while (!bIsValid);
 	}
 
-	for (int I = 0; I < 50; I++) {
+	for (int I = 0; I < 100; I++) {
 		do {
 			X = Rnd.RandRange(-RegionSize, RegionSize);
 			Y = Rnd.RandRange(-RegionSize, RegionSize);
 			const float R = std::sqrt(X * X + Y * Y);
 
 			bIsValid = true;
+			FVector Origin(X * 1000, Y * 1000, -10000);
 
-			//UE_LOG(LogTemp, Warning, TEXT("TEST -> %d %d -> %f"), X, Y, R);
-			FVector Origin(X * 1000, Y * 1000, 0);
-
-			AsyncTask(ENamedThreads::GameThread, [=]() {
-				//DrawDebugBox(GetWorld(), Origin, FVector(USBT_ZONE_SIZE / 2), FColor(255, 0, 0, 0), true);
-			});
-
-
+			TStructureSphereCavern Test(TVoxelIndex(X, Y, -10), 1500);
+			Test.MakeMetaData(this);
 		} while (!bIsValid);
 	}
 }

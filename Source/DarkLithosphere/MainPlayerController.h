@@ -83,6 +83,8 @@ public:
 
 	virtual void OnPossess(APawn* NewPawn) override;
 
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
 public:
 
 	UFUNCTION(BlueprintCallable, Category = "Sandbox")
@@ -169,6 +171,8 @@ public:
 	bool OnContainerDropCheck(int32 SlotId, FName ContainerName, const ASandboxObject* Obj) const override;
 
 protected:
+
+	void OnFinishInitialLoad();
 
 	void FindOrCreateCharacterInternal();
 

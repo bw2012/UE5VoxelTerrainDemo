@@ -109,6 +109,7 @@ protected:
 
 	virtual void OnProgressBackgroundSaveTerrain(float Progress) override;
 
+	virtual void OnFinishInitialLoad();
 
 private:
 

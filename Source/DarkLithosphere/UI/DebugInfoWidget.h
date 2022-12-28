@@ -21,6 +21,10 @@ class DARKLITHOSPHERE_API UDebugInfoWidget : public UUserWidget {
 	GENERATED_BODY()
 	
 protected:
+
+	UFUNCTION(BlueprintCallable, Category = "Sandbox System info")
+	FString SandboxPlayerCrdText();
+
 	UFUNCTION(BlueprintCallable, Category = "Sandbox System info")
 	FString SandboxDebugInfo1Text();
 

@@ -253,10 +253,6 @@ const FVector& TVoxelData::getOrigin() const {
 	return origin;
 }
 
-//void getOrigin(FVector& o) const {
-	//o = origin;
-//};
-
 FORCEINLINE float TVoxelData::size() const {
 	return volume_size;
 }
@@ -369,16 +365,8 @@ void TVoxelData::forEachWithCache(std::function<void(int x, int y, int z)> func,
 void TVoxelData::forEachCacheItem(const int lod, std::function<void(const TSubstanceCacheItem& itm)> func) const{
 	substanceCacheLOD[lod].forEach([=](const TSubstanceCacheItem& itm) {
 		func(itm);
-		//const int index = itm.index;
-		//const int x = index / (vd.num() * vd.num());
-		//const int y = (index / vd.num()) % vd.num();
-		//const int z = index % vd.num();
 	});
 }
-
-//const TSubstanceCache& TVoxelData::getCacheByLod(int lod) const {
-//	return substanceCacheLOD[lod];
-//}
 
 FORCEINLINE int TVoxelData::clcLinearIndex(int x, int y, int z) const {
 	//return x * voxel_num * voxel_num + y * voxel_num + z;
@@ -398,15 +386,6 @@ void TVoxelData::clcVoxelIndex(uint32 idx, uint32& x, uint32& y, uint32& z) cons
 void TVoxelData::makeSubstanceCache() {
 	clearSubstanceCache();
 	initCache();
-
-	/*
-	const int s = num() * num() * num();
-	for (int i = 0; i < s; i++) {
-		uint32 x, y, z;
-		clcVoxelIndex(i, x, y, z);
-		performSubstanceCacheLOD(x, y, z);
-	}
-	*/
 	
 	for (int x = 0u; x < num(); x++) {
 		for (int y = 0u; y < num(); y++) {
@@ -501,7 +480,6 @@ TSubstanceCache::TSubstanceCache() {
 TSubstanceCacheItem* TSubstanceCache::emplace() {
 	auto s = cellArray.size();
 	if (s == idx) {
-		//UE_LOG(LogSandboxTerrain, Log, TEXT("resize -> %d"), cellArray.size());
 		cellArray.resize(s + s / 2 + 1);
 	}
 

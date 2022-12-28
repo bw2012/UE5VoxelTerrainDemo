@@ -55,11 +55,8 @@ bool UMainTerrainGeneratorComponent::IsForcedComplexZone(const TVoxelIndex& Zone
 
 float UMainTerrainGeneratorComponent::FunctionMakeSphere(const float InDensity, const FVector& V, const FVector& Origin, const float Radius, const float NoiseFactor) const {
 	static const float E = 50;
-	//static const float NoiseSmallPositionScale = 0.007f;
-	//const float NoiseSmallValueScale = 0.1 * NoiseFactor;
-
 	static const float NoiseMediumPositionScale = 0.007f / 4;
-	const float NoiseMediumValueScale = 0.2f * NoiseFactor;
+	const float NoiseMediumValueScale = 100.f * NoiseFactor;
 
 	if (InDensity > 0.5f) {
 		const FVector P = V - Origin;
@@ -68,9 +65,8 @@ float UMainTerrainGeneratorComponent::FunctionMakeSphere(const float InDensity, 
 			if (R < Radius - E) {
 				return 0.f;
 			} else {
-				//const float N = PerlinNoise(P, NoiseSmallPositionScale, NoiseSmallValueScale) + PerlinNoise(P, NoiseMediumPositionScale, NoiseMediumValueScale);
-				const float N = PerlinNoise(P, NoiseMediumPositionScale, NoiseMediumValueScale);
-				float Density = 1 / (1 + exp((Radius - R) / 100)) + N;
+				//const float N = R + PerlinNoise(P, NoiseMediumPositionScale, NoiseMediumValueScale);
+				float Density = 1 / (1 + exp((Radius - R) / 100));
 				if (Density < InDensity) {
 					return Density;
 				}
@@ -517,7 +513,7 @@ void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxel
 	// rocks
 	if (ZoneType == TZoneGenerationType::Landscape) {
 		float Chance = Rnd.GetFraction();
-		if (Chance < 0.05f) {
+		if (Chance < 0.1f) {
 			GenerateRandomInstMesh(ZoneInstanceMeshMap, 900, Rnd, ZoneIndex, Vd);
 		}
 	}
@@ -526,14 +522,17 @@ void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxel
 	if (ZoneIndex.Z <= -8 && ZoneIndex.Z > -20) {
 		FVector Pos(0);
 		FVector Normal(0);
-		if (SelectRandomSpawnPoint(Rnd, ZoneIndex, Vd, Pos, Normal)) {
-			FVector Scale = FVector(1, 1, 1);
-			FRotator Rotation = Normal.Rotation();
-			Rotation.Pitch -= 90;
-			FTransform NewTransform(Rotation, Pos, Scale);
-			AsyncTask(ENamedThreads::GameThread, [=]() {
-				TerrainController->SpawnSandboxObject(300, NewTransform);
-			});
+		float Chance = Rnd.GetFraction();
+		if (Chance < 0.05f) {
+			if (SelectRandomSpawnPoint(Rnd, ZoneIndex, Vd, Pos, Normal)) {
+				FVector Scale = FVector(1, 1, 1);
+				FRotator Rotation = Normal.Rotation();
+				Rotation.Pitch -= 90;
+				FTransform NewTransform(Rotation, Pos, Scale);
+				AsyncTask(ENamedThreads::GameThread, [=]() {
+					TerrainController->SpawnSandboxObject(300, NewTransform);
+				});
+			}
 		}
 	}
 
@@ -622,102 +621,8 @@ void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxel
 		GenerateRandomInstMesh(ZoneInstanceMeshMap, 904, Rnd, ZoneIndex, Vd, 1, 7); // chopped woods
 		GenerateRandomInstMesh(ZoneInstanceMeshMap, 902, Rnd, ZoneIndex, Vd, 1, 5); // logs
 		GenerateRandomInstMesh(ZoneInstanceMeshMap, 903, Rnd, ZoneIndex, Vd);	// stump
-
-		AsyncTask(ENamedThreads::GameThread, [=]() {
-			FVector ZonePos = GetController()->GetZonePos(ZoneIndex);
-			//DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
-		});
 	}
 }
-
-
-bool UMainTerrainGeneratorComponent::SpawnCustomFoliage(const TVoxelIndex& Index, const FVector& WorldPos, int32 FoliageTypeId, FSandboxFoliage FoliageType, FRandomStream& Rnd, FTransform& Transform) {
-	/*
-	if (IsCaveLayerZone(Index.Z)) {
-		//FVector rrr = WorldPos;
-				//rrr.Z += 10;
-				//if (Noise1 > 0) {
-				//	Foliage.Probability = 0;
-				//}
-
-		float Chance = Rnd.FRandRange(0.f, 1.f);
-		FVector Pos = WorldPos;
-		Pos.Z += 20;
-
-		float Probability = FoliageType.Probability;
-		if (Chance <= Probability / 20) {
-				TSubclassOf<ASandboxObject> Obj = LevelController->GetSandboxObjectByClassId(200);
-			float Pitch = Rnd.FRandRange(0.f, 10.f);
-			float Roll = Rnd.FRandRange(0.f, 360.f);
-			float Yaw = Rnd.FRandRange(0.f, 10.f);
-			float ScaleZ = Rnd.FRandRange(FoliageType.ScaleMaxZ, FoliageType.ScaleMaxZ * 2);
-			FVector Scale = FVector(ScaleZ, ScaleZ, ScaleZ);
-			FRotator Rotation(Pitch, Roll, Yaw);
-			FTransform NewTransform(Rotation, Pos, Scale);
-
-			UWorld* World = TerrainController->GetWorld();
-
-			AsyncTask(ENamedThreads::GameThread, [=]() {
-				World->SpawnActor(Obj->ClassDefaultObject->GetClass(), &NewTransform);
-			});
-
-			return false;
-	
-		}
-
-		if (Chance <= Probability) {
-			float Angle = Rnd.FRandRange(0.f, 360.f);
-			float ScaleZ = Rnd.FRandRange(FoliageType.ScaleMinZ, FoliageType.ScaleMaxZ);
-			FVector Scale = FVector(ScaleZ, ScaleZ, ScaleZ);
-			Transform = FTransform(FRotator(0, Angle, 0), Pos, Scale);
-			return true;
-		}
-	}
-	*/
-
-	/*
-	ATerrainController* TerrainController = (ATerrainController*)GetController();
-	ALevelController* LevelController = TerrainController->LevelController;
-
-	if (!LevelController) {
-		return false;
-	}
-
-	FVector Pos = WorldPos;
-
-	// cave height
-	static const float scale3 = 0.001f;
-	const FVector v3(WorldPos.X * scale3, WorldPos.Y * scale3, 0); // extra cave height
-	const float Noise3 = PerlinNoise(v3);
-	const float BaseCaveHeight = 400;
-	const float ExtraCaveHeight = 490 * Noise3;
-	float CaveHeight = BaseCaveHeight + ExtraCaveHeight;
-	//float CaveHeight = BaseCaveHeight;
-	if (CaveHeight < 0) {
-		CaveHeight = 0; // protection if my calculation is failed
-	}
-
-	//cave level
-	static const float scale4 = 0.00025f;
-	const FVector v4(WorldPos.X * scale4, WorldPos.Y * scale4, 10); // extra cave height
-	const float Noise4 = PerlinNoise(v4);
-	const float BaseCaveLevel = 3000;
-	const float ExtraCaveLevel = 1000 * Noise4;
-	const float CaveLevel = BaseCaveLevel + ExtraCaveLevel;
-
-	static const float scale1 = 0.001f; // small
-	const FVector v1(WorldPos.X * scale1, WorldPos.Y * scale1, 0); // just noise
-	const float Noise1 = PerlinNoise(v1);
-
-	float test = (-CaveLevel - CaveHeight / 2);
-	if (WorldPos.Z < test - 200 && WorldPos.Z > test - 220) { // && WorldPos.Z > test - 105
-		
-	}
-	*/
-
-	return false;
-}
-
 
 void UMainTerrainGeneratorComponent::OnBatchGenerationFinished() {
 

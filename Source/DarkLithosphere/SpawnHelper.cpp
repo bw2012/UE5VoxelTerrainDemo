@@ -3,11 +3,7 @@
 
 #include "SpawnHelper.h"
 #include "SandboxObject.h"
-//#include "SandboxCharacter.h"
 #include "SandboxTerrainController.h"
-//#include "BaseCharacter.h"
-
-
 
 
 bool IsCursorPositionValid(const FHitResult& Hit) {
