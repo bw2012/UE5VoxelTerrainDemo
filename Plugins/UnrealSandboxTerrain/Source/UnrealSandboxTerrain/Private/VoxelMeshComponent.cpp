@@ -639,8 +639,8 @@ void UVoxelMeshComponent::SetMeshData(TMeshDataPtr NewMeshDataPtr, const TTerrai
 			LodIndex++;
 		}
 	}
-	
 
+	SetCollisionMeshData(NewMeshDataPtr);
 	UpdateLocalBounds(); // Update overall bounds
 	MarkRenderStateDirty(); // New section requires recreating scene proxy
 }
@@ -720,16 +720,11 @@ bool UVoxelMeshComponent::GetPhysicsTriMeshData(struct FTriMeshCollisionData* Co
 void UVoxelMeshComponent::UpdateLocalBounds() {
 	FBox LocalBox(EForceInit::ForceInitToZero);
 
-	//if (TriMeshData.ProcVertexBuffer.Num() == 0) return;
+	CollisionLodSection.WholeMesh.SectionLocalBox;
+	LocalBox += CollisionLodSection.WholeMesh.SectionLocalBox;
+	LocalBounds = LocalBox.IsValid ? FBoxSphereBounds(LocalBox) : FBoxSphereBounds(FVector(0, 0, 0), FVector(500, 500, 500), 500); // fallback to reset box sphere bounds
 
-	//LocalBox += TriMeshData.SectionLocalBox;
-	//LocalBounds = LocalBox.IsValid ? FBoxSphereBounds(LocalBox) : FBoxSphereBounds(FVector(0, 0, 0), FVector(0, 0, 0), 0); // fallback to reset box sphere bounds
-
-	//FIXME use real bounds
-	LocalBounds = FBoxSphereBounds(FVector(0, 0, 0), FVector(700, 700, 700), 700);
-	
 	UpdateBounds();
-	// Need to send to render thread
 	MarkRenderTransformDirty();
 }
 
@@ -835,7 +830,7 @@ UBodySetup* UVoxelMeshComponent::GetBodySetup() {
 
 void UVoxelMeshComponent::SetCollisionMeshData(TMeshDataPtr MeshDataPtr) {
 	CollisionLodSection = MeshSectionLodArray[0]; //FIXME use real collision section id in terrain controller
-	UpdateLocalBounds();
+	//UpdateLocalBounds();
 	UpdateCollision();
 }
 
