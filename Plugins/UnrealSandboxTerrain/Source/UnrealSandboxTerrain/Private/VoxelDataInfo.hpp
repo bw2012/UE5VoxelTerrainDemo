@@ -42,7 +42,7 @@ private:
     volatile double LastMeshGeneration;
     volatile double LastCacheCheck;
 
-	TMeshDataPtr MeshDataCachePtr = nullptr;
+    std::atomic<TMeshDataPtr> MeshDataCachePtr = nullptr;
 
 	std::atomic<UTerrainZoneComponent*> ZoneComponentAtomicPtr = nullptr;
     std::atomic<bool> bNeedTerrainSave{ false };
@@ -179,12 +179,11 @@ public:
     }
 
 	void PushMeshDataCache(TMeshDataPtr MeshDataPtr) {
-		std::atomic_store(&MeshDataCachePtr, MeshDataPtr);
+		MeshDataCachePtr.store(MeshDataPtr);
 	}
 
 	TMeshDataPtr PopMeshDataCache() {
-		TMeshDataPtr NullPtr = nullptr;
-		TMeshDataPtr MeshDataPtr = std::atomic_exchange(&MeshDataCachePtr, NullPtr);
+        TMeshDataPtr MeshDataPtr = MeshDataCachePtr.exchange(nullptr);
 		return MeshDataPtr;
 	}
 
