@@ -223,7 +223,7 @@ bool ASandboxTerrainController::LoadMeshAndObjectDataByIndex(const TVoxelIndex& 
 			CompressedMdPtr->resize(ZoneHeader.LenMd);
 			Deserializer.read(CompressedMdPtr->data(), ZoneHeader.LenMd);
 			auto DecompressedDataPtr = Decompress(CompressedMdPtr);
-			MeshData = DeserializeMeshDataFast(*DecompressedDataPtr, GetCollisionMeshSectionLodIndex());
+			MeshData = DeserializeMeshDataFast(*DecompressedDataPtr, 0);
 		}
 
 		if (ZoneHeader.LenObj > 0) {

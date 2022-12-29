@@ -946,7 +946,7 @@ std::shared_ptr<TMeshData> ASandboxTerrainController::GenerateMesh(TVoxelData* V
 
 	if (USBT_ENABLE_LOD) {
 		Vdp.bGenerateLOD = true;
-		Vdp.collisionLOD = GetCollisionMeshSectionLodIndex();
+		Vdp.collisionLOD = 0;
 	} else {
 		Vdp.bGenerateLOD = false;
 		Vdp.collisionLOD = 0;
@@ -960,15 +960,6 @@ std::shared_ptr<TMeshData> ASandboxTerrainController::GenerateMesh(TVoxelData* V
 
 	//UE_LOG(LogSandboxTerrain, Log, TEXT("generateMesh -------------> %f %f %f --> %f ms"), Vd->getOrigin().X, Vd->getOrigin().Y, Vd->getOrigin().Z, Time);
 	return MeshDataPtr;
-}
-
-
-int ASandboxTerrainController::GetCollisionMeshSectionLodIndex() const {
-	if (CollisionSection > 6) {
-		return 6;
-	}
-
-	return CollisionSection;
 }
 
 const FSandboxFoliage& ASandboxTerrainController::GetFoliageById(uint32 FoliageId) const {

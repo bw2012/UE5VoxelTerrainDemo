@@ -393,15 +393,6 @@ public:
 	USandboxTerrainParameters* TerrainParameters;
 
 	//========================================================================================
-	// collision
-	//========================================================================================
-
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Collision")
-	unsigned int CollisionSection;
-
-	void OnFinishAsyncPhysicsCook(const TVoxelIndex& ZoneIndex);
-
-	//========================================================================================
 	// foliage
 	//========================================================================================
 
@@ -508,6 +499,12 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "UnrealSandbox")
 	FTerrainDebugInfo GetMemstat();
+
+	//========================================================================================
+	// collision
+	//========================================================================================
+
+	void OnFinishAsyncPhysicsCook(const TVoxelIndex& ZoneIndex);
 
 private:
 
@@ -623,12 +620,6 @@ private:
 	TMap<uint16, UMaterialInterface*> RegularMaterialCache;
 
 	TMap<uint16, FSandboxTerrainMaterial> MaterialMap;
-
-	//===============================================================================
-	// collision
-	//===============================================================================
-
-	int GetCollisionMeshSectionLodIndex() const;
 
 	//===============================================================================
 	// 

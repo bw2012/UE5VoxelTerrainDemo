@@ -799,7 +799,6 @@ void UVoxelMeshComponent::FinishPhysicsAsyncCook(bool bSuccess, UBodySetup* Fini
 
 	UpdateNavigationData();
 
-	//CollisionLodSection = TMeshLodSection(); //clear to reduce memory usage
 	ASandboxTerrainController* TerrainController = Cast<ASandboxTerrainController>(GetAttachmentRootActor());
 	if (TerrainController) {
 		TerrainController->OnFinishAsyncPhysicsCook(ZoneIndex);
@@ -829,7 +828,7 @@ UBodySetup* UVoxelMeshComponent::GetBodySetup() {
 }
 
 void UVoxelMeshComponent::SetCollisionMeshData(TMeshDataPtr MeshDataPtr) {
-	CollisionLodSection = MeshSectionLodArray[0]; //FIXME use real collision section id in terrain controller
+	CollisionLodSection = MeshSectionLodArray[0]; 
 	//UpdateLocalBounds();
 	UpdateCollision();
 }
