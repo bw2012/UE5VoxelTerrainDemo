@@ -13,14 +13,9 @@
 
 
 /** Resource array to pass  */
-class FProcMeshVertexResourceArray : public FResourceArrayInterface
-{
+class FProcMeshVertexResourceArray : public FResourceArrayInterface {
 public:
-	FProcMeshVertexResourceArray(void* InData, uint32 InSize)
-		: Data(InData)
-		, Size(InSize)
-	{
-	}
+	FProcMeshVertexResourceArray(void* InData, uint32 InSize) : Data(InData) , Size(InSize) { }
 
 	virtual const void* GetResourceData() const override { return Data; }
 	virtual uint32 GetResourceDataSize() const override { return Size; }
@@ -35,30 +30,25 @@ private:
 };
 
 /** Vertex Buffer */
-class FProcMeshVertexBuffer : public FVertexBuffer
-{
+class FProcMeshVertexBuffer : public FVertexBuffer {
 public:
 	TArray<FDynamicMeshVertex> Vertices;
 
-	virtual void InitRHI() override
-	{
+	virtual void InitRHI() override {
 		const uint32 SizeInBytes = Vertices.Num() * sizeof(FDynamicMeshVertex);
 
 		FProcMeshVertexResourceArray ResourceArray(Vertices.GetData(), SizeInBytes);
 		FRHIResourceCreateInfo CreateInfo(TEXT("FProcMeshVertexBuffer"), &ResourceArray);
 		VertexBufferRHI = RHICreateVertexBuffer(SizeInBytes, BUF_Static, CreateInfo);
 	}
-
 };
 
 /** Index Buffer */
-class FProcMeshIndexBuffer : public FIndexBuffer
-{
+class FProcMeshIndexBuffer : public FIndexBuffer {
 public:
 	TArray<int32> Indices;
 
-	virtual void InitRHI() override
-	{
+	virtual void InitRHI() override {
 		FRHIResourceCreateInfo CreateInfo(TEXT("FProcMeshIndexBuffer"));
 		void* Buffer = nullptr;
 		IndexBufferRHI = RHICreateAndLockIndexBuffer(sizeof(int32), Indices.Num() * sizeof(int32), BUF_Static, CreateInfo, Buffer);
@@ -110,11 +100,7 @@ public:
 	/** Whether this section is currently visible */
 	bool bSectionVisible;
 
-	FProcMeshProxySection(ERHIFeatureLevel::Type InFeatureLevel)
-		: Material(NULL)
-		, VertexFactory(InFeatureLevel, "FProcMeshProxySection")
-		, bSectionVisible(true)
-	{}
+	FProcMeshProxySection(ERHIFeatureLevel::Type InFeatureLevel) : Material(NULL), VertexFactory(InFeatureLevel, "FProcMeshProxySection") , bSectionVisible(true) {}
 
 	~FProcMeshProxySection() {
 		this->VertexBuffers.PositionVertexBuffer.ReleaseResource();
@@ -603,7 +589,7 @@ void UVoxelMeshComponent::SetMeshData(TMeshDataPtr NewMeshDataPtr, const TTerrai
 	ASandboxTerrainController* TerrainController = Cast<ASandboxTerrainController>(GetAttachmentRootActor());
 
 	LocalMaterials.Empty();
-	//LocalMaterials.Reserve(10);
+	LocalMaterials.Reserve(10);
 
     static const auto DummyMesh = TMeshLodSection();
 	MeshSectionLodArray.SetNum(LOD_ARRAY_SIZE, false);
