@@ -50,7 +50,7 @@ void ATerrainController::BeginPlayServer() {
 					for (int Z = -1; Z <= 1; Z++) {
 						const TVoxelIndex TmpZoneIndex(ZoneIndex.X + X, ZoneIndex.Y + Y, ZoneIndex.Z + Z);
 						UE_LOG(LogTemp, Log, TEXT("AddInitialZone -> %d %d %d"), TmpZoneIndex.X, TmpZoneIndex.Y, TmpZoneIndex.Z);
-						AddInitialZone(TmpZoneIndex);
+						AddInitialZone(TmpZoneIndex); 
 						SpawnFromStash(TmpZoneIndex);
 					}
 				}
@@ -162,8 +162,6 @@ void ATerrainController::MakeFlattenGrassTrace(const FHitResult& Overlap) {
 					Scale.Z = s;
 				}
 			}
-
-			//UE_LOG(LogTemp, Warning, TEXT("ttt: %f"), Scale.Z);
 
 			Transform.SetScale3D(Scale);
 			FoliageMesh->UpdateInstanceTransform(Overlap.Item, Transform, false);

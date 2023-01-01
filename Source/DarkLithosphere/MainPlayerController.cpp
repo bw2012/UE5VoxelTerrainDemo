@@ -275,15 +275,18 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 }
 
 void AMainPlayerController::OnFinishInitialLoad() {
-	AsyncTask(ENamedThreads::GameThread, [&] {
-		FindOrCreateCharacter();
+	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [&] {
+		FPlatformProcess::Sleep(0.5f);
 
-		if (GetNetMode() == NM_Client || GetNetMode() == NM_Standalone) {
-			AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
-			if (MainHud) {
-				MainHud->CloseWidget(TEXT("loading_terrain"));
+		AsyncTask(ENamedThreads::GameThread, [&] {
+			FindOrCreateCharacter();
+			if (GetNetMode() == NM_Client || GetNetMode() == NM_Standalone) {
+				AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
+				if (MainHud) {
+					MainHud->CloseWidget(TEXT("loading_terrain"));
+				}
 			}
-		}
+		});
 	});
 }
 
@@ -398,25 +401,6 @@ void AMainPlayerController::OnAltActionReleased() {
 		MainPlayerControllerComponent->EndAltAction();
 	}
 }
-
-/*
-void AMainPlayerController::OnTracePlayerActionPoint(const FHitResult& Res) {
-	ADummyPawn* DummyPawn = Cast<ADummyPawn>(GetPawn());
-	if (DummyPawn) {
-		// do nothing;
-		return;
-	}
-
-	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
-	if (BaseCharacter) {
-		if (BaseCharacter->IsDead()) {
-			return;
-		}
-
-		MainPlayerControllerComponent->OnTracePlayerActionPoint(Res);
-	}
-}
-*/
 
 void AMainPlayerController::OnSelectActionObject(AActor* Actor) {
 	ASandboxCharacter* PlayerCharacter = Cast<ASandboxCharacter>(GetCharacter());

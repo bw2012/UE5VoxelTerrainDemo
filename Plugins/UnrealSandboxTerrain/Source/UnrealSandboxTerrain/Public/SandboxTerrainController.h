@@ -421,6 +421,11 @@ public:
 
 	//========================================================================================
 
+	UFUNCTION(BlueprintCallable, Category = "UnrealSandboxWorkaround")
+	void UE51MaterialIssueWorkaround();
+
+	//========================================================================================
+
 	uint32 GetZoneVoxelResolution();
 
 	float GetZoneSize();

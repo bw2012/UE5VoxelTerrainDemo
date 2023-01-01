@@ -11,6 +11,8 @@
 #include "PhysicsEngine/PhysicsSettings.h"
 #include "PhysicsEngine/BodySetup.h"
 
+#include "SceneManagement.h"
+
 
 /** Resource array to pass  */
 class FProcMeshVertexResourceArray : public FResourceArrayInterface {
@@ -57,13 +59,6 @@ public:
 		FMemory::Memcpy(Buffer, Indices.GetData(), Indices.Num() * sizeof(int32));
 		RHIUnlockIndexBuffer(IndexBufferRHI);
 	}
-};
-
-struct FTerrainMeshBatchInfo {
-
-	FVector* ZoneOriginPtr = nullptr;
-
-	int ZoneLodIndex = 0;
 };
 
 float GlobalTerrainZoneLOD[LOD_ARRAY_SIZE];
@@ -124,10 +119,6 @@ public:
 
 	/** Array of transition sections (todo: should be changed to mat sections)*/
 	FProcMeshProxySection* transitionMesh[6];
-
-	// render info
-	FTerrainMeshBatchInfo TerrainMeshBatchInfo;
-
 
 	FMeshProxyLodSection() {
 		for (auto i = 0; i < 6; i++) {
@@ -191,6 +182,8 @@ static void ConvertProcMeshToDynMeshVertex(FDynamicMeshVertex& Vert, const FProc
 	Vert.TangentZ.Vector.W = 0;
 }
 
+float LodScreenSizeArray[LOD_ARRAY_SIZE] = { 1.f, .5f, .25f, .125f, .0625, 0.03125 };
+
 class FVoxelMeshSceneProxy final : public FPrimitiveSceneProxy {
 
 private:
@@ -223,11 +216,7 @@ public:
 		return reinterpret_cast<size_t>(&UniquePointer);
 	}
 
-	FVoxelMeshSceneProxy(UVoxelMeshComponent* Component)
-		: FPrimitiveSceneProxy(Component)
-		, BodySetup(Component->GetBodySetup())
-		, MaterialRelevance(Component->GetMaterialRelevance(GetScene().GetFeatureLevel()))
-	{
+	FVoxelMeshSceneProxy(UVoxelMeshComponent* Component) : FPrimitiveSceneProxy(Component), BodySetup(Component->GetBodySetup()), MaterialRelevance(Component->GetMaterialRelevance(GetScene().GetFeatureLevel())) {
 		bLodFlag = Component->bLodFlag;
 		ZoneOrigin = Component->GetComponentLocation();
 
@@ -368,17 +357,16 @@ public:
 	}
 
 	//================================================================================================
-	// Draw as static mesh (not used because no significant performance impact)
+	// Draw as static mesh 
 	//================================================================================================
 
-	void DrawStaticMeshSection(FStaticPrimitiveDrawInterface* PDI, FProcMeshProxySection* Section, int32 LODIndex) {
+	void DrawStaticMeshSection(FStaticPrimitiveDrawInterface* PDI, FProcMeshProxySection* Section, int LODIndex) {
 		FMaterialRenderProxy* MaterialInstance = Section->Material->GetRenderProxy();
 
 		FMeshBatch Mesh;
 		Mesh.bWireframe = false;
 		Mesh.VertexFactory = &Section->VertexFactory;
 		Mesh.MaterialRenderProxy = MaterialInstance;
-		Mesh.bDitheredLODTransition = true;
 		Mesh.ReverseCulling = IsLocalToWorldDeterminantNegative();
 		Mesh.Type = PT_TriangleList;
 		Mesh.DepthPriorityGroup = SDPG_World;
@@ -392,41 +380,117 @@ public:
 		BatchElement.NumPrimitives = Section->IndexBuffer.Indices.Num() / 3;
 		BatchElement.MinVertexIndex = 0;
 		BatchElement.MaxVertexIndex = Section->VertexBuffers.PositionVertexBuffer.GetNumVertices() - 1;
-		//BatchElement.MinScreenSize = LODResource.LODInfo.MinScreenSize;
-		//BatchElement.MaxScreenSize = LODResource.LODInfo.MaxScreenSize;
 
-		//static const float LodScreenSizeArray[LOD_ARRAY_SIZE] = {MAX_FLT, .8f, .43f, .19f, .15f, .12f, .1f};
-		//const float ScreenSize = LodScreenSizeArray[LODIndex];
-		//PDI->DrawMesh(Mesh, MAX_FLT); // ok
-		//PDI->DrawMesh(Mesh, ScreenSize); // ok
+		//static const float LodScreenSizeArray[LOD_ARRAY_SIZE] = {1.f, .8f, .43f, .19f, .15f, .12f };
+		//static const float LodScreenSizeArray[LOD_ARRAY_SIZE] = { 1.f, .5f, .25f, .125f, .625f,  0.3125};
+		const float ScreenSize = LodScreenSizeArray[LODIndex];
+		//PDI->DrawMesh(Mesh, MAX_FLT); // no LOD
+		PDI->DrawMesh(Mesh, ScreenSize); 
 	}
 
-	virtual void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI) {
-		for (int LodSectionIdx = 0; LodSectionIdx < LodSectionArray.Num(); LodSectionIdx++) {
-			FMeshProxyLodSection* LodSectionProxy = LodSectionArray[LodSectionIdx];
-			if (LodSectionProxy != nullptr) {
-				LodSectionProxy->TerrainMeshBatchInfo.ZoneLodIndex = LodSectionIdx;
-				LodSectionProxy->TerrainMeshBatchInfo.ZoneOriginPtr = &ZoneOrigin;
-				for (FProcMeshProxySection* MatSection : LodSectionProxy->MaterialMeshPtrArray) {
-					if (MatSection != nullptr) {
-						DrawStaticMeshSection(PDI, MatSection, LodSectionIdx);
-					}
+	void DrawStaticLodSection(FStaticPrimitiveDrawInterface* PDI, const FMeshProxyLodSection* LodSection, int LODIndex) {
+		if (LodSection != nullptr) {
+			for (FProcMeshProxySection* MatSection : LodSection->MaterialMeshPtrArray) {
+				if (MatSection != nullptr) {
+					DrawStaticMeshSection(PDI, MatSection, LODIndex);
 				}
 			}
 		}
 	}
 
+	virtual void DrawStaticElements(FStaticPrimitiveDrawInterface* PDI) {
+		if (LodSectionArray.Num() > 0) {
+			for (int LODIndex = 0; LODIndex < LodSectionArray.Num(); LODIndex++) {
+				const FMeshProxyLodSection* LodSection = LodSectionArray[LODIndex];
+
+				//TODO: fix LODIndex < 4
+				if (LODIndex == 0 || LODIndex == 1 || LODIndex == 2 || LODIndex == 3) {
+					DrawStaticLodSection(PDI, LodSection, LODIndex);
+				}
+			}
+		}
+	}
+
+	void DrawBox(FMeshElementCollector& Collector, int32 ViewIndex, const FLinearColor Color) const {
+		FPrimitiveDrawInterface* PDI = Collector.GetPDI(ViewIndex);
+		auto Box = FBox{ ZoneOrigin - FVector(1.f, 1.f, 1.f) * 500.f, ZoneOrigin + FVector(1.f, 1.f, 1.f) * 500.f };
+		DrawWireBox(PDI, Box, Color, SDPG_World, 8.f, 0.f, false);
+	}
+	
+	int32 ComputeLodIndexByScreenSize(const FSceneView* View, const FVector& Origin) const {
+		const FBoxSphereBounds& ProxyBounds = GetBounds();
+		const float ScreenSize = ComputeBoundsScreenSize(Origin, ProxyBounds.SphereRadius, *View);
+
+		int32 I = 5;
+		for (int LODIndex = 0; LODIndex < 4; LODIndex++) { // TODO: fix LODIndex < 4
+			if (ScreenSize < LodScreenSizeArray[LODIndex]) {
+				I = LODIndex;
+			}
+		}
+
+		return I;
+	}
 
 	FORCENOINLINE virtual void GetDynamicMeshElements(const TArray<const FSceneView*>& Views, const FSceneViewFamily& ViewFamily, uint32 VisibilityMap, FMeshElementCollector& Collector) const override {
-		/*
-		for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++) {
-			FPrimitiveDrawInterface* PDI = Collector.GetPDI(ViewIndex);
-			auto Box = FBox{ ZoneOrigin - FVector(1.f, 1.f, 1.f) * 500.f, ZoneOrigin + FVector(1.f, 1.f, 1.f) * 500.f };
-			auto Color = FLinearColor::Blue;
-			DrawWireBox(PDI, Box, Color, SDPG_World, 2.f, 0.f, false);
+		if (LodSectionArray.Num() == 0) {
+			return;
 		}
-		*/
 
+		for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++) {
+			if (VisibilityMap & (1 << ViewIndex)) {
+				const FSceneView* View = Views[ViewIndex];
+				const FBoxSphereBounds& ProxyBounds = GetBounds();
+
+				int32 LodIndex = ComputeLodIndexByScreenSize(View, ProxyBounds.Origin);
+				//const float ScreenSize = ComputeBoundsScreenSize(ProxyBounds.Origin, ProxyBounds.SphereRadius, *View);
+
+				if (LodIndex > 0) {
+					// draw transition patches
+					for (auto i = 0; i < 6; i++) {
+						const FVector  NeighborZoneOrigin = ZoneOrigin + V[i];
+						const auto NeighborLodIndex = ComputeLodIndexByScreenSize(View, NeighborZoneOrigin);
+						if (NeighborLodIndex < LodIndex) {
+							FMeshProxyLodSection* LodSectionProxy = LodSectionArray[LodIndex];
+							if (LodSectionProxy != nullptr) {
+								for (FProcMeshProxySection* MatSection : LodSectionProxy->NormalPatchPtrArray[i]) {
+									if (MatSection != nullptr && MatSection->Material != nullptr) {
+										//FMaterialRenderProxy* MaterialProxy = bWireframe ? WireframeMaterialInstance : MatSection->Material->GetRenderProxy();
+										//DrawDynamicMeshSection(MatSection, Collector, MaterialProxy, bWireframe, ViewIndex);
+										DrawDynamicMeshSection(MatSection, Collector, MatSection->Material->GetRenderProxy(), false, ViewIndex);
+
+										// TODO: check: некоторые артефакты при lod = 0 
+									}
+								}
+							}
+						}
+					}
+				}
+
+
+				if (LodIndex == 0) {
+					//DrawBox(Collector, ViewIndex, FLinearColor::Blue);
+				}
+
+				if (LodIndex == 1) {
+					//DrawBox(Collector, ViewIndex, FLinearColor::Red);
+				}
+
+				if (LodIndex == 2) {
+					//DrawBox(Collector, ViewIndex, FLinearColor::White);
+				}
+
+				if (LodIndex == 3) {
+					//DrawBox(Collector, ViewIndex, FLinearColor::Yellow);
+				}
+
+				//if (ScreenSize < LodScreenSizeArray[1]) {
+				//	DrawBox(Collector, ViewIndex, FLinearColor::Red);
+				//}
+			}
+		}
+
+		
+		/*
 		if (LodSectionArray.Num() == 0) {
 			return;
 		}
@@ -464,25 +528,11 @@ public:
 						}
 					}
 
-					if (LodIndex > 0) {
-						// draw transition patches
-						for (auto i = 0; i < 6; i++) {
-							const FVector  NeighborZoneOrigin = ZoneOrigin + V[i];
-							const int NeighborLodIndex = GetLodIndex(NeighborZoneOrigin, View->ViewMatrices.GetViewOrigin());
-
-							if (NeighborLodIndex != LodIndex) {
-								for (FProcMeshProxySection* MatSection : LodSectionProxy->NormalPatchPtrArray[i]) {
-									if (MatSection != nullptr &&  MatSection->Material != nullptr) {
-										FMaterialRenderProxy* MaterialProxy = bWireframe ? WireframeMaterialInstance : MatSection->Material->GetRenderProxy();
-										DrawDynamicMeshSection(MatSection, Collector, MaterialProxy, bWireframe, ViewIndex);
-									}
-								}
-							}
-						}
-					}
+					
 				}
 			}
 		}
+		*/
 	}
 
 	FORCEINLINE void DrawDynamicMeshSection(const FProcMeshProxySection* Section, FMeshElementCollector& Collector, FMaterialRenderProxy* MaterialProxy, bool bWireframe, int32 ViewIndex) const {
@@ -529,12 +579,17 @@ public:
 		FPrimitiveViewRelevance Result;
 		Result.bDrawRelevance = IsShown(View);
 		Result.bShadowRelevance = IsShadowCast(View);
+		//Result.bDynamicRelevance = true;
+		//Result.bStaticRelevance = false;
+
 		Result.bDynamicRelevance = true;
-		Result.bStaticRelevance = false;
+		Result.bStaticRelevance = true;
+
 		Result.bRenderInMainPass = ShouldRenderInMainPass();
 		Result.bUsesLightingChannels = GetLightingChannelMask() != GetDefaultLightingChannelMask();
 		Result.bRenderCustomDepth = ShouldRenderCustomDepth();
 		MaterialRelevance.SetPrimitiveViewRelevance(Result);
+
 		return Result;
 	}
 
@@ -640,7 +695,6 @@ void UVoxelMeshComponent::SetMeshData(TMeshDataPtr NewMeshDataPtr, const TTerrai
 		}
 	}
 
-	SetCollisionMeshData(NewMeshDataPtr);
 	UpdateLocalBounds(); // Update overall bounds
 	MarkRenderStateDirty(); // New section requires recreating scene proxy
 }
@@ -718,11 +772,14 @@ bool UVoxelMeshComponent::GetPhysicsTriMeshData(struct FTriMeshCollisionData* Co
 }
 
 void UVoxelMeshComponent::UpdateLocalBounds() {
-	FBox LocalBox(EForceInit::ForceInitToZero);
+	//FBox LocalBox(EForceInit::ForceInitToZero);
+	//CollisionLodSection.WholeMesh.SectionLocalBox;
+	//LocalBox += CollisionLodSection.WholeMesh.SectionLocalBox;
+	//LocalBounds = LocalBox.IsValid ? FBoxSphereBounds(LocalBox) : FBoxSphereBounds(FVector(0, 0, 0), FVector(500, 500, 500), 500); // fallback to reset box sphere bounds
 
-	CollisionLodSection.WholeMesh.SectionLocalBox;
-	LocalBox += CollisionLodSection.WholeMesh.SectionLocalBox;
-	LocalBounds = LocalBox.IsValid ? FBoxSphereBounds(LocalBox) : FBoxSphereBounds(FVector(0, 0, 0), FVector(500, 500, 500), 500); // fallback to reset box sphere bounds
+	const FVector BoxExt(USBT_ZONE_SIZE / 2.f);
+	const double Radius = BoxExt.Length();
+	LocalBounds = FBoxSphereBounds(FVector(0), BoxExt, Radius);
 
 	UpdateBounds();
 	MarkRenderTransformDirty();

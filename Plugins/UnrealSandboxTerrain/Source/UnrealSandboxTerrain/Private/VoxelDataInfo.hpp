@@ -182,6 +182,10 @@ public:
 		MeshDataCachePtr.store(MeshDataPtr);
 	}
 
+    TMeshDataPtr GetMeshDataCache() {
+        return MeshDataCachePtr.load();
+    }
+
 	TMeshDataPtr PopMeshDataCache() {
         TMeshDataPtr MeshDataPtr = MeshDataCachePtr.exchange(nullptr);
 		return MeshDataPtr;

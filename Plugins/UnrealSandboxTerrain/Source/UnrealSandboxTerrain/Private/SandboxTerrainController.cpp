@@ -63,7 +63,7 @@ void ASandboxTerrainController::FinishDestroy() {
 	delete TerrainData;
 	delete CheckAreaMap;
 
-	UE_LOG(LogSandboxTerrain, Warning, TEXT("vd -> %d, md -> %d, cd -> %d"), vd::tools::memory::getVdCount(), md_counter.load(), cd_counter.load());
+	//UE_LOG(LogSandboxTerrain, Warning, TEXT("vd -> %d, md -> %d, cd -> %d"), vd::tools::memory::getVdCount(), md_counter.load(), cd_counter.load());
 }
 
 ASandboxTerrainController::ASandboxTerrainController(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer) {
@@ -431,19 +431,24 @@ void ASandboxTerrainController::BeginServerTerrainLoad() {
 			UE_LOG(LogSandboxTerrain, Warning, TEXT("======= Finish initial terrain load ======="));
 
 			if (!bIsWorkFinished) {
-				OnFinishInitialLoad();
-
-				if (bSaveAfterInitialLoad) {
-					SaveMapAsync();
-				}
-
 				AsyncTask(ENamedThreads::GameThread, [&] {
-					StartPostLoadTimers();
-					StartCheckArea();
+					UE51MaterialIssueWorkaround();
+					OnFinishInitialLoad();
+
+					if (bSaveAfterInitialLoad) {
+						SaveMapAsync();
+					}
+
+					AsyncTask(ENamedThreads::GameThread, [&] {
+						StartPostLoadTimers();
+						StartCheckArea();
+					});
 				});
 			}
         });
-    }
+	} else {
+		OnFinishInitialLoad();
+	}
 }
 
 void ASandboxTerrainController::BeginPlayClient() {
@@ -879,7 +884,6 @@ FORCEINLINE float ASandboxTerrainController::ClcGroundLevel(const FVector& V) {
 //======================================================================================================================================================================
 
 
-
 void ASandboxTerrainController::OnOverlapActorTerrainEdit(const FOverlapResult& OverlapResult, const FVector& Pos) {
 
 }
@@ -996,4 +1000,29 @@ float ASandboxTerrainController::GetGroundLevel(const FVector& Pos) {
 
 FTerrainDebugInfo ASandboxTerrainController::GetMemstat() {
 	return FTerrainDebugInfo{ vd::tools::memory::getVdCount(), md_counter.load(), cd_counter.load(), (int)Conveyor->size(), ThreadPool->size()};
+}
+
+void ASandboxTerrainController::UE51MaterialIssueWorkaround() {
+	double Start = FPlatformTime::Seconds();
+
+	TArray<UTerrainZoneComponent*> Components;
+	GetComponents<UTerrainZoneComponent>(Components);
+	for (UTerrainZoneComponent* ZoneComponent : Components) {
+		FVector ZonePos = ZoneComponent->GetComponentLocation();
+		const TVoxelIndex ZoneIndex = GetZoneIndex(ZonePos);
+
+		TVoxelDataInfoPtr VdInfoPtr = TerrainData->GetVoxelDataInfo(ZoneIndex);
+		VdInfoPtr->Lock();
+
+		auto MeshDataPtr = VdInfoPtr->GetMeshDataCache();
+		if (MeshDataPtr != nullptr) {
+			ZoneComponent->ApplyTerrainMesh(MeshDataPtr, true);
+		}
+
+		VdInfoPtr->Unlock();
+	}
+
+	double End = FPlatformTime::Seconds();
+	double Time = (End - Start) * 1000;
+	UE_LOG(LogSandboxTerrain, Log, TEXT("UE51MaterialIssueWorkaround --> %f ms"), Time);
 }

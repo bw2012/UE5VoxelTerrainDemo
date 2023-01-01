@@ -460,6 +460,9 @@ void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgr
 			auto MeshDataPtr = VdInfoPtr->PopMeshDataCache();
 			if (MeshDataPtr) {
 				DataMd = SerializeMeshData(MeshDataPtr);
+			} else {
+				if (VdInfoPtr->Vd && VdInfoPtr->Vd->getDensityFillState() == MIXED)
+					UE_LOG(LogSandboxTerrain, Error, TEXT("PopMeshDataCache fail -> %d %d %d"), Index.X, Index.Y, Index.Z);
 			}
 
 			if (FoliageDataAsset) {
@@ -479,23 +482,28 @@ void ASandboxTerrainController::Save(std::function<void(uint32, uint32)> OnProgr
 				if (Zone) {
 					DataObj = Zone->SerializeAndResetObjectData();
 
-					// IsNeedObjectsSave means terrain was not changed, only objects
-					// load mesh and resave obj+mesh
-					bool bIsLoaded = LoadDataFromKvFile(TdFile, Index, [&](TValueDataPtr DataPtr) {
-						// TODO refactor
-						UE_LOG(LogSandboxTerrain, Warning, TEXT("Only objects was changed. Load mesh data -> %d %d %d"), Index.X, Index.Y, Index.Z);
-						usbt::TFastUnsafeDeserializer Deserializer(DataPtr->data());
-						TKvFileZodeData ZoneHeader;
-						Deserializer >> ZoneHeader;
+					auto MeshDataPtr = VdInfoPtr->GetMeshDataCache();
+					if (MeshDataPtr) {
+						DataMd = SerializeMeshData(MeshDataPtr);
+					} else {
+						// IsNeedObjectsSave means terrain was not changed, only objects
+						// load mesh and resave obj+mesh
+						bool bIsLoaded = LoadDataFromKvFile(TdFile, Index, [&](TValueDataPtr DataPtr) {
+							// TODO refactor
+							UE_LOG(LogSandboxTerrain, Warning, TEXT("Only objects was changed. Load mesh data -> %d %d %d"), Index.X, Index.Y, Index.Z);
+							usbt::TFastUnsafeDeserializer Deserializer(DataPtr->data());
+							TKvFileZodeData ZoneHeader;
+							Deserializer >> ZoneHeader;
 
-						DataMd = std::make_shared<TValueData>();
-						DataMd->resize(ZoneHeader.LenMd);
-						Deserializer.read(DataMd->data(), ZoneHeader.LenMd);
-					});
+							DataMd = std::make_shared<TValueData>();
+							DataMd->resize(ZoneHeader.LenMd);
+							Deserializer.read(DataMd->data(), ZoneHeader.LenMd);
+							});
 
-					if (!bIsLoaded) {
-						// TODO fix it later
-						UE_LOG(LogSandboxTerrain, Error, TEXT("Load mesh fail -> %d %d %d"), Index.X, Index.Y, Index.Z);
+						if (!bIsLoaded) {
+							// TODO fix it later
+							UE_LOG(LogSandboxTerrain, Error, TEXT("Load mesh fail -> %d %d %d"), Index.X, Index.Y, Index.Z);
+						}
 					}
 				} 
 				// legacy
