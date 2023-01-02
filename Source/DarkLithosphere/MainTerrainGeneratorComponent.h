@@ -51,8 +51,6 @@ public:
 
 	virtual float DensityFunctionExt(float Density, const TVoxelIndex& ZoneIndex, const FVector& WorldPos, const FVector& LocalPos) const override;
 
-	virtual bool UseCustomFoliage(const TVoxelIndex& ZoneIndex) override;
-
 	virtual FSandboxFoliage FoliageExt(const int32 FoliageTypeId, const FSandboxFoliage & FoliageType, const TVoxelIndex & ZoneIndex, const FVector & WorldPos) override;
 
 	void AddLandscapeStructure(const TLandscapeZoneHandler& Structure);

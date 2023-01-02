@@ -1050,10 +1050,6 @@ void UTerrainGeneratorComponent::SpawnFoliage(int32 FoliageTypeId, FSandboxFolia
 
 }
 
-bool UTerrainGeneratorComponent::UseCustomFoliage(const TVoxelIndex& Index) {
-    return false;
-}
-
 FSandboxFoliage UTerrainGeneratorComponent::FoliageExt(const int32 FoliageTypeId, const FSandboxFoliage& FoliageType, const TVoxelIndex& ZoneIndex, const FVector& WorldPos) {
     return FoliageType;
 }

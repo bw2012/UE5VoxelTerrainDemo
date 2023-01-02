@@ -9,7 +9,6 @@
 
 typedef struct TTerrainAreaLoadParams {
 	float Radius = 3000;
-	float FullLodDistance = 1000;
 	int32 TerrainSizeMinZ = 5;
 	int32 TerrainSizeMaxZ = 5;
 
@@ -45,7 +44,6 @@ protected:
 	TVoxelIndex OriginIndex;
 	uint32 Total = 0;
 	uint32 Progress = 0;
-	uint32 SaveGeneratedZones = 1000;
 	bool bIsStopped = false;
 
 protected:

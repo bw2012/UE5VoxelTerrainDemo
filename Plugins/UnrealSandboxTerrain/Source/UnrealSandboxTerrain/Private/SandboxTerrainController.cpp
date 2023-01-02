@@ -42,7 +42,6 @@ bool IsGameShutdown() {
 void ASandboxTerrainController::InitializeTerrainController() {
 	PrimaryActorTick.bCanEverTick = true;
 	MapName = TEXT("World 0");
-	SaveGeneratedZones = 1000;
 	ServerPort = 6000;
     AutoSavePeriod = 20;
     TerrainData = new TTerrainData();
@@ -106,14 +105,6 @@ void ASandboxTerrainController::BeginPlay() {
 
 	bIsGameShutdown = false;
     
-    GlobalTerrainZoneLOD[0] = 0;
-    GlobalTerrainZoneLOD[1] = LodDistance.Distance1;
-    GlobalTerrainZoneLOD[2] = LodDistance.Distance2;
-    GlobalTerrainZoneLOD[3] = LodDistance.Distance3;
-    GlobalTerrainZoneLOD[4] = LodDistance.Distance4;
-    GlobalTerrainZoneLOD[5] = LodDistance.Distance5;
-    GlobalTerrainZoneLOD[6] = LodDistance.Distance6;
-
 	FoliageMap.Empty();
 	if (FoliageDataAsset) {
 		FoliageMap = FoliageDataAsset->FoliageMap;
@@ -220,7 +211,7 @@ void ASandboxTerrainController::StartCheckArea() {
 }
 
 void ASandboxTerrainController::PerformCheckArea() {
-    if(!bEnableAreaSwapping){
+    if(!bEnableAreaStreaming){
         return;
     }
     
@@ -263,7 +254,6 @@ void ASandboxTerrainController::PerformCheckArea() {
                 }
                 
 				TTerrainAreaLoadParams Params;
-                Params.FullLodDistance = DynamicLoadArea.FullLodDistance;
                 Params.Radius = DynamicLoadArea.Radius;
                 Params.TerrainSizeMinZ = LocationIndex.Z + DynamicLoadArea.TerrainSizeMinZ;
                 Params.TerrainSizeMaxZ = LocationIndex.Z + DynamicLoadArea.TerrainSizeMaxZ;
@@ -376,13 +366,6 @@ void ASandboxTerrainController::BeginPlayServer() {
 	LoadJson();
 	LoadTerrainMetadata();
 
-	if (bShowInitialArea) {
-		static const float Len = 5000;
-		DrawDebugCylinder(GetWorld(), FVector(0, 0, Len), FVector(0, 0, -Len), InitialLoadArea.FullLodDistance, 128, FColor(255, 255, 255, 0), true);
-		DrawDebugCylinder(GetWorld(), FVector(0, 0, Len), FVector(0, 0, -Len), InitialLoadArea.FullLodDistance + LodDistance.Distance2, 128, FColor(255, 255, 255, 0), true);
-		DrawDebugCylinder(GetWorld(), FVector(0, 0, Len), FVector(0, 0, -Len), InitialLoadArea.FullLodDistance + LodDistance.Distance5, 128, FColor(255, 255, 255, 0), true);
-	}
-
 	BeginServerTerrainLoad();
 
 	if (GetNetMode() == NM_DedicatedServer || GetNetMode() == NM_ListenServer) {
@@ -394,7 +377,6 @@ void ASandboxTerrainController::BeginPlayServer() {
 
 void ASandboxTerrainController::BeginClientTerrainLoad(const TVoxelIndex& ZoneIndex, const TSet<TVoxelIndex>& Ignore) {
 	TTerrainAreaLoadParams Params;
-	Params.FullLodDistance = InitialLoadArea.FullLodDistance;
 	Params.Radius = InitialLoadArea.Radius;
 	Params.TerrainSizeMinZ = InitialLoadArea.TerrainSizeMinZ;
 	Params.TerrainSizeMaxZ = InitialLoadArea.TerrainSizeMaxZ;
@@ -416,7 +398,6 @@ void ASandboxTerrainController::BeginServerTerrainLoad() {
 
         // async loading other zones
 		TTerrainAreaLoadParams Params;
-		Params.FullLodDistance = InitialLoadArea.FullLodDistance;
 		Params.Radius = InitialLoadArea.Radius;
 		Params.TerrainSizeMinZ = InitialLoadArea.TerrainSizeMinZ + B.Z;
 		Params.TerrainSizeMaxZ = InitialLoadArea.TerrainSizeMaxZ + B.Z;

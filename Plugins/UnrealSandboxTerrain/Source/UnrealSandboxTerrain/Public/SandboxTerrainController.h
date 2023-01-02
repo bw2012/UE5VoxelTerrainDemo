@@ -185,31 +185,6 @@ public:
 
 };
 
-extern float GlobalTerrainZoneLOD[LOD_ARRAY_SIZE];
-
-USTRUCT()
-struct FSandboxTerrainLODDistance {
-    GENERATED_BODY()
-    
-    UPROPERTY(EditAnywhere)
-    float Distance1 = 1500;
-    
-    UPROPERTY(EditAnywhere)
-    float Distance2 = 3000;
-    
-    UPROPERTY(EditAnywhere)
-    float Distance3 = 6000;
-    
-    UPROPERTY(EditAnywhere)
-    float Distance4 = 12000;
-    
-    UPROPERTY(EditAnywhere)
-    float Distance5 = 16000;
-    
-    UPROPERTY(EditAnywhere)
-    float Distance6 = 20000;
-};
-
 UENUM(BlueprintType)
 enum class ETerrainLodMaskPreset : uint8 {
     All      = 0            UMETA(DisplayName = "Show all"),
@@ -223,9 +198,7 @@ struct FTerrainSwapAreaParams {
     
     UPROPERTY(EditAnywhere)
     float Radius = 3000;
-    
-    UPROPERTY(EditAnywhere)
-    float FullLodDistance = 1000;
+   
     
     UPROPERTY(EditAnywhere)
     int TerrainSizeMinZ = -5;
@@ -321,10 +294,7 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Debug")
 	bool bShowZoneBounds = false;
-    
-    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Debug")
-    bool bShowInitialArea = false;
-    
+        
     UPROPERTY(EditAnywhere, Category = "UnrealSandbox Debug")
     bool bShowStartSwapPos = false;
 
@@ -344,9 +314,6 @@ public:
     UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
     FTerrainSwapAreaParams InitialLoadArea;
            
-    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
-    FSandboxTerrainLODDistance LodDistance;
-
 	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
 	bool bSaveOnEndPlay;
     
@@ -355,7 +322,7 @@ public:
     //========================================================================================
     
     UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
-    bool bEnableAreaSwapping;
+    bool bEnableAreaStreaming;
     
     UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
     float PlayerLocationThreshold = 1000;
@@ -375,9 +342,6 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
     int32 AutoSavePeriod;
-    
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
-	int32 SaveGeneratedZones; // TODO refactor
 
 	//========================================================================================
 	// materials

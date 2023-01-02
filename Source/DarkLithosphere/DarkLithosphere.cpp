@@ -26,7 +26,7 @@ void FDarkLithosphereGameModule::ShutdownModule() {
 }
 
 FString GetVersionString() {
-	return TEXT("v0.0.37-alpha-L");
+	return TEXT("v0.0.37a-alpha-L");
 }
 
 FString GlobalSandboxPlayerId;

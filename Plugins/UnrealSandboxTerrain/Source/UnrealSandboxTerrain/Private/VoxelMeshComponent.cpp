@@ -61,25 +61,6 @@ public:
 	}
 };
 
-float GlobalTerrainZoneLOD[LOD_ARRAY_SIZE];
-
-int CalculateLodIndex(const FVector& ZoneOrigin, const FVector& ViewOrigin) {
-    auto& LOD = GlobalTerrainZoneLOD;
-	float Distance = FVector::Dist(ViewOrigin, ZoneOrigin);
-
-	if (Distance <= LOD[1]) {
-		return 0;
-	}
-
-	for (int Idx = 1; Idx < LOD_ARRAY_SIZE - 1; Idx++) {
-		if (Distance > LOD[Idx] && Distance <= LOD[Idx + 1]) {
-			return Idx;
-		}
-	}
-
-	return LOD_ARRAY_SIZE - 1;
-}
-
 /** Class representing a single section of the proc mesh */
 class FProcMeshProxySection
 {
@@ -565,14 +546,6 @@ public:
 		Mesh.DepthPriorityGroup = SDPG_World;
 		Mesh.bCanApplyViewModeOverrides = false;
 		Collector.AddMesh(ViewIndex, Mesh);	
-	}
-
-	int GetLodIndex(const FVector& Origin, const FVector& ViewOrigin) const {
-		if (bLodFlag) {
-			return CalculateLodIndex(Origin, ViewOrigin);
-		}
-
-		return 0;
 	}
 
 	virtual FPrimitiveViewRelevance GetViewRelevance(const FSceneView* View) const {

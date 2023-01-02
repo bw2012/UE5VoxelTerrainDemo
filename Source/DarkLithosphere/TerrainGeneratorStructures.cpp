@@ -292,6 +292,7 @@ void StructureVerticalCylinderTunnel(UMainTerrainGeneratorComponent* Generator, 
 	const auto Function2 = [=](const TVoxelIndex& ZoneIndex, const FVector& WorldPos, const FVector& LocalPos) {
 		const FVector P = WorldPos - Origin;
 		const float R = std::sqrt(P.X * P.X + P.Y * P.Y);
+
 		if (R < Radius) {
 			return false;
 		}
@@ -337,7 +338,7 @@ void StructureDiagonalCylinderTunnel(UMainTerrainGeneratorComponent* Generator, 
 		FVector Tmp = Rotator.RotateVector(WorldPos - Origin);
 		Tmp += Origin;
 
-		static const float E = 0;
+		static const float E = 25;
 		if (Tmp.Z < Top + E && Tmp.Z > Bottom - E) {
 			const FVector P = Tmp - Origin;
 			const float R = std::sqrt(P.X * P.X + P.Y * P.Y);
