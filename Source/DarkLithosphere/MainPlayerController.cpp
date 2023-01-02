@@ -181,6 +181,7 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 			AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
 			if (MainHud) {
 				MainHud->OpenWidget(TEXT("loading_terrain"));
+				MainHud->OpenWidget(TEXT("debug_info"));
 			}
 		}
 	}

@@ -414,11 +414,13 @@ void ASandboxTerrainController::BeginServerTerrainLoad() {
 			if (!bIsWorkFinished) {
 				AsyncTask(ENamedThreads::GameThread, [&] {
 					UE51MaterialIssueWorkaround();
-					OnFinishInitialLoad();
 
-					if (bSaveAfterInitialLoad) {
-						SaveMapAsync();
-					}
+					AddTaskToConveyor([=] { 
+						OnFinishInitialLoad(); 
+						if (bSaveAfterInitialLoad) {
+							SaveMapAsync();
+						}
+					});
 
 					AsyncTask(ENamedThreads::GameThread, [&] {
 						StartPostLoadTimers();

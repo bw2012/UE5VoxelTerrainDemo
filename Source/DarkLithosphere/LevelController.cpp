@@ -249,24 +249,26 @@ void ALevelController::SpawnTempCharacterList() {
 	for (const FTempCharacterLoadInfo& TempCharacterInfo : TempCharacterList) {
 		TSubclassOf<ABaseCharacter> BaseCharacterSubclass = (TSubclassOf<ABaseCharacter>)CharacterMap->CharacterTypeMap[TempCharacterInfo.TypeId];
 
-		FVector Pos(TempCharacterInfo.Location.X, TempCharacterInfo.Location.Y, TempCharacterInfo.Location.Z + 90);// ALS spawn issue woraround
+		FVector Pos(TempCharacterInfo.Location.X, TempCharacterInfo.Location.Y, TempCharacterInfo.Location.Z + 100);// ALS spawn issue workaround
 		ABaseCharacter* BaseCharacter = (ABaseCharacter*)GetWorld()->SpawnActor(BaseCharacterSubclass, &Pos, &TempCharacterInfo.Rotation);
-		BaseCharacter->SandboxPlayerUid = TempCharacterInfo.SandboxPlayerUid;
-		UContainerComponent* InventoryContainer = BaseCharacter->GetInventory("Inventory");
-		if (InventoryContainer) {
-			for (const FTempContainerStack& TempContainerStack : TempCharacterInfo.Inventory) {
-				InventoryContainer->SetStackDirectly(TempContainerStack.Stack, TempContainerStack.SlotId);
+		if (BaseCharacter) {
+			BaseCharacter->SandboxPlayerUid = TempCharacterInfo.SandboxPlayerUid;
+			UContainerComponent* InventoryContainer = BaseCharacter->GetInventory("Inventory");
+			if (InventoryContainer) {
+				for (const FTempContainerStack& TempContainerStack : TempCharacterInfo.Inventory) {
+					InventoryContainer->SetStackDirectly(TempContainerStack.Stack, TempContainerStack.SlotId);
+				}
 			}
-		}
 
-		UContainerComponent* EquipmentContainer = BaseCharacter->GetInventory("Equipment");
-		if (EquipmentContainer) {
-			for (const FTempContainerStack& TempContainerStack : TempCharacterInfo.Equipment) {
-				EquipmentContainer->SetStackDirectly(TempContainerStack.Stack, TempContainerStack.SlotId);
+			UContainerComponent* EquipmentContainer = BaseCharacter->GetInventory("Equipment");
+			if (EquipmentContainer) {
+				for (const FTempContainerStack& TempContainerStack : TempCharacterInfo.Equipment) {
+					EquipmentContainer->SetStackDirectly(TempContainerStack.Stack, TempContainerStack.SlotId);
+				}
 			}
-		}
 
-		BaseCharacter->RebuildEquipment();
+			BaseCharacter->RebuildEquipment();
+		}
 	}
 }
 

@@ -3,6 +3,7 @@
 #include "VoxelMeshComponent.h"
 #include "TerrainZoneComponent.h"
 #include "../MainPlayerController.h"
+#include "ConstructionObject.h"
 
 #define Max_Size 3
 
@@ -123,13 +124,31 @@ void SpawnStones(ALevelController* LevelController, const FVector& Location, uin
 
 void AMiningTool::OnAltAction(const FHitResult& Hit, ABaseCharacter* PlayerCharacter) {
 	UWorld* World = PlayerCharacter->GetWorld();
-	ASandboxTerrainController* Terrain = Cast<ASandboxTerrainController>(Hit.GetActor());
 	ALevelController* LevelController = nullptr;
 	AMainPlayerController* MainController = Cast<AMainPlayerController>(PlayerCharacter->GetController());
 	if (MainController) {
 		LevelController = MainController->GetLevelController();
 	}
 
+	AConstructionObject* Construction = Cast<AConstructionObject>(Hit.GetActor());
+	if (Construction) {
+		if (LevelController) {
+			FVector Location = Construction->GetActorLocation();
+
+			LevelController->RemoveSandboxObject(Construction);
+
+			if (EffectActorWood) {
+				FRotator Rotation(0, 0, 0);
+				World->SpawnActor(EffectActorWood, &Location, &Rotation);
+			}
+
+			if (HitWoodSound) {
+				UGameplayStatics::PlaySoundAtLocation(World, this->HitWoodSound, Location, FRotator(0));
+			}
+		}
+	}
+
+	ASandboxTerrainController* Terrain = Cast<ASandboxTerrainController>(Hit.GetActor());
 	if (Terrain) {
 		TVoxelIndex ZoneIndex = Terrain->GetZoneIndex(Hit.ImpactPoint);
 		FVector ZoneIndexTmp(ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
@@ -145,11 +164,8 @@ void AMiningTool::OnAltAction(const FHitResult& Hit, ABaseCharacter* PlayerChara
 				}
 			}
 
-			//UE_LOG(LogTemp, Warning, TEXT("zIndex -> %f %f %f"), ZoneIndexTmp.X, ZoneIndexTmp.Y, ZoneIndexTmp.Z);
 			if (DiggingToolMode == 0) {
-				// Strength / Mat.RockHardness > 0.1
 				const float Radius = ToolSizeArray[DiggingToolSize];
-
 				const float F = 0;
 				const FVector P = Hit.Normal * Radius * F + Hit.Location;
 				//DrawDebugSphere(World, P, Radius, 24, FColor(255, 255, 255, 100));
@@ -159,7 +175,6 @@ void AMiningTool::OnAltAction(const FHitResult& Hit, ABaseCharacter* PlayerChara
 				FVector Location = Hit.Normal * 50 + Hit.Location;
 
 				if (EffectActor && bShowEffects) {
-					//DrawDebugPoint(PlayerCharacter->GetWorld(), Location, 5.f, FColor(255, 0, 0, 0), false, 1);
 					FRotator Rotation(0, 0, 0);
 					World->SpawnActor(EffectActor, &Location, &Rotation);
 				}
@@ -171,20 +186,10 @@ void AMiningTool::OnAltAction(const FHitResult& Hit, ABaseCharacter* PlayerChara
 
 			if (DiggingToolMode == 1) {
 				FVector Location = SnapToGrid(Hit.Location, Dig_Snap_To_Grid);
-				//FRotator Rotation2(-26.5f, 0, 0);
-				//FRotator Rotation2(0, -26.5f, 0);
-				//FRotator Rotation2(0, 0, 0);
-				//float test = Dig_Cube_Size*2;
-				//FVector Min(-test);
-				//FVector Max(test);
-				//FBox Box(Min, Max);
-				//Terrain->DigTerrainCubeHole(Location, Box, 100.f, Rotation2); // FIXME: why inverse?
-
 				Terrain->DigTerrainCubeHole(Location, Dig_Cube_Size);
 
 				if (EffectActor && bShowEffects) {
 					FVector Location2 = Hit.Normal * 50 + Location;
-					//DrawDebugPoint(PlayerCharacter->GetWorld(), Location, 5.f, FColor(255, 0, 0, 0), false, 1);
 					FRotator Rotation(0, 0, 0);
 					World->SpawnActor(EffectActor, &Location2, &Rotation);
 				}
@@ -234,14 +239,6 @@ bool AMiningTool::OnTracePlayerActionPoint(const FHitResult& Res, ABaseCharacter
 
 				FVector MiningPos = Res.Location;
 				FVector PlayerPos = PlayerCharacter->GetActorLocation();
-				//FVector Dir = PlayerPos - MiningPos;
-				//Dir.Normalize(0.01);
-				//Dir *= Radius / 2;
-				//DrawDebugLine(World, MiningPos, Dir + MiningPos, FColor(255, 0, 0), false, -1, 0, 2);
-				//DrawDebugSphere(World, Res.Location, Radius, 24, FColor(255, 255, 255, 100));
-
-				//FVector P = Res.Normal * Radius + Res.Location;
-				//DrawDebugSphere(World, P, Radius, 24, FColor(255, 255, 255, 100));
 
 				const FVector CursorFV = Res.ImpactNormal;
 				const FRotator CursorR = CursorFV.Rotation();
@@ -253,53 +250,24 @@ bool AMiningTool::OnTracePlayerActionPoint(const FHitResult& Res, ABaseCharacter
 
 			if (DiggingToolMode == 1) {
 				const FVector Location = SnapToGrid(Res.Location, Dig_Snap_To_Grid);
-
-				/*				
-				FVector Dir = Res.Normal;
-				FVector NewDir(0);
-
-				if (Dir.X > 0.5) {
-					NewDir = FVector(1, 0, 0);
-				}
-
-				if (Dir.X < -0.5) {
-					NewDir = FVector(-1, 0, 0);
-				}
-
-				if (Dir.Y > 0.5) {
-					NewDir = FVector(0, 1, 0);
-				}
-
-				if (Dir.Y < -0.5) {
-					NewDir = FVector(0, -1, 0);
-				}
-
-				if (Dir.Z > 0.5) {
-					NewDir = FVector(0, 0, 1);
-				}
-
-				if (Dir.Z < -0.5) {
-					NewDir = FVector(0, 0, -1);
-				}
-				*/
-
-				//FVector NewMiningPos = MiningPos + (NewDir * Dig_Cube_Size * 0.75);
-				//DrawDebugLine(World, MiningPos, NewMiningPos, FColor(255, 0, 0), false, -1, 0, 2);
-				//DrawDebugBox(World, NewMiningPos, FVector(Dig_Cube_Size), FColor(255, 255, 255, 100));
-
 				DrawDebugBox(World, Location, FVector(Dig_Cube_Size), FColor(255, 255, 255, 100));
 				PlayerCharacter->CursorToWorld->SetVisibility(false);
 			}
-		//}
-
-		//if (ComponentName == "TerrainInstancedStaticMesh") {
-		//	DrawDebugPoint(World, Res.Location, 5.f, FColor(255, 255, 255, 0), false, 1);
-		//}
 		
 		return true;
-	} else {
-		//DrawDebugPoint(World, Res.Location, 5.f, FColor(255, 255, 255, 0), false, 1);
+	} 
 
+	AConstructionObject* Construction = Cast<AConstructionObject>(Res.GetActor());
+	if (Construction) {
+		const float Radius = ToolSizeArray[DiggingToolSize];
+		const FVector CursorFV = Res.ImpactNormal;
+		const FRotator CursorR = CursorFV.Rotation();
+		PlayerCharacter->CursorToWorld->SetWorldLocation(Res.Location);
+		PlayerCharacter->CursorToWorld->SetWorldRotation(CursorR);
+		PlayerCharacter->CursorToWorld->DecalSize = FVector(100.f, Radius, Radius);
+		PlayerCharacter->CursorToWorld->SetVisibility(true);
+
+		return true;
 	}
 
 	return false;
