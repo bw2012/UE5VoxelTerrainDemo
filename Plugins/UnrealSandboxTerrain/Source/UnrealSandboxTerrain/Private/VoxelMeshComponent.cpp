@@ -163,7 +163,7 @@ static void ConvertProcMeshToDynMeshVertex(FDynamicMeshVertex& Vert, const FProc
 	Vert.TangentZ.Vector.W = 0;
 }
 
-float LodScreenSizeArray[LOD_ARRAY_SIZE] = { 1.f, .5f, .25f, .125f, .0625, 0.03125 };
+extern float LodScreenSizeArray[LOD_ARRAY_SIZE];
 
 class FVoxelMeshSceneProxy final : public FPrimitiveSceneProxy {
 
@@ -338,7 +338,7 @@ public:
 	}
 
 	//================================================================================================
-	// Draw as static mesh 
+	// Draw main zone as static mesh
 	//================================================================================================
 
 	void DrawStaticMeshSection(FStaticPrimitiveDrawInterface* PDI, FProcMeshProxySection* Section, int LODIndex) {
@@ -362,8 +362,6 @@ public:
 		BatchElement.MinVertexIndex = 0;
 		BatchElement.MaxVertexIndex = Section->VertexBuffers.PositionVertexBuffer.GetNumVertices() - 1;
 
-		//static const float LodScreenSizeArray[LOD_ARRAY_SIZE] = {1.f, .8f, .43f, .19f, .15f, .12f };
-		//static const float LodScreenSizeArray[LOD_ARRAY_SIZE] = { 1.f, .5f, .25f, .125f, .625f,  0.3125};
 		const float ScreenSize = LodScreenSizeArray[LODIndex];
 		//PDI->DrawMesh(Mesh, MAX_FLT); // no LOD
 		PDI->DrawMesh(Mesh, ScreenSize); 
@@ -383,11 +381,7 @@ public:
 		if (LodSectionArray.Num() > 0) {
 			for (int LODIndex = 0; LODIndex < LodSectionArray.Num(); LODIndex++) {
 				const FMeshProxyLodSection* LodSection = LodSectionArray[LODIndex];
-
-				//TODO: fix LODIndex < 4
-				if (LODIndex == 0 || LODIndex == 1 || LODIndex == 2 || LODIndex == 3) {
-					DrawStaticLodSection(PDI, LodSection, LODIndex);
-				}
+				DrawStaticLodSection(PDI, LodSection, LODIndex);
 			}
 		}
 	}
@@ -403,7 +397,7 @@ public:
 		const float ScreenSize = ComputeBoundsScreenSize(Origin, ProxyBounds.SphereRadius, *View);
 
 		int32 I = 5;
-		for (int LODIndex = 0; LODIndex < 4; LODIndex++) { // TODO: fix LODIndex < 4
+		for (int LODIndex = 0; LODIndex < LOD_ARRAY_SIZE; LODIndex++) { // TODO: fix LODIndex < 4
 			if (ScreenSize < LodScreenSizeArray[LODIndex]) {
 				I = LODIndex;
 			}
@@ -411,6 +405,10 @@ public:
 
 		return I;
 	}
+
+	//================================================================================================
+	// Draw transvoxel patches as dynamic mesh  
+	//================================================================================================
 
 	FORCENOINLINE virtual void GetDynamicMeshElements(const TArray<const FSceneView*>& Views, const FSceneViewFamily& ViewFamily, uint32 VisibilityMap, FMeshElementCollector& Collector) const override {
 		if (LodSectionArray.Num() == 0) {
@@ -421,10 +419,7 @@ public:
 			if (VisibilityMap & (1 << ViewIndex)) {
 				const FSceneView* View = Views[ViewIndex];
 				const FBoxSphereBounds& ProxyBounds = GetBounds();
-
 				int32 LodIndex = ComputeLodIndexByScreenSize(View, ProxyBounds.Origin);
-				//const float ScreenSize = ComputeBoundsScreenSize(ProxyBounds.Origin, ProxyBounds.SphereRadius, *View);
-
 				if (LodIndex > 0) {
 					// draw transition patches
 					for (auto i = 0; i < 6; i++) {
@@ -438,7 +433,6 @@ public:
 										//FMaterialRenderProxy* MaterialProxy = bWireframe ? WireframeMaterialInstance : MatSection->Material->GetRenderProxy();
 										//DrawDynamicMeshSection(MatSection, Collector, MaterialProxy, bWireframe, ViewIndex);
 										DrawDynamicMeshSection(MatSection, Collector, MatSection->Material->GetRenderProxy(), false, ViewIndex);
-
 										// TODO: check: некоторые артефакты при lod = 0 
 									}
 								}
@@ -446,74 +440,8 @@ public:
 						}
 					}
 				}
-
-
-				if (LodIndex == 0) {
-					//DrawBox(Collector, ViewIndex, FLinearColor::Blue);
-				}
-
-				if (LodIndex == 1) {
-					//DrawBox(Collector, ViewIndex, FLinearColor::Red);
-				}
-
-				if (LodIndex == 2) {
-					//DrawBox(Collector, ViewIndex, FLinearColor::White);
-				}
-
-				if (LodIndex == 3) {
-					//DrawBox(Collector, ViewIndex, FLinearColor::Yellow);
-				}
-
-				//if (ScreenSize < LodScreenSizeArray[1]) {
-				//	DrawBox(Collector, ViewIndex, FLinearColor::Red);
-				//}
 			}
 		}
-
-		
-		/*
-		if (LodSectionArray.Num() == 0) {
-			return;
-		}
-
-		// Set up wireframe material (if needed)
-		const bool bWireframe = AllowDebugViewmodes() && ViewFamily.EngineShowFlags.Wireframe;
-		FColoredMaterialRenderProxy* WireframeMaterialInstance = NULL;
-		if (bWireframe) {
-			WireframeMaterialInstance = new FColoredMaterialRenderProxy(
-				GEngine->WireframeMaterial ? GEngine->WireframeMaterial->GetRenderProxy() : NULL,
-				FLinearColor(0, 0.5f, 1.f)
-			);
-
-			Collector.RegisterOneFrameMaterialProxy(WireframeMaterialInstance);
-		}
-
-		// For each view..
-		for (int32 ViewIndex = 0; ViewIndex < Views.Num(); ViewIndex++) {
-			if (VisibilityMap & (1 << ViewIndex)) {
-				// calculate lod index
-				const FSceneView* View = Views[ViewIndex];
-				const FBoxSphereBounds& ProxyBounds = GetBounds();
-				//const float ScreenSize = ComputeBoundsScreenSize(ProxyBounds.Origin, ProxyBounds.SphereRadius, *View);
-				const int LodIndex = GetLodIndex(ZoneOrigin, View->ViewMatrices.GetViewOrigin());
-				//const int LodIndex = 5;
-
-				// draw section according lod index
-				FMeshProxyLodSection* LodSectionProxy = LodSectionArray[LodIndex];
-				if (LodSectionProxy != nullptr) {
-					// draw each material section
-					for (FProcMeshProxySection* MatSection : LodSectionProxy->MaterialMeshPtrArray) {
-						if (MatSection != nullptr &&  MatSection->Material != nullptr) {
-							FMaterialRenderProxy* MaterialProxy = bWireframe ? WireframeMaterialInstance : MatSection->Material->GetRenderProxy();// (IsSelected());
-							DrawDynamicMeshSection(MatSection, Collector, MaterialProxy, bWireframe, ViewIndex);
-						}
-					}
-
-					
-				}
-			}
-		}
-		*/
 	}
 
 	FORCEINLINE void DrawDynamicMeshSection(const FProcMeshProxySection* Section, FMeshElementCollector& Collector, FMaterialRenderProxy* MaterialProxy, bool bWireframe, int32 ViewIndex) const {
@@ -552,17 +480,12 @@ public:
 		FPrimitiveViewRelevance Result;
 		Result.bDrawRelevance = IsShown(View);
 		Result.bShadowRelevance = IsShadowCast(View);
-		//Result.bDynamicRelevance = true;
-		//Result.bStaticRelevance = false;
-
 		Result.bDynamicRelevance = true;
 		Result.bStaticRelevance = true;
-
 		Result.bRenderInMainPass = ShouldRenderInMainPass();
 		Result.bUsesLightingChannels = GetLightingChannelMask() != GetDefaultLightingChannelMask();
 		Result.bRenderCustomDepth = ShouldRenderCustomDepth();
 		MaterialRelevance.SetPrimitiveViewRelevance(Result);
-
 		return Result;
 	}
 

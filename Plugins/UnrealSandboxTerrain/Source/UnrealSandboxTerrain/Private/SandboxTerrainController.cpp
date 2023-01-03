@@ -93,9 +93,19 @@ UTerrainGeneratorComponent* ASandboxTerrainController::GetTerrainGenerator() {
 	return this->GeneratorComponent;
 }
 
+extern float LodScreenSizeArray[LOD_ARRAY_SIZE];
+
 void ASandboxTerrainController::BeginPlay() {
 	Super::BeginPlay();
 	UE_LOG(LogSandboxTerrain, Log, TEXT("ASandboxTerrainController::BeginPlay()"));
+
+
+	float ScreenSize = 1.f;
+	for (auto LodIdx = 0; LodIdx < LOD_ARRAY_SIZE; LodIdx++) {
+		UE_LOG(LogSandboxTerrain, Warning, TEXT("Lod %d -> %f"), LodIdx, ScreenSize);
+		LodScreenSizeArray[LodIdx] = ScreenSize;
+		ScreenSize *= LodRatio;
+	}
 
 	ThreadPool = new TThreadPool(5);
 	Conveyor = new TConveyour();
@@ -502,7 +512,7 @@ std::list<TChunkIndex> ASandboxTerrainController::MakeChunkListByAreaSize(const 
 }
 
 void ASandboxTerrainController::SpawnZone(const TVoxelIndex& Index, const TTerrainLodMask TerrainLodMask) {
-	TVoxelDataInfoPtr VdInfoPtr = GetVoxelDataInfo(Index); // TODO lock zone
+	TVoxelDataInfoPtr VdInfoPtr = GetVoxelDataInfo(Index); 
 	TVdInfoLockGuard Lock(VdInfoPtr);
 
 	if (VdInfoPtr->IsSpawnFinished()) {
@@ -517,12 +527,8 @@ void ASandboxTerrainController::SpawnZone(const TVoxelIndex& Index, const TTerra
 	LoadMeshAndObjectDataByIndex(Index, MeshDataPtr, ZoneInstanceObjectMap);
 	if (MeshDataPtr && VdInfoPtr->DataState != TVoxelDataState::GENERATED) {
 		if (Zone) {
-			// just change lod mask
-			//TerrainData->PutMeshDataToCache(Index, MeshDataPtr);
 			ExecGameThreadZoneApplyMesh(Index, Zone, MeshDataPtr);
 		} else {
-			// spawn new zone with mesh
-			//TerrainData->PutMeshDataToCache(Index, MeshDataPtr);
 			ExecGameThreadAddZoneAndApplyMesh(Index, MeshDataPtr);
 		}
 	}

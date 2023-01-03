@@ -315,6 +315,13 @@ public:
 	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
 	bool bSaveOnEndPlay;
     
+	//========================================================================================
+	// LOD
+	//========================================================================================
+
+	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain LOD")
+	float LodRatio = .5f;
+
     //========================================================================================
     // Dynamic area swapping
     //========================================================================================
@@ -599,7 +606,7 @@ private:
     void OnLoadZone(const TVoxelIndex& Index, UTerrainZoneComponent* Zone);
     
 	//===============================================================================
-	// pipeline
+	// 
 	//===============================================================================
 
 	void SpawnZone(const TVoxelIndex& Index, const TTerrainLodMask TerrainLodMask);
