@@ -223,8 +223,6 @@ enum class TZoneFlag : int {
 typedef struct TKvFileZodeData {
 	uint32 Flags = 0x0;
 	uint32 LenMd = 0;
-	//uint32 LenVd = 0;
-	uint32 LenObj = 0;
 
 	bool Is(TZoneFlag Flag) {
 		return (Flags >> (int)Flag) & 1U;
@@ -551,6 +549,8 @@ private:
     TTerrainData* TerrainData;
 
 	mutable TKvFile TdFile;
+
+	mutable TKvFile ObjFile;
 
 	TKvFile VdFile;
 

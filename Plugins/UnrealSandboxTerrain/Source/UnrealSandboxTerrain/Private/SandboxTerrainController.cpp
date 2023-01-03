@@ -331,7 +331,7 @@ void ASandboxTerrainController::ZoneHardUnload(UTerrainZoneComponent* ZoneCompon
 
 	FVector ZonePos = ZoneComponent->GetComponentLocation();
 	if (VdInfoPtr->IsSoftUnload() && !VdInfoPtr->IsNeedObjectsSave()) {
-		if (ZoneComponent->bIsSpawnFinished) {
+		if (VdInfoPtr->IsSpawnFinished()) {
 			RemoveAllChilds(ZoneComponent);
 			TerrainData->RemoveZone(ZoneIndex);
 			ZoneComponent->DestroyComponent(true);
@@ -408,7 +408,6 @@ void ASandboxTerrainController::BeginServerTerrainLoad() {
 			TTerrainLoadHelper Loader(TEXT("Initial_Load_Task"), this, Params);
             Loader.LoadArea(BeginServerTerrainLoadLocation);
 
-			GEngine->AddOnScreenDebugMessage(-1, 10, FColor::White, TEXT("Finish initial terrain load"));
 			UE_LOG(LogSandboxTerrain, Warning, TEXT("======= Finish initial terrain load ======="));
 
 			if (!bIsWorkFinished) {
@@ -503,36 +502,32 @@ std::list<TChunkIndex> ASandboxTerrainController::MakeChunkListByAreaSize(const 
 }
 
 void ASandboxTerrainController::SpawnZone(const TVoxelIndex& Index, const TTerrainLodMask TerrainLodMask) {
-	// voxel data must exist in this point
-	TVoxelDataInfoPtr VoxelDataInfoPtr = GetVoxelDataInfo(Index);
+	TVoxelDataInfoPtr VdInfoPtr = GetVoxelDataInfo(Index); // TODO lock zone
+	TVdInfoLockGuard Lock(VdInfoPtr);
 
-	bool bMeshExist = false;
-	auto ExistingZone = GetZoneByVectorIndex(Index);
-	if (ExistingZone) {
-		if (ExistingZone->GetTerrainLodMask() <= TerrainLodMask) {
-			return;
-		} else {
-			bMeshExist = true;
-		}
+	if (VdInfoPtr->IsSpawnFinished()) {
+		return;
 	}
+
+	auto Zone = GetZoneByVectorIndex(Index);
 
 	// if mesh data exist in file - load, apply and return
 	TMeshDataPtr MeshDataPtr = nullptr;
 	TInstanceMeshTypeMap& ZoneInstanceObjectMap = *TerrainData->GetOrCreateInstanceObjectMap(Index);
 	LoadMeshAndObjectDataByIndex(Index, MeshDataPtr, ZoneInstanceObjectMap);
-	if (MeshDataPtr && VoxelDataInfoPtr->DataState != TVoxelDataState::GENERATED) {
-		if (bMeshExist) {
+	if (MeshDataPtr && VdInfoPtr->DataState != TVoxelDataState::GENERATED) {
+		if (Zone) {
 			// just change lod mask
 			//TerrainData->PutMeshDataToCache(Index, MeshDataPtr);
-			ExecGameThreadZoneApplyMesh(Index, ExistingZone, MeshDataPtr);
-			return;
+			ExecGameThreadZoneApplyMesh(Index, Zone, MeshDataPtr);
 		} else {
 			// spawn new zone with mesh
 			//TerrainData->PutMeshDataToCache(Index, MeshDataPtr);
 			ExecGameThreadAddZoneAndApplyMesh(Index, MeshDataPtr);
-			return;
 		}
 	}
+
+	VdInfoPtr->SetSpawnFinished();
 }
 
 void ASandboxTerrainController::BatchGenerateZone(const TArray<TSpawnZoneParam>& GenerationList) {
@@ -834,7 +829,6 @@ void ASandboxTerrainController::OnGenerateNewZone(const TVoxelIndex& Index, UTer
 
 	OnFinishGenerateNewZone(Index);
 	VdInfoPtr->ClearInstanceObjectMap();
-	Zone->bIsSpawnFinished = true;
 	VdInfoPtr->SetNeedTerrainSave();
 	TerrainData->AddSaveIndex(Index);
 }
@@ -849,7 +843,6 @@ void ASandboxTerrainController::OnLoadZone(const TVoxelIndex& Index, UTerrainZon
 
 	OnFinishLoadZone(Index);
 	VdInfoPtr->ClearInstanceObjectMap();
-	Zone->bIsSpawnFinished = true;
 }
 
 void ASandboxTerrainController::OnFinishAsyncPhysicsCook(const TVoxelIndex& ZoneIndex) {

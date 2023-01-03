@@ -45,8 +45,9 @@ private:
     std::atomic<TMeshDataPtr> MeshDataCachePtr = nullptr;
 
 	std::atomic<UTerrainZoneComponent*> ZoneComponentAtomicPtr = nullptr;
-    std::atomic<bool> bNeedTerrainSave{ false };
-    std::atomic<bool> bNeedObjectsSave{ false };
+    std::atomic<bool> bNeedTerrainSave { false };
+    std::atomic<bool> bNeedObjectsSave { false };
+    std::atomic<bool> bSpawnFinished { false };
 
 	std::shared_timed_mutex InstanceObjectMapMutex;
 	std::shared_ptr<TInstanceMeshTypeMap> InstanceMeshTypeMapPtr = nullptr;
@@ -91,6 +92,18 @@ public:
 
     void Unlock() {
         VdMutex.Unlock();
+    }
+
+    void SetSpawnFinished() {
+        bSpawnFinished = true;
+    }
+
+    void ResetSpawnFinished() {
+        bSpawnFinished = false;
+    }
+
+    bool IsSpawnFinished() {
+        return bSpawnFinished;
     }
 
     bool IsNeedObjectsSave() {

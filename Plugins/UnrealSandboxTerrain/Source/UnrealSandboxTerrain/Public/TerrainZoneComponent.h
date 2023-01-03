@@ -74,8 +74,6 @@ public:
 	static TValueDataPtr SerializeInstancedMesh(const TInstanceMeshTypeMap& InstanceMeshMap);
     
 	TTerrainLodMask GetTerrainLodMask();
-    
-	volatile bool bIsSpawnFinished = false;
 
 private:
     
