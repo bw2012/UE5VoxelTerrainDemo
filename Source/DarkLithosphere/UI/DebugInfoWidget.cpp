@@ -63,4 +63,17 @@ FString UDebugInfoWidget::SandboxPlayerCrdText() {
 	return FString(TEXT(""));
 }
 
+FString UDebugInfoWidget::SandboxZoneIndexText() {
+	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
+	if (MainPlayerController) {
+		APawn* Pawn = MainPlayerController->GetPawn();
+		if (Pawn) {
+			FVector Pos = Pawn->GetActorLocation();
+			return FString::Printf(TEXT("%d, %d, %d"), (int)(Pos.X / 1000), (int)(Pos.Y / 1000), (int)(Pos.Z / 1000));
+		}
+	}
+
+	return FString(TEXT(""));
+}
+
 
