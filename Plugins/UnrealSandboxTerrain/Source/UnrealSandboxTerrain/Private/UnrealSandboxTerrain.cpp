@@ -5,7 +5,7 @@
 #define LOCTEXT_NAMESPACE "FUnrealSandboxTerrainModule"
 
 
-float LodScreenSizeArray[LOD_ARRAY_SIZE] = { 1.f, .5f, .25f, .125f, .0625, 0.03125 };
+float LodScreenSizeArray[LOD_ARRAY_SIZE];
 
 void FUnrealSandboxTerrainModule::StartupModule() {
 	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
@@ -15,7 +15,7 @@ void FUnrealSandboxTerrainModule::StartupModule() {
 	float LodRatio = 2.f;
 	float ScreenSize = 1.f;
 	for (auto LodIdx = 0; LodIdx < LOD_ARRAY_SIZE; LodIdx++) {
-		UE_LOG(LogSandboxTerrain, Warning, TEXT("Lod %d -> %f"), LodIdx, ScreenSize);
+		//UE_LOG(LogSandboxTerrain, Warning, TEXT("Lod %d -> %f"), LodIdx, ScreenSize);
 		LodScreenSizeArray[LodIdx] = ScreenSize;
 		ScreenSize /= LodRatio;
 	}

@@ -44,7 +44,8 @@ private:
 
     std::atomic<TMeshDataPtr> MeshDataCachePtr = nullptr;
 
-	std::atomic<UTerrainZoneComponent*> ZoneComponentAtomicPtr = nullptr;
+    std::atomic<UTerrainZoneComponent*> ZoneComponentAtomicPtr = nullptr;
+
     std::atomic<bool> bNeedTerrainSave { false };
     std::atomic<bool> bNeedObjectsSave { false };
     std::atomic<bool> bSpawnFinished { false };

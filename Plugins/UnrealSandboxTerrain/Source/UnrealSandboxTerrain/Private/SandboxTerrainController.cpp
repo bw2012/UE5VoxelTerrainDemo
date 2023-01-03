@@ -259,14 +259,9 @@ void ASandboxTerrainController::PerformCheckArea() {
 
                 if(bShowStartSwapPos){
                     DrawDebugBox(GetWorld(), PlayerLocation, FVector(100), FColor(255, 0, 255, 0), false, 15);
-                    static const float Len = 1000;
-                    DrawDebugCylinder(GetWorld(), FVector(Tmp.X, Tmp.Y, Len), FVector(Tmp.X, Tmp.Y, -Len), DynamicLoadArea.Radius, 128, FColor(255, 0, 255, 128), false, 30);
                 }
                 
-				TTerrainAreaLoadParams Params;
-                Params.Radius = DynamicLoadArea.Radius;
-                Params.TerrainSizeMinZ = LocationIndex.Z + DynamicLoadArea.TerrainSizeMinZ;
-                Params.TerrainSizeMaxZ = LocationIndex.Z + DynamicLoadArea.TerrainSizeMaxZ;
+				TTerrainAreaLoadParams Params(ActiveAreaSize, ActiveAreaDepth);
                 HandlerPtr->SetParams(TEXT("Player_Swap_Terrain_Task"), this, Params);
                                
                 AddAsyncTask([=]() {
@@ -277,7 +272,7 @@ void ASandboxTerrainController::PerformCheckArea() {
             }
 
 			if (bPerformSoftUnload || bForcePerformHardUnload) {
-				UnloadFarZones(PlayerLocation, DynamicLoadArea.Radius);
+				UnloadFarZones(PlayerLocation);
 			}
         }
     }
@@ -299,10 +294,11 @@ void RemoveAllChilds(UTerrainZoneComponent* ZoneComponent) {
 	}
 }
 
-void ASandboxTerrainController::UnloadFarZones(FVector PlayerLocation, float Radius) {
+void ASandboxTerrainController::UnloadFarZones(const FVector& PlayerLocation) {
 	double Start = FPlatformTime::Seconds();
 
 	// hard unload far zones
+	const float Radius = ActiveAreaSize * USBT_ZONE_SIZE;
 	TArray<UTerrainZoneComponent*> Components;
 	GetComponents<UTerrainZoneComponent>(Components);
 	for (UTerrainZoneComponent* ZoneComponent : Components) {
@@ -332,7 +328,7 @@ void ASandboxTerrainController::UnloadFarZones(FVector PlayerLocation, float Rad
 
 	double End = FPlatformTime::Seconds();
 	double Time = (End - Start) * 1000;
-	//UE_LOG(LogSandboxTerrain, Log, TEXT("UnloadFarZones --> %f ms"), Time);
+	UE_LOG(LogSandboxTerrain, Log, TEXT("UnloadFarZones --> %f ms"), Time);
 }
 
 void ASandboxTerrainController::ZoneHardUnload(UTerrainZoneComponent* ZoneComponent, const TVoxelIndex& ZoneIndex) {
@@ -345,6 +341,11 @@ void ASandboxTerrainController::ZoneHardUnload(UTerrainZoneComponent* ZoneCompon
 			RemoveAllChilds(ZoneComponent);
 			TerrainData->RemoveZone(ZoneIndex);
 			ZoneComponent->DestroyComponent(true);
+		}
+		else {
+			AsyncTask(ENamedThreads::GameThread, [=]() {
+				DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 0, 0, 0), false, 5);
+			});
 		}
 	}
 }
@@ -386,10 +387,7 @@ void ASandboxTerrainController::BeginPlayServer() {
 }
 
 void ASandboxTerrainController::BeginClientTerrainLoad(const TVoxelIndex& ZoneIndex, const TSet<TVoxelIndex>& Ignore) {
-	TTerrainAreaLoadParams Params;
-	Params.Radius = InitialLoadArea.Radius;
-	Params.TerrainSizeMinZ = InitialLoadArea.TerrainSizeMinZ;
-	Params.TerrainSizeMaxZ = InitialLoadArea.TerrainSizeMaxZ;
+	TTerrainAreaLoadParams Params(ActiveAreaSize, ActiveAreaDepth);
 	Params.Ignore = Ignore;
 
 	AddAsyncTask([=]() {
@@ -407,11 +405,7 @@ void ASandboxTerrainController::BeginServerTerrainLoad() {
 		TVoxelIndex B = GetZoneIndex(BeginServerTerrainLoadLocation);
 
         // async loading other zones
-		TTerrainAreaLoadParams Params;
-		Params.Radius = InitialLoadArea.Radius;
-		Params.TerrainSizeMinZ = InitialLoadArea.TerrainSizeMinZ + B.Z;
-		Params.TerrainSizeMaxZ = InitialLoadArea.TerrainSizeMaxZ + B.Z;
-
+		TTerrainAreaLoadParams Params(ActiveAreaSize, ActiveAreaDepth);
         AddAsyncTask([=]() {            
 			UE_LOG(LogSandboxTerrain, Warning, TEXT("Server: Begin terrain load at location: %f %f %f"), BeginServerTerrainLoadLocation.X, BeginServerTerrainLoadLocation.Y, BeginServerTerrainLoadLocation.Z);
 
@@ -634,7 +628,10 @@ void ASandboxTerrainController::BatchSpawnZone(const TArray<TSpawnZoneParam>& Sp
 		} else {
 			VoxelDataInfoPtr->SetNeedTerrainSave();
 			TerrainData->AddSaveIndex(P.Index);
+
 		}
+
+		VoxelDataInfoPtr->SetSpawnFinished();
 	}
 }
 
@@ -647,12 +644,13 @@ void ASandboxTerrainController::AddInitialZone(const TVoxelIndex& ZoneIndex) {
 }
 
 void ASandboxTerrainController::SpawnInitialZone() {
-	const int s = static_cast<int>(TerrainInitialArea);
+	const int S = static_cast<int>(TerrainInitialArea);
 
-	if (s > 0) {
-		for (auto z = InitialLoadArea.TerrainSizeMaxZ; z >= InitialLoadArea.TerrainSizeMinZ; z--) {
-			for (auto x = -s; x <= s; x++) {
-				for (auto y = -s; y <= s; y++) {
+	if (S > 0) {
+		float SZ = ActiveAreaDepth * USBT_ZONE_SIZE;
+		for (auto z = SZ; z >= -SZ; z--) {
+			for (auto x = -S; x <= S; x++) {
+				for (auto y = -S; y <= S; y++) {
 					AddInitialZone(TVoxelIndex(x, y, z));
 				}
 			}

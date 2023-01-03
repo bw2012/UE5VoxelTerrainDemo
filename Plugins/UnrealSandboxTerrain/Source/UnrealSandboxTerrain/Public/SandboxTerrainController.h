@@ -303,18 +303,18 @@ public:
     // general
     //========================================================================================
 
-    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain General")
     FString MapName;
 
-    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain General")
     int32 Seed;
 
-    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
-    FTerrainSwapAreaParams InitialLoadArea;
-           
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
-	bool bSaveOnEndPlay;
-    
+	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain General")
+	uint32 ActiveAreaSize = 10;
+
+	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain General")
+	uint32 ActiveAreaDepth = 5;
+              
 	//========================================================================================
 	// LOD
 	//========================================================================================
@@ -323,17 +323,14 @@ public:
 	float LodRatio = .5f;
 
     //========================================================================================
-    // Dynamic area swapping
+    // Dynamic area streaming
     //========================================================================================
     
-    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain Streaming")
     bool bEnableAreaStreaming;
     
-    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain Streaming")
     float PlayerLocationThreshold = 1000;
-    
-    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
-    FTerrainSwapAreaParams DynamicLoadArea;
 
 	//========================================================================================
 	// save/load
@@ -347,6 +344,9 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
     int32 AutoSavePeriod;
+
+	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
+	bool bSaveOnEndPlay;
 
 	//========================================================================================
 	// materials
@@ -613,7 +613,7 @@ private:
 
 	UTerrainZoneComponent* AddTerrainZone(FVector pos);
 
-	void UnloadFarZones(FVector PlayerLocation, float Radius);
+	void UnloadFarZones(const FVector& PlayerLocation);
 
 	//===============================================================================
 	// network
