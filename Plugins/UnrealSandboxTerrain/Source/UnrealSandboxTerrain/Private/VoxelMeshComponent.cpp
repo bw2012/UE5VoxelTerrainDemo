@@ -170,14 +170,10 @@ class FVoxelMeshSceneProxy final : public FPrimitiveSceneProxy {
 private:
 	/** Array of lod sections */
 	TArray<FMeshProxyLodSection*> LodSectionArray;
-
 	UBodySetup* BodySetup;
-
 	FMaterialRelevance MaterialRelevance;
-
 	FVector ZoneOrigin;
-
-	bool bLodFlag;
+	float CullDistance = 20000.f;
 
 	const FVector V[6] = {
 		FVector(-USBT_ZONE_SIZE, 0, 0), // -X
@@ -198,8 +194,12 @@ public:
 	}
 
 	FVoxelMeshSceneProxy(UVoxelMeshComponent* Component) : FPrimitiveSceneProxy(Component), BodySetup(Component->GetBodySetup()), MaterialRelevance(Component->GetMaterialRelevance(GetScene().GetFeatureLevel())) {
-		bLodFlag = Component->bLodFlag;
 		ZoneOrigin = Component->GetComponentLocation();
+
+		ASandboxTerrainController* Controller = Cast<ASandboxTerrainController>(Component->GetAttachmentRootActor());
+		if (Controller) {
+			CullDistance = Controller->ActiveAreaSize * 1.5 * USBT_ZONE_SIZE;
+		}
 
 		// Copy each section
 		CopyAll(Component);
@@ -478,7 +478,8 @@ public:
 
 	virtual FPrimitiveViewRelevance GetViewRelevance(const FSceneView* View) const {
 		FPrimitiveViewRelevance Result;
-		Result.bDrawRelevance = IsShown(View);
+		const float Distance = FVector::Distance(View->ViewMatrices.GetViewOrigin(), ZoneOrigin);
+		Result.bDrawRelevance = (Distance <= CullDistance) && IsShown(View);
 		Result.bShadowRelevance = IsShadowCast(View);
 		Result.bDynamicRelevance = true;
 		Result.bStaticRelevance = true;

@@ -190,9 +190,13 @@ unsigned short TVoxelData::getMaterial(int x, int y, int z) const {
 
 	if (x < voxel_num && y < voxel_num && z < voxel_num) {
 		const int index = clcLinearIndex(x, y, z);
-		return material_data[index];
-	}
-	else {
+		auto mat_id = material_data[index];
+		if (mat_id == 0) {
+			return base_fill_mat;
+		}
+
+		return mat_id;
+	} else {
 		return 0;
 	}
 }
@@ -454,6 +458,9 @@ std::shared_ptr<std::vector<uint8>> TVoxelData::serialize() {
 	return serializer.data();
 }
 
+void TVoxelData::setBaseMatId(TMaterialId base_mat_id) {
+	base_fill_mat = base_mat_id;
+}
 
 bool TVoxelData::isSubstanceCacheValid() const {
 	return cache_state >= 0;

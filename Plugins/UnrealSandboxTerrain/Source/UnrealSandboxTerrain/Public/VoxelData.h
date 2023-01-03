@@ -135,6 +135,8 @@ public:
 	void initializeDensity();
 	void initializeMaterial();
 
+	void setBaseMatId(TMaterialId base_mat_id);
+
 	int clcLinearIndex(const TVoxelIndex& v) const;
 	int clcLinearIndex(int x, int y, int z) const;
 	void clcVoxelIndex(uint32 idx, uint32& x, uint32& y, uint32& z) const;

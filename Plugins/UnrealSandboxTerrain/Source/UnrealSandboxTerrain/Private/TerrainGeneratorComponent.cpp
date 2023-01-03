@@ -569,6 +569,8 @@ void UTerrainGeneratorComponent::GenerateZoneVolumeWithFunction(const TGenerateV
 
     if (!bContainsMoreOneMaterial) {
         VoxelData->deinitializeMaterial(BaseMaterialId);
+    } else {
+        VoxelData->setBaseMatId(BaseMaterialId);
     }
 
     VoxelData->setCacheToValid();

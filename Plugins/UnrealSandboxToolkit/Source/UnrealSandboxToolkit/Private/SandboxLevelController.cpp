@@ -362,9 +362,11 @@ ASandboxObject* ASandboxLevelController::SpawnSandboxObject(const int ClassId, c
 		if (SandboxObject) {
 			UClass* SpawnClass = SandboxObject->ClassDefaultObject->GetClass();
 			ASandboxObject* NewObject = (ASandboxObject*)GetWorld()->SpawnActor(SpawnClass, &Transform);
-			NewObject->SandboxNetUid = ObjectCounter;
-			GlobalObjectMap.Add(ObjectCounter, NewObject);
-			ObjectCounter++;
+			if (NewObject) {
+				NewObject->SandboxNetUid = ObjectCounter;
+				GlobalObjectMap.Add(ObjectCounter, NewObject);
+				ObjectCounter++;
+			}
 			return NewObject;
 		}
 	}

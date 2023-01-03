@@ -176,7 +176,7 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 
 		FString PlayerUid = PlayerInfo.PlayerUid;
 		RegisterSandboxPlayerUid(PlayerUid);
-
+		//FindOrCreateCharacter();
 		if (GetNetMode() == NM_Client || GetNetMode() == NM_Standalone) {
 			AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
 			if (MainHud) {
@@ -280,7 +280,7 @@ void AMainPlayerController::OnFinishInitialLoad() {
 		FPlatformProcess::Sleep(0.5f);
 
 		AsyncTask(ENamedThreads::GameThread, [&] {
-			FindOrCreateCharacter();
+			FindOrCreateCharacter(); 
 			if (GetNetMode() == NM_Client || GetNetMode() == NM_Standalone) {
 				AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
 				if (MainHud) {

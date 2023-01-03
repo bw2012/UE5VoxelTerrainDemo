@@ -76,13 +76,7 @@ ASandboxTerrainController::ASandboxTerrainController() {
 void ASandboxTerrainController::PostLoad() {
 	Super::PostLoad();
 	UE_LOG(LogSandboxTerrain, Log, TEXT("ASandboxTerrainController::PostLoad()"));
-
 	bIsGameShutdown = false;
-
-#if WITH_EDITOR
-	//spawnInitialZone();
-#endif
-
 }
 
 UTerrainGeneratorComponent* ASandboxTerrainController::NewTerrainGenerator() {
@@ -399,7 +393,9 @@ void ASandboxTerrainController::BeginClientTerrainLoad(const TVoxelIndex& ZoneIn
 }
 
 void ASandboxTerrainController::BeginServerTerrainLoad() {
-	SpawnInitialZone();
+	bEnableConveyor = false;
+	SpawnInitialZone(); // spawn initial zones without conveyor
+	bEnableConveyor = true;
     
     if (!bGenerateOnlySmallSpawnPoint) {
 		TVoxelIndex B = GetZoneIndex(BeginServerTerrainLoadLocation);
@@ -563,7 +559,6 @@ void ASandboxTerrainController::BatchSpawnZone(const TArray<TSpawnZoneParam>& Sp
 	for (const auto& SpawnZoneParam : SpawnZoneParamArray) {
 		const TVoxelIndex Index = SpawnZoneParam.Index;
 		const TTerrainLodMask TerrainLodMask = SpawnZoneParam.TerrainLodMask;
-
 		bool bIsNoMesh = false;
 
 		//check voxel data in memory
@@ -583,15 +578,12 @@ void ASandboxTerrainController::BatchSpawnZone(const TArray<TSpawnZoneParam>& Sp
 					bIsNoMesh = ZoneHeader.Is(TZoneFlag::NoMesh);
 					bool bIsNoVd = ZoneHeader.Is(TZoneFlag::NoVoxelData);
 					if (bIsNoVd) {
-						//UE_LOG(LogSandboxTerrain, Log, TEXT("NoVoxelData"));
 						VdInfoPtr->DataState = TVoxelDataState::UNGENERATED;
-					}
-					else {
+					} else {
 						//voxel data exist in file
 						VdInfoPtr->DataState = TVoxelDataState::READY_TO_LOAD;
 					}
-				}
-				else {
+				} else {
 					// generate new voxel data
 					VdInfoPtr->DataState = TVoxelDataState::GENERATION_IN_PROGRESS;
 					bNewVdGeneration = true;
@@ -749,7 +741,15 @@ void ASandboxTerrainController::InvokeSafe(std::function<void()> Function) {
 }
 
 void ASandboxTerrainController::AddTaskToConveyor(std::function<void()> Function) {
-	Conveyor->push(Function);
+	if (bEnableConveyor) {
+		Conveyor->push(Function);
+	} else {
+		if (IsInGameThread()) {
+			Function();
+		} else {
+			UE_LOG(LogSandboxTerrain, Error, TEXT("Conveyor is disabled. Attempt to run conveyor task in non game thread"));
+		}
+	}
 }
 
 void ASandboxTerrainController::ExecGameThreadZoneApplyMesh(const TVoxelIndex& Index, UTerrainZoneComponent* Zone, TMeshDataPtr MeshDataPtr) {

@@ -482,6 +482,8 @@ public:
 
 private:
 
+	volatile bool bEnableConveyor = false;
+
 	volatile bool bForcePerformHardUnload = false;
     
 	std::unordered_set<TVoxelIndex> InitialLoadSet;
