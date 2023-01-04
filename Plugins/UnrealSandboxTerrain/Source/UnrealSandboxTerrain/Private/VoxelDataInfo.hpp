@@ -42,11 +42,13 @@ private:
     volatile double LastMeshGeneration;
     volatile double LastCacheCheck;
 
-	TMeshDataPtr MeshDataCachePtr = nullptr;
+    std::atomic<TMeshDataPtr> MeshDataCachePtr = nullptr;
 
-	std::atomic<UTerrainZoneComponent*> ZoneComponentAtomicPtr = nullptr;
-    std::atomic<bool> bNeedTerrainSave{ false };
-    std::atomic<bool> bNeedObjectsSave{ false };
+    std::atomic<UTerrainZoneComponent*> ZoneComponentAtomicPtr = nullptr;
+
+    std::atomic<bool> bNeedTerrainSave { false };
+    std::atomic<bool> bNeedObjectsSave { false };
+    std::atomic<bool> bSpawnFinished { false };
 
 	std::shared_timed_mutex InstanceObjectMapMutex;
 	std::shared_ptr<TInstanceMeshTypeMap> InstanceMeshTypeMapPtr = nullptr;
@@ -91,6 +93,18 @@ public:
 
     void Unlock() {
         VdMutex.Unlock();
+    }
+
+    void SetSpawnFinished() {
+        bSpawnFinished = true;
+    }
+
+    void ResetSpawnFinished() {
+        bSpawnFinished = false;
+    }
+
+    bool IsSpawnFinished() {
+        return bSpawnFinished;
     }
 
     bool IsNeedObjectsSave() {
@@ -179,12 +193,15 @@ public:
     }
 
 	void PushMeshDataCache(TMeshDataPtr MeshDataPtr) {
-		std::atomic_store(&MeshDataCachePtr, MeshDataPtr);
+		MeshDataCachePtr.store(MeshDataPtr);
 	}
 
+    TMeshDataPtr GetMeshDataCache() {
+        return MeshDataCachePtr.load();
+    }
+
 	TMeshDataPtr PopMeshDataCache() {
-		TMeshDataPtr NullPtr = nullptr;
-		TMeshDataPtr MeshDataPtr = std::atomic_exchange(&MeshDataCachePtr, NullPtr);
+        TMeshDataPtr MeshDataPtr = MeshDataCachePtr.exchange(nullptr);
 		return MeshDataPtr;
 	}
 

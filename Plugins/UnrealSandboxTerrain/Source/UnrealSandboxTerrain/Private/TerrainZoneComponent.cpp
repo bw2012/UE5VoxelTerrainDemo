@@ -20,7 +20,7 @@ UTerrainZoneComponent::UTerrainZoneComponent(const FObjectInitializer& ObjectIni
     CurrentTerrainLodMask = 0xff;
 }
 
-void UTerrainZoneComponent::ApplyTerrainMesh(TMeshDataPtr MeshDataPtr, const TTerrainLodMask TerrainLodMask) {
+void UTerrainZoneComponent::ApplyTerrainMesh(TMeshDataPtr MeshDataPtr, bool bIgnoreCollision, const TTerrainLodMask TerrainLodMask) {
     const std::lock_guard<std::mutex> lock(TerrainMeshMutex);
 	double start = FPlatformTime::Seconds();
 	TMeshData* MeshData = MeshDataPtr.get();
@@ -34,7 +34,8 @@ void UTerrainZoneComponent::ApplyTerrainMesh(TMeshDataPtr MeshDataPtr, const TTe
 	}
 
 	if (MeshDataTimeStamp > MeshDataPtr->TimeStamp) {
-		UE_LOG(LogSandboxTerrain, Log, TEXT("ASandboxTerrainZone::applyTerrainMesh skip late thread -> %f"), MeshDataPtr->TimeStamp);
+		// TODO 
+		//UE_LOG(LogSandboxTerrain, Warning, TEXT("ASandboxTerrainZone::applyTerrainMesh skip late thread -> %f"), MeshDataPtr->TimeStamp);
 	}
 
 	MeshDataTimeStamp = MeshDataPtr->TimeStamp;
@@ -55,11 +56,14 @@ void UTerrainZoneComponent::ApplyTerrainMesh(TMeshDataPtr MeshDataPtr, const TTe
 	}
 		
 	MainTerrainMesh->SetMeshData(MeshDataPtr, TargetTerrainLodMask);
+
+	if (!bIgnoreCollision) {
+		MainTerrainMesh->SetCollisionMeshData(MeshDataPtr);
+	}
+
     MainTerrainMesh->bCastShadowAsTwoSided = true;    
 	MainTerrainMesh->SetCastShadow(true);
 	MainTerrainMesh->bCastHiddenShadow = true;
-
-	MainTerrainMesh->SetCollisionMeshData(MeshDataPtr);
 	MainTerrainMesh->SetCollisionProfileName(TEXT("BlockAll"));
 
 	double end = FPlatformTime::Seconds();

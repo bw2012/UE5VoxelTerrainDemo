@@ -185,31 +185,6 @@ public:
 
 };
 
-extern float GlobalTerrainZoneLOD[LOD_ARRAY_SIZE];
-
-USTRUCT()
-struct FSandboxTerrainLODDistance {
-    GENERATED_BODY()
-    
-    UPROPERTY(EditAnywhere)
-    float Distance1 = 1500;
-    
-    UPROPERTY(EditAnywhere)
-    float Distance2 = 3000;
-    
-    UPROPERTY(EditAnywhere)
-    float Distance3 = 6000;
-    
-    UPROPERTY(EditAnywhere)
-    float Distance4 = 12000;
-    
-    UPROPERTY(EditAnywhere)
-    float Distance5 = 16000;
-    
-    UPROPERTY(EditAnywhere)
-    float Distance6 = 20000;
-};
-
 UENUM(BlueprintType)
 enum class ETerrainLodMaskPreset : uint8 {
     All      = 0            UMETA(DisplayName = "Show all"),
@@ -223,9 +198,7 @@ struct FTerrainSwapAreaParams {
     
     UPROPERTY(EditAnywhere)
     float Radius = 3000;
-    
-    UPROPERTY(EditAnywhere)
-    float FullLodDistance = 1000;
+   
     
     UPROPERTY(EditAnywhere)
     int TerrainSizeMinZ = -5;
@@ -250,8 +223,6 @@ enum class TZoneFlag : int {
 typedef struct TKvFileZodeData {
 	uint32 Flags = 0x0;
 	uint32 LenMd = 0;
-	//uint32 LenVd = 0;
-	uint32 LenObj = 0;
 
 	bool Is(TZoneFlag Flag) {
 		return (Flags >> (int)Flag) & 1U;
@@ -321,10 +292,7 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Debug")
 	bool bShowZoneBounds = false;
-    
-    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Debug")
-    bool bShowInitialArea = false;
-    
+        
     UPROPERTY(EditAnywhere, Category = "UnrealSandbox Debug")
     bool bShowStartSwapPos = false;
 
@@ -335,33 +303,34 @@ public:
     // general
     //========================================================================================
 
-    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain General")
     FString MapName;
 
-    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain General")
     int32 Seed;
 
-    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
-    FTerrainSwapAreaParams InitialLoadArea;
-           
-    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
-    FSandboxTerrainLODDistance LodDistance;
+	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain General")
+	uint32 ActiveAreaSize = 10;
 
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
-	bool bSaveOnEndPlay;
-    
+	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain General")
+	uint32 ActiveAreaDepth = 5;
+              
+	//========================================================================================
+	// LOD
+	//========================================================================================
+
+	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain LOD")
+	float LodRatio = .5f;
+
     //========================================================================================
-    // Dynamic area swapping
+    // Dynamic area streaming
     //========================================================================================
     
-    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
-    bool bEnableAreaSwapping;
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain Streaming")
+    bool bEnableAreaStreaming;
     
-    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
+    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain Streaming")
     float PlayerLocationThreshold = 1000;
-    
-    UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
-    FTerrainSwapAreaParams DynamicLoadArea;
 
 	//========================================================================================
 	// save/load
@@ -375,9 +344,9 @@ public:
 
     UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
     int32 AutoSavePeriod;
-    
+
 	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain")
-	int32 SaveGeneratedZones; // TODO refactor
+	bool bSaveOnEndPlay;
 
 	//========================================================================================
 	// materials
@@ -391,15 +360,6 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Terrain Material")
 	USandboxTerrainParameters* TerrainParameters;
-
-	//========================================================================================
-	// collision
-	//========================================================================================
-
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Collision")
-	unsigned int CollisionSection;
-
-	void OnFinishAsyncPhysicsCook(const TVoxelIndex& ZoneIndex);
 
 	//========================================================================================
 	// foliage
@@ -427,6 +387,11 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "UnrealSandbox")
 	void ForcePerformHardUnload();
+
+	//========================================================================================
+
+	UFUNCTION(BlueprintCallable, Category = "UnrealSandboxWorkaround")
+	void UE51MaterialIssueWorkaround();
 
 	//========================================================================================
 
@@ -509,7 +474,15 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "UnrealSandbox")
 	FTerrainDebugInfo GetMemstat();
 
+	//========================================================================================
+	// collision
+	//========================================================================================
+
+	void OnFinishAsyncPhysicsCook(const TVoxelIndex& ZoneIndex);
+
 private:
+
+	volatile bool bEnableConveyor = false;
 
 	volatile bool bForcePerformHardUnload = false;
     
@@ -586,6 +559,8 @@ private:
 
 	mutable TKvFile TdFile;
 
+	mutable TKvFile ObjFile;
+
 	TKvFile VdFile;
 
 	std::shared_ptr<TVoxelDataInfo> GetVoxelDataInfo(const TVoxelIndex& Index);
@@ -625,12 +600,6 @@ private:
 	TMap<uint16, FSandboxTerrainMaterial> MaterialMap;
 
 	//===============================================================================
-	// collision
-	//===============================================================================
-
-	int GetCollisionMeshSectionLodIndex() const;
-
-	//===============================================================================
 	// 
 	//===============================================================================
 
@@ -639,14 +608,14 @@ private:
     void OnLoadZone(const TVoxelIndex& Index, UTerrainZoneComponent* Zone);
     
 	//===============================================================================
-	// pipeline
+	// 
 	//===============================================================================
 
 	void SpawnZone(const TVoxelIndex& Index, const TTerrainLodMask TerrainLodMask);
 
 	UTerrainZoneComponent* AddTerrainZone(FVector pos);
 
-	void UnloadFarZones(FVector PlayerLocation, float Radius);
+	void UnloadFarZones(const FVector& PlayerLocation);
 
 	//===============================================================================
 	// network

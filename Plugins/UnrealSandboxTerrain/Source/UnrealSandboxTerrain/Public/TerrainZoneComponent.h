@@ -61,7 +61,7 @@ public:
 
 	ASandboxTerrainController* GetTerrainController();
 
-	void ApplyTerrainMesh(std::shared_ptr<TMeshData> MeshDataPtr, const TTerrainLodMask TerrainLodMask = 0);
+	void ApplyTerrainMesh(std::shared_ptr<TMeshData> MeshDataPtr, bool bIgnoreCollision = false, const TTerrainLodMask TerrainLodMask = 0);
 
 	std::shared_ptr<std::vector<uint8>> SerializeInstancedMeshes();
 
@@ -74,8 +74,6 @@ public:
 	static TValueDataPtr SerializeInstancedMesh(const TInstanceMeshTypeMap& InstanceMeshMap);
     
 	TTerrainLodMask GetTerrainLodMask();
-    
-	volatile bool bIsSpawnFinished = false;
 
 private:
     

@@ -528,7 +528,6 @@ private:
 			const unsigned short v0 = (edgeCode >> 4) & 0x0F;
 			const unsigned short v1 = edgeCode & 0x0F;
 			struct TmpPoint tp = vertexClc(d[v0], d[v1]);
-
 			materialIdSet.insert(tp.matId);
 			vertexList.push_back(tp);
 		}

@@ -569,6 +569,8 @@ void UTerrainGeneratorComponent::GenerateZoneVolumeWithFunction(const TGenerateV
 
     if (!bContainsMoreOneMaterial) {
         VoxelData->deinitializeMaterial(BaseMaterialId);
+    } else {
+        VoxelData->setBaseMatId(BaseMaterialId);
     }
 
     VoxelData->setCacheToValid();
@@ -1048,10 +1050,6 @@ void UTerrainGeneratorComponent::GenerateNewFoliageLandscape(const TVoxelIndex& 
 
 void UTerrainGeneratorComponent::SpawnFoliage(int32 FoliageTypeId, FSandboxFoliage& FoliageType, const FVector& Origin, FRandomStream& rnd, const TVoxelIndex& Index, TInstanceMeshTypeMap& ZoneInstanceMeshMap) {
 
-}
-
-bool UTerrainGeneratorComponent::UseCustomFoliage(const TVoxelIndex& Index) {
-    return false;
 }
 
 FSandboxFoliage UTerrainGeneratorComponent::FoliageExt(const int32 FoliageTypeId, const FSandboxFoliage& FoliageType, const TVoxelIndex& ZoneIndex, const FVector& WorldPos) {

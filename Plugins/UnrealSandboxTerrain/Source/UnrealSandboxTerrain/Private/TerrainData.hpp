@@ -73,7 +73,9 @@ public:
     }
 
 	void RemoveZone(const TVoxelIndex& Index) {
-		return GetVoxelDataInfo(Index)->RemoveZone();
+		auto Ptr = GetVoxelDataInfo(Index);
+		Ptr->ResetSpawnFinished();
+		Ptr->RemoveZone();
 	}
     
 	//=====================================================================================

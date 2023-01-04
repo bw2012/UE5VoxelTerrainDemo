@@ -176,11 +176,14 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 
 		FString PlayerUid = PlayerInfo.PlayerUid;
 		RegisterSandboxPlayerUid(PlayerUid);
+		FindOrCreateCharacter();
+		BlockGameInput();
 
 		if (GetNetMode() == NM_Client || GetNetMode() == NM_Standalone) {
 			AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
 			if (MainHud) {
 				MainHud->OpenWidget(TEXT("loading_terrain"));
+				MainHud->OpenWidget(TEXT("debug_info"));
 			}
 		}
 	}
@@ -275,15 +278,19 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 }
 
 void AMainPlayerController::OnFinishInitialLoad() {
-	AsyncTask(ENamedThreads::GameThread, [&] {
-		FindOrCreateCharacter();
+	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [&] {
+		FPlatformProcess::Sleep(0.5f);
 
-		if (GetNetMode() == NM_Client || GetNetMode() == NM_Standalone) {
-			AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
-			if (MainHud) {
-				MainHud->CloseWidget(TEXT("loading_terrain"));
+		AsyncTask(ENamedThreads::GameThread, [&] {
+			//FindOrCreateCharacter(); 
+			UnblockGameInput();
+			if (GetNetMode() == NM_Client || GetNetMode() == NM_Standalone) {
+				AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
+				if (MainHud) {
+					MainHud->CloseWidget(TEXT("loading_terrain"));
+				}
 			}
-		}
+		});
 	});
 }
 
@@ -398,25 +405,6 @@ void AMainPlayerController::OnAltActionReleased() {
 		MainPlayerControllerComponent->EndAltAction();
 	}
 }
-
-/*
-void AMainPlayerController::OnTracePlayerActionPoint(const FHitResult& Res) {
-	ADummyPawn* DummyPawn = Cast<ADummyPawn>(GetPawn());
-	if (DummyPawn) {
-		// do nothing;
-		return;
-	}
-
-	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
-	if (BaseCharacter) {
-		if (BaseCharacter->IsDead()) {
-			return;
-		}
-
-		MainPlayerControllerComponent->OnTracePlayerActionPoint(Res);
-	}
-}
-*/
 
 void AMainPlayerController::OnSelectActionObject(AActor* Actor) {
 	ASandboxCharacter* PlayerCharacter = Cast<ASandboxCharacter>(GetCharacter());
@@ -533,6 +521,10 @@ void AMainPlayerController::SetCurrentInventorySlot(int32 Slot) {
 		}
 	}
 
+	if (IsGameInputBlocked()) {
+		return;
+	}
+
 	if (CurrentInventorySlot == Slot) {
 		Slot = -1;
 	}
@@ -548,9 +540,6 @@ void AMainPlayerController::ChangeDummyCameraAltitude(float Val) {
 		FVector Pos = DummyPawn->GetActorLocation();
 		Pos.Z += Val;
 		DummyPawn->SetActorLocation(Pos);
-
-
-		UE_LOG(LogTemp, Warning, TEXT("test1 -> %f"), Pos.Z);
 
 		TArray<AActor*> ObjList;
 		UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASandboxObject::StaticClass(), ObjList);
@@ -619,8 +608,10 @@ void AMainPlayerController::DisableGuiMode() {
 
 void AMainPlayerController::ToggleMainInventory() {
 	if (!bGuiMode) {
-		EnableGuiMode();
-		OpenMainInventoryGui();
+		if (!IsGameInputBlocked()) {
+			EnableGuiMode();
+			OpenMainInventoryGui();
+		}
 	} else {
 		DisableGuiMode();
 		CloseMainInventoryGui();

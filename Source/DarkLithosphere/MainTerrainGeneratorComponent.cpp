@@ -328,18 +328,6 @@ float UMainTerrainGeneratorComponent::DensityFunctionExt(float Density, const TV
 	return Density;
 }
 
-//==========================================
-// Foliage (mushrooms)
-//==========================================
-
-bool UMainTerrainGeneratorComponent::UseCustomFoliage(const TVoxelIndex& ZoneIndex) {
-	if (ZoneIndex.Z <= -2 && ZoneIndex.Z >= -4) {
-		return true;
-	}
-
-	return false;
-}
-
 bool TBiome::IsForest() const {
 	return ValForestMeadow > 0.f;
 }
@@ -367,14 +355,6 @@ bool IsSpawnArea(const FVector& WorldPos) {
 FSandboxFoliage UMainTerrainGeneratorComponent::FoliageExt(const int32 FoliageTypeId, const FSandboxFoliage& FoliageType, const TVoxelIndex& ZoneIndex, const FVector& WorldPos) {
 	FSandboxFoliage Foliage = FoliageType;
 	TBiome Biome = ClcBiome(WorldPos);
-
-	if (Biome.IsForest()) {
-		AsyncTask(ENamedThreads::GameThread, [=]() {
-			FVector Pos = WorldPos;
-			Pos.Z = 500;
-			//DrawDebugPoint(GetWorld(), Pos, 5.f, FColor(0, 0, 255, 0), true);
-		});
-	}
 
 	// tree
 	if (Foliage.Type == ESandboxFoliageType::Tree) {
@@ -410,13 +390,10 @@ FSandboxFoliage UMainTerrainGeneratorComponent::FoliageExt(const int32 FoliageTy
 		} else {
 			Foliage.Probability *= 3;
 		}
-
 	}
 
 	// grass
 	if (Foliage.Type == ESandboxFoliageType::Grass) {
-		const float R = std::sqrt(WorldPos.X * WorldPos.X + WorldPos.Y * WorldPos.Y + WorldPos.Z * WorldPos.Z);
-
 		if (Biome.IsForest()) {
 			Foliage.ScaleMaxZ = 0.95;
 		}
@@ -424,8 +401,27 @@ FSandboxFoliage UMainTerrainGeneratorComponent::FoliageExt(const int32 FoliageTy
 
 	if (FoliageTypeId == 2) {
 		const float R = std::sqrt(WorldPos.X * WorldPos.X + WorldPos.Y * WorldPos.Y + WorldPos.Z * WorldPos.Z);
-
 		if (R < 500) {
+			Foliage.Probability = 0;
+		}
+	}
+
+	// flowers
+	if (Foliage.Type == ESandboxFoliageType::Flower) {
+		if (Biome.IsForest()) {
+			Foliage.Probability = 0;
+		}
+	}
+
+	if (Foliage.Type == ESandboxFoliageType::ForestFoliage) {
+		if (Biome.IsForest()) {
+			if (CheckExtZoneParam(ZoneIndex, "fern", "Y")) {
+				if (FoliageTypeId == 3) { //fern
+					Foliage.Probability *= 10;
+					Foliage.SpawnStep = 25;
+				}
+			}
+		} else {
 			Foliage.Probability = 0;
 		}
 	}
@@ -513,7 +509,13 @@ void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxel
 	// rocks
 	if (ZoneType == TZoneGenerationType::Landscape) {
 		float Chance = Rnd.GetFraction();
-		if (Chance < 0.1f) {
+		if (Chance < 0.2f) {
+			static const int RockTypeV[] = {900, 905, 906, 907, 908};
+			int I = Rnd.RandRange(0, 4);
+			GenerateRandomInstMesh(ZoneInstanceMeshMap, RockTypeV[I], Rnd, ZoneIndex, Vd);
+		}
+
+		if (ZoneIndex.X == 0 && ZoneIndex.Y == 0) {
 			GenerateRandomInstMesh(ZoneInstanceMeshMap, 900, Rnd, ZoneIndex, Vd);
 		}
 	}
@@ -714,11 +716,6 @@ void UMainTerrainGeneratorComponent::ExtVdGenerationData(TGenerateVdTempItm& VdG
 
 		if (ZoneOreData) {
 			VdGenerationData.OreData = ZoneOreData;
-
-			AsyncTask(ENamedThreads::GameThread, [=]() {
-				FVector ZonePos = GetController()->GetZonePos(ZoneIndex);
-				//DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
-			});
 		}
 	}
 
@@ -734,6 +731,16 @@ void UMainTerrainGeneratorComponent::ExtVdGenerationData(TGenerateVdTempItm& VdG
 			float Probability = Rnd.FRandRange(0.f, 1.f);
 			if (Probability < 0.025) {
 				ZoneExtData.FindOrAdd(ZoneIndex).Add("wood_logs", "Y");
+			}
+
+			Probability = Rnd.FRandRange(0.f, 1.f);
+			if (Probability < 0.05) {
+				ZoneExtData.FindOrAdd(ZoneIndex).Add("fern", "Y");
+
+				AsyncTask(ENamedThreads::GameThread, [=]() {
+					FVector ZonePos = GetController()->GetZonePos(ZoneIndex);
+					//DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 0, 0, 0), true);
+				});
 			}
 		}
 	}

@@ -7,17 +7,23 @@
 //
 //======================================================================================================================================================================
 
-typedef struct TTerrainAreaLoadParams {
+struct TTerrainAreaLoadParams {
+	TTerrainAreaLoadParams() {};
+
+	TTerrainAreaLoadParams(uint32 AreaSize, uint32 AreaDepth) {
+		Radius = (float)(AreaSize * USBT_ZONE_SIZE);
+		TerrainSizeMinZ = -(float)(AreaDepth);
+		TerrainSizeMaxZ = (float)(AreaDepth);
+	};
+
 	float Radius = 3000;
-	float FullLodDistance = 1000;
-	int32 TerrainSizeMinZ = 5;
+	int32 TerrainSizeMinZ = -5;
 	int32 TerrainSizeMaxZ = 5;
 
 	TSet<TVoxelIndex> Ignore;
 
 	std::function<void(uint32, uint32)> OnProgress = nullptr;
-
-} TTerrainAreaLoadParams;
+};
 
 
 class TTerrainAreaHelper {
@@ -45,7 +51,6 @@ protected:
 	TVoxelIndex OriginIndex;
 	uint32 Total = 0;
 	uint32 Progress = 0;
-	uint32 SaveGeneratedZones = 1000;
 	bool bIsStopped = false;
 
 protected:
