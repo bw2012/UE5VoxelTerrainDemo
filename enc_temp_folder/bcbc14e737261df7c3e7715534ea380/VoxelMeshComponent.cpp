@@ -438,6 +438,7 @@ public:
 										//FMaterialRenderProxy* MaterialProxy = bWireframe ? WireframeMaterialInstance : MatSection->Material->GetRenderProxy();
 										//DrawDynamicMeshSection(MatSection, Collector, MaterialProxy, bWireframe, ViewIndex);
 										DrawDynamicMeshSection(MatSection, Collector, MatSection->Material->GetRenderProxy(), false, ViewIndex);
+										// TODO: check: некоторые артефакты при lod = 0 
 									}
 								}
 							}
