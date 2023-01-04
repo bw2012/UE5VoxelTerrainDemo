@@ -56,15 +56,21 @@ void ACoreCharacter::PlayerRightMovementInput(float Value) {
 }
 
 void ACoreCharacter::PlayerCameraUpInput(float Value) {
-	CameraUpAction_Implementation(Value);
+	if (CanMove()) {
+		CameraUpAction_Implementation(Value);
+	}
 }
 
 void ACoreCharacter::PlayerCameraRightInput(float Value) {
-	CameraRightAction_Implementation(Value);
+	if (CanMove()) {
+		CameraRightAction_Implementation(Value);
+	}
 }
 
 void ACoreCharacter::SprintPressedAction() {
-	SetDesiredGait(EALSGait::Sprinting);
+	if (CanMove()) {
+		SetDesiredGait(EALSGait::Sprinting);
+	}
 }
 
 void ACoreCharacter::SprintReleasedAction() {

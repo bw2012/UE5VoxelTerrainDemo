@@ -230,6 +230,10 @@ bool ABaseCharacter::CanMove() {
 		return false;
 	}
 
+	if (MainPlayerController->IsGameInputBlocked()) {
+		return false;
+	}
+
 	//if (bIsAttacking) {
 	//	return false;
 	//}

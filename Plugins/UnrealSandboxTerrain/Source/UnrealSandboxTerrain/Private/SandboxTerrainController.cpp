@@ -640,10 +640,10 @@ void ASandboxTerrainController::SpawnInitialZone() {
 
 	if (S > 0) {
 		float SZ = ActiveAreaDepth * USBT_ZONE_SIZE;
-		for (auto z = SZ; z >= -SZ; z--) {
-			for (auto x = -S; x <= S; x++) {
-				for (auto y = -S; y <= S; y++) {
-					AddInitialZone(TVoxelIndex(x, y, z));
+		for (auto Z = SZ; Z >= -SZ; Z--) {
+			for (auto X = -S; X <= S; X++) {
+				for (auto Y = -S; Y <= S; Y++) {
+					AddInitialZone(TVoxelIndex(X, Y, Z));
 				}
 			}
 		}
@@ -657,6 +657,11 @@ void ASandboxTerrainController::SpawnInitialZone() {
 		SpawnZoneParam.Index = ZoneIndex;
 		SpawnZoneParam.TerrainLodMask = 0;
 		SpawnList.Add(SpawnZoneParam);
+
+		AsyncTask(ENamedThreads::GameThread, [=]() {
+			//DrawDebugBox(GetWorld(), GetZonePos(ZoneIndex), FVector(USBT_ZONE_SIZE / 2), FColor(255, 0, 0, 0), true);
+		});
+
 	}
 
 	BatchSpawnZone(SpawnList);
