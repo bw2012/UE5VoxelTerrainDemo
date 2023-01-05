@@ -421,6 +421,17 @@ FSandboxFoliage UMainTerrainGeneratorComponent::FoliageExt(const int32 FoliageTy
 					Foliage.SpawnStep = 25;
 				}
 			}
+
+			if (FoliageTypeId == 6) { //nettle
+				Foliage.Probability = 0;
+			}
+
+			if (CheckExtZoneParam(ZoneIndex, "nettle", "Y")) {
+				if (FoliageTypeId == 6) { //nettle
+					Foliage.Probability = 0.1;
+				}
+			}
+
 		} else {
 			Foliage.Probability = 0;
 		}
@@ -736,12 +747,21 @@ void UMainTerrainGeneratorComponent::ExtVdGenerationData(TGenerateVdTempItm& VdG
 			Probability = Rnd.FRandRange(0.f, 1.f);
 			if (Probability < 0.05) {
 				ZoneExtData.FindOrAdd(ZoneIndex).Add("fern", "Y");
-
 				AsyncTask(ENamedThreads::GameThread, [=]() {
 					FVector ZonePos = GetController()->GetZonePos(ZoneIndex);
 					//DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 0, 0, 0), true);
 				});
+			} else {
+				Probability = Rnd.FRandRange(0.f, 1.f);
+				if (Probability < 0.05) {
+					ZoneExtData.FindOrAdd(ZoneIndex).Add("nettle", "Y");
+					AsyncTask(ENamedThreads::GameThread, [=]() {
+						FVector ZonePos = GetController()->GetZonePos(ZoneIndex);
+						//DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 0, 0, 0), true);
+					});
+				}
 			}
+
 		}
 	}
 }
