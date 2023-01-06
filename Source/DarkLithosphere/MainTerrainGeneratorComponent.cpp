@@ -747,18 +747,10 @@ void UMainTerrainGeneratorComponent::ExtVdGenerationData(TGenerateVdTempItm& VdG
 			Probability = Rnd.FRandRange(0.f, 1.f);
 			if (Probability < 0.05) {
 				ZoneExtData.FindOrAdd(ZoneIndex).Add("fern", "Y");
-				AsyncTask(ENamedThreads::GameThread, [=]() {
-					FVector ZonePos = GetController()->GetZonePos(ZoneIndex);
-					//DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 0, 0, 0), true);
-				});
 			} else {
 				Probability = Rnd.FRandRange(0.f, 1.f);
-				if (Probability < 0.05) {
+				if (Probability < 0.025) {
 					ZoneExtData.FindOrAdd(ZoneIndex).Add("nettle", "Y");
-					AsyncTask(ENamedThreads::GameThread, [=]() {
-						FVector ZonePos = GetController()->GetZonePos(ZoneIndex);
-						//DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 0, 0, 0), true);
-					});
 				}
 			}
 
