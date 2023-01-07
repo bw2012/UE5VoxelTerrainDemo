@@ -38,7 +38,7 @@ namespace std {
 		std::size_t operator()(const TKeyData& keyData) const {
 			std::size_t h = 0;
 			for (auto elem : keyData) {
-				h ^= std::hash<int>{}(elem)+0x9e3779b9 + (h << 6) + (h >> 2);
+				h ^= std::hash<int>{}(elem) + 0x9e3779b9 + (h << 6) + (h >> 2);
 			}
 			return h;
 		}

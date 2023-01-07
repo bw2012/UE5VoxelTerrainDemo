@@ -93,6 +93,12 @@ void ASandboxTerrainController::BeginPlay() {
 	Super::BeginPlay();
 	UE_LOG(LogSandboxTerrain, Log, TEXT("ASandboxTerrainController::BeginPlay()"));
 
+#if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
+	UE_LOG(LogSandboxTerrain, Warning, TEXT("Debug mode"));
+#else
+	UE_LOG(LogSandboxTerrain, Log, TEXT("Packaged project: debug features are disabled"));
+	bGenerateOnlySmallSpawnPoint = false;
+#endif
 
 	float ScreenSize = 1.f;
 	for (auto LodIdx = 0; LodIdx < LOD_ARRAY_SIZE; LodIdx++) {

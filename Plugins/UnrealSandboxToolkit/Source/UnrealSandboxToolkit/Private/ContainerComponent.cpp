@@ -82,7 +82,7 @@ bool UContainerComponent::AddObject(ASandboxObject* Obj) {
 
 		//TODO check inventory max volume and mass
 		if (Stack->Amount > 0) {
-			if (Stack->SandboxClassId == Obj->GetSandboxClassId() && MaxStackSize > 1) {
+			if (Stack->SandboxClassId == Obj->GetSandboxClassId() && MaxStackSize > 1 && (uint64)Stack->Amount < MaxStackSize) {
 				Stack->Amount++;
 				bIsAdded = true;
 				break;

@@ -92,7 +92,7 @@ public:
 
 	void OnDeath();
 
-	void ToggleCraftMode(int ReceiptId);
+	bool ToggleCraftMode(int ReceiptId);
 
 	void OnSelectCurrentInventorySlot(int SlotId);
 

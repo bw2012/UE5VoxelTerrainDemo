@@ -5,8 +5,11 @@
 #include "../Globals.h"
 #include "../MainPlayerController.h"
 
-FString UDebugInfoWidget::SandboxDebugInfo1Text() {
+bool IsDatailedInfo() {
+	return false;
+}
 
+FString UDebugInfoWidget::SandboxDebugInfo1Text() {
 	if (!TerrainController) {
 		for (TActorIterator<ATerrainController> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
 			ATerrainController* TerrainCtrl = Cast<ATerrainController>(*ActorItr);
@@ -16,6 +19,10 @@ FString UDebugInfoWidget::SandboxDebugInfo1Text() {
 				break;
 			}
 		}
+	}
+
+	if (!IsDatailedInfo()) {
+		return FString(TEXT(""));
 	}
 
 	if (TerrainController) {
@@ -29,6 +36,10 @@ FString UDebugInfoWidget::SandboxDebugInfo1Text() {
 }
 
 FString UDebugInfoWidget::SandboxDebugInfo2Text() {
+	if (!IsDatailedInfo()) {
+		return FString(TEXT(""));
+	}
+
 	if (TerrainController) {
 		FTerrainDebugInfo Memstat = TerrainController->GetMemstat();
 
@@ -40,6 +51,10 @@ FString UDebugInfoWidget::SandboxDebugInfo2Text() {
 }
 
 FString UDebugInfoWidget::SandboxDebugInfo3Text() {
+	if (!IsDatailedInfo()) {
+		return FString(TEXT(""));
+	}
+
 	if (TerrainController) {
 		FTerrainDebugInfo Memstat = TerrainController->GetMemstat();
 
@@ -51,6 +66,10 @@ FString UDebugInfoWidget::SandboxDebugInfo3Text() {
 }
 
 FString UDebugInfoWidget::SandboxPlayerCrdText() {
+	if (!IsDatailedInfo()) {
+		return FString(TEXT(""));
+	}
+
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
 	if (MainPlayerController) {
 		APawn* Pawn = MainPlayerController->GetPawn();

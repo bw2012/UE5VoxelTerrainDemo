@@ -6,6 +6,18 @@
 #include "MainHUD.generated.h"
 
 
+USTRUCT()
+struct FActiveWidgetInfo {
+	GENERATED_BODY()
+
+	UPROPERTY()
+	UUserWidget* Widget;
+
+	UPROPERTY()
+	FString Tag;
+}; 
+
+
 /**
  * 
  */
@@ -20,21 +32,21 @@ public:
 
 public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	TSubclassOf<class UUserWidget> HudInventoryClass;
+	TSubclassOf<class UUserWidget> InventoryWidget;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	TMap<FString, TSubclassOf<class UUserWidget>> WidgetMap;
 
-	void OpenWidget(FString Name);
+	void OpenWidget(FString Name, FString Tag = TEXT(""));
 
 	void CloseWidget(FString Name);
 
-	void CloseAllWidgets();
+	void CloseAllWidgets(FString Tag = TEXT(""));
 
 	void ShowInGameInventory();
 
 private:
 
-	TMap<FString, UUserWidget*> ActiveWidgetMap;
+	TMap<FString, FActiveWidgetInfo> ActiveWidgetMap;
 	
 };
