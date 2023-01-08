@@ -113,9 +113,11 @@ public:
 
 	double GetNewTimeOffset();
 
-	virtual void UpdatePlayerPosition(FVector Pos);
+	virtual void UpdatePlayerPosition(FVector Pos, APlayerController* Controller);
 
 	void SetCaveMode(bool bCaveModeEnabled);
+
+	bool IsCaveMode();
 
 	bool IsNight() const;
 

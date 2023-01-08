@@ -567,10 +567,31 @@ void UMainPlayerControllerComponent::OnDeath() {
 	ResetState();
 }
 
-void UMainPlayerControllerComponent::ToggleCraftMode(int ReceiptId) {
-	ResetState();
-	CurrentActionType = ECurrentActionType::PlaceCraftToWorld;
-	CraftReceiptId = ReceiptId;
+bool UMainPlayerControllerComponent::ToggleCraftMode(int ReceiptId) {
+	AMainPlayerController* MainController = (AMainPlayerController*)GetOwner();
+	FCraftRecipeData* CraftRecipeData = MainController->GetCraftRecipeData(ReceiptId);
+	if (CraftRecipeData) {
+		if (CraftRecipeData->bToInventory) {
+			UContainerComponent* Inventory = MainController->GetInventory();
+			if (Inventory != nullptr) {
+				TSubclassOf<ASandboxObject> ObjSubclass = MainController->LevelController->GetSandboxObjectByClassId(CraftRecipeData->SandboxClassId);
+				if (ObjSubclass) {
+					auto* Obj = Cast<ASandboxObject>(ObjSubclass->GetDefaultObject());
+					for (int Idx = 0; Idx < 10; Idx++) {
+						Inventory->AddObject(Obj);
+					}
+
+					return false;
+				}
+			}
+		} else {
+			ResetState();
+			CurrentActionType = ECurrentActionType::PlaceCraftToWorld;
+			CraftReceiptId = ReceiptId;
+		}
+	}
+
+	return true;
 }
 
 void UMainPlayerControllerComponent::OnSelectCurrentInventorySlot(int SlotId) {

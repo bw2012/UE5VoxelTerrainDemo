@@ -28,7 +28,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	AAmbientSound* Night1AmbientSound;
 
-	virtual void UpdatePlayerPosition(FVector Pos);
+	virtual void UpdatePlayerPosition(FVector Pos, APlayerController* Controller);
 
 protected:
 

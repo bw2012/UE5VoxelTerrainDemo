@@ -8,23 +8,22 @@ void AMainHUD::BeginPlay() {
 }
 
 void AMainHUD::ShowInGameInventory() {
-	if (HudInventoryClass) {
-		UUserWidget* Wigdet = CreateWidget<UUserWidget>(GetWorld(), HudInventoryClass);
+	if (InventoryWidget) {
+		UUserWidget* Wigdet = CreateWidget<UUserWidget>(GetWorld(), InventoryWidget);
 		if (Wigdet) {
 			Wigdet->AddToViewport();
-
 		}
 	}
 }
 
-void AMainHUD::OpenWidget(FString Name) {
+void AMainHUD::OpenWidget(FString Name, FString Tag) {
 	if (WidgetMap.Contains(Name)) {
 		if (!ActiveWidgetMap.Contains(Name)) {
 			TSubclassOf<class UUserWidget> WidgetClass = WidgetMap[Name];
 			UUserWidget* Wigdet = CreateWidget<UUserWidget>(GetWorld(), WidgetClass);
 			if (Wigdet) {
 				Wigdet->AddToViewport();
-				ActiveWidgetMap.Add(Name, Wigdet);
+				ActiveWidgetMap.Add(Name, FActiveWidgetInfo{ Wigdet , Tag });
 			}
 		}
 	}
@@ -32,16 +31,18 @@ void AMainHUD::OpenWidget(FString Name) {
 
 void AMainHUD::CloseWidget(FString Name) {
 	if (ActiveWidgetMap.Contains(Name)) {
-		UUserWidget* Wigdet = ActiveWidgetMap[Name];
-		Wigdet->RemoveFromViewport();
+		FActiveWidgetInfo ActiveWidgetInfo = ActiveWidgetMap[Name];
+		ActiveWidgetInfo.Widget->RemoveFromViewport();
 		ActiveWidgetMap.Remove(Name);
 	}
 }
 
-void AMainHUD::CloseAllWidgets() {
+void AMainHUD::CloseAllWidgets(FString Tag) {
 	for (auto& Itm : ActiveWidgetMap) {
-		UUserWidget* Wigdet = Itm.Value;
-		Wigdet->RemoveFromViewport();
+		FActiveWidgetInfo ActiveWidgetInfo = Itm.Value;
+		if (ActiveWidgetInfo.Tag == Tag || Tag == TEXT("")) {
+			ActiveWidgetInfo.Widget->RemoveFromViewport();
+		}
 	}
 
 	ActiveWidgetMap.Empty();

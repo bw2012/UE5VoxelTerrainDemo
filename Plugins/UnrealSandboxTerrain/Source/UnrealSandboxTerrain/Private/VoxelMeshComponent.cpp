@@ -482,7 +482,11 @@ public:
 
 	virtual FPrimitiveViewRelevance GetViewRelevance(const FSceneView* View) const {
 		FPrimitiveViewRelevance Result;
-		const float Distance = FVector::Distance(View->ViewMatrices.GetViewOrigin(), ZoneOrigin);
+
+		const FVector O(View->ViewMatrices.GetViewOrigin().X, View->ViewMatrices.GetViewOrigin().Y, 0);
+		const FVector ZO(ZoneOrigin.X, ZoneOrigin.Y, 0);
+		const float Distance = FVector::Distance(O, ZO);
+
 		Result.bDrawRelevance = (Distance <= CullDistance) && IsShown(View);
 		Result.bShadowRelevance = IsShadowCast(View);
 		Result.bDynamicRelevance = true;

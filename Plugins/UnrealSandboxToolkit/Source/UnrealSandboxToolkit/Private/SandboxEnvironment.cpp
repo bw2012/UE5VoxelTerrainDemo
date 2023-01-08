@@ -264,7 +264,7 @@ double ASandboxEnvironment::GetNewTimeOffset() {
 	return RealTimeOffset + RealServerTime;
 }
 
-void ASandboxEnvironment::UpdatePlayerPosition(FVector Pos) {
+void ASandboxEnvironment::UpdatePlayerPosition(FVector Pos, APlayerController* Controller) {
 	PlayerPos = Pos;
 
 	if (CaveSphere) {
@@ -287,6 +287,9 @@ void ASandboxEnvironment::UpdatePlayerPosition(FVector Pos) {
 	}
 }
 
+bool ASandboxEnvironment::IsCaveMode() {
+	return bCaveMode;
+}
 
 void ASandboxEnvironment::SetCaveMode(bool bCaveModeEnabled) {
 	if (bCaveMode == bCaveModeEnabled) {

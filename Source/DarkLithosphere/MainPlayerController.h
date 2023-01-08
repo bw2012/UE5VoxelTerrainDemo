@@ -40,6 +40,9 @@ struct FCraftRecipeData {
 	bool bOnlyOne = true;
 
 	UPROPERTY(EditAnywhere)
+	bool bToInventory = false;
+
+	UPROPERTY(EditAnywhere)
 	TArray<FCraftPartData> Parts;
 };
 

@@ -1,12 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #include "MainTerrainGeneratorComponent.h"
 #include "TerrainController.h"
 #include "UnrealSandboxTerrain.h"
-//#include "SpawnHelper.h" // TODO
-
-
-
 
 
 TArray<TVoxelIndex> TMetaStructure::GetRelevantZones(UMainTerrainGeneratorComponent* Generator) const {
@@ -17,10 +12,8 @@ void TMetaStructure::MakeMetaData(UMainTerrainGeneratorComponent* Generator) con
 
 }
 
-
 void UMainTerrainGeneratorComponent::BeginPlay() {
 	Super::BeginPlay();
-	UE_LOG(LogTemp, Warning, TEXT("UCudaTerrainGeneratorComponent::BeginPlay"));
 }
 
 //====================================================================================
@@ -36,7 +29,6 @@ bool IsCaveLayerZone(int Z) {
 
 void UMainTerrainGeneratorComponent::PrepareMetaData() {
 	UE_LOG(LogTemp, Warning, TEXT("UMainTerrainGeneratorComponent::PrepareMetaData()"));
-	
 	GenerateStructures();
 }
 
@@ -87,10 +79,6 @@ TGenerationResult UMainTerrainGeneratorComponent::FunctionMakeSolidSphere(const 
 	float Density = InDensity;
 	TMaterialId MaterialId = InMaterialId;
 
-	if (R < Radius) {
-		//AsyncTask(ENamedThreads::GameThread, [=]() { DrawDebugPoint(GetController()->GetWorld(), V, 2.f, FColor(255, 255, 255, 0), true); });
-	}
-
 	if (R < Radius + Thickness && R > Radius - Thickness) {
 		MaterialId = ShellMaterialId;
 		Density = 1;
@@ -137,8 +125,6 @@ float UMainTerrainGeneratorComponent::FunctionMakeVerticalCylinder(const float I
 				if (R < Radius - E) {
 					return 0.f;
 				} else {
-					//AsyncTask(ENamedThreads::GameThread, [=]() { DrawDebugPoint(GetWorld(), V, 2.f, FColor(255, 255, 255, 0), true); });
-
 					const float N = PerlinNoise(P, NoisePositionScale, NoiseValueScale);
 					float Density = 1 / (1 + exp((Radius - R) / 100)) + N;
 					if (Density < InDensity) {
@@ -318,7 +304,6 @@ float UMainTerrainGeneratorComponent::DensityFunctionExt(float Density, const TV
 		Result *= t;
 
 		//return Result;
-		
 	}
 
 	if (IsCaveLayerZone(ZoneIndex.Z)) {
@@ -421,6 +406,17 @@ FSandboxFoliage UMainTerrainGeneratorComponent::FoliageExt(const int32 FoliageTy
 					Foliage.SpawnStep = 25;
 				}
 			}
+
+			if (FoliageTypeId == 6) { //nettle
+				Foliage.Probability = 0;
+			}
+
+			if (CheckExtZoneParam(ZoneIndex, "nettle", "Y")) {
+				if (FoliageTypeId == 6) { //nettle
+					Foliage.Probability = 0.1;
+				}
+			}
+
 		} else {
 			Foliage.Probability = 0;
 		}
@@ -434,17 +430,13 @@ FRandomStream UMainTerrainGeneratorComponent::MakeNewRandomStream(const FVector&
 	FRandomStream Rnd = FRandomStream();
 	Rnd.Initialize(Hash);
 	Rnd.Reset();
-
 	return Rnd;
 }
 
 FRotator SelectRotation() {
 	const auto DirIndex = FMath::RandRange(0, 3);
-	//static const FRotator Direction[7] = { FRotator(0), FRotator(90, 0, 0), FRotator(-90, 0, 0), FRotator(0, 90, 0), FRotator(0, -90, 0), FRotator(0, 0, 90), FRotator(0, 0, -90) };
 	static const FRotator Direction[4] = { FRotator(0), FRotator(0, 0, 90), FRotator(0, 0, -90), FRotator(0, 0, 180) };
-
 	const FRotator Rotation = Direction[DirIndex];
-
 	return Rotation;
 }
 
@@ -459,10 +451,6 @@ void UMainTerrainGeneratorComponent::GenerateRandomInstMesh(TInstanceMeshTypeMap
 
 	for (int I = 0; I < Num; I++) {
 		if (SelectRandomSpawnPoint(Rnd, ZoneIndex, Vd, WorldPos, Normal)) {
-			AsyncTask(ENamedThreads::GameThread, [=]() {
-				//DrawDebugPoint(GetWorld(), WorldPos, 5.f, FColor(255, 255, 255, 0), true);
-			});
-
 			const FVector LocalPos = WorldPos - ZonePos;
 			const FVector Scale = FVector(1, 1, 1);
 			FRotator Rotation = Normal.Rotation();
@@ -736,12 +724,13 @@ void UMainTerrainGeneratorComponent::ExtVdGenerationData(TGenerateVdTempItm& VdG
 			Probability = Rnd.FRandRange(0.f, 1.f);
 			if (Probability < 0.05) {
 				ZoneExtData.FindOrAdd(ZoneIndex).Add("fern", "Y");
-
-				AsyncTask(ENamedThreads::GameThread, [=]() {
-					FVector ZonePos = GetController()->GetZonePos(ZoneIndex);
-					//DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 0, 0, 0), true);
-				});
+			} else {
+				Probability = Rnd.FRandRange(0.f, 1.f);
+				if (Probability < 0.025) {
+					ZoneExtData.FindOrAdd(ZoneIndex).Add("nettle", "Y");
+				}
 			}
+
 		}
 	}
 }

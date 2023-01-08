@@ -512,6 +512,11 @@ void ASandboxTerrainController::EditTerrain(const H& ZoneHandler) {
 	PerformEachZone(ZoneHandler.Origin, ZoneHandler.Extend, [&](TVoxelIndex ZoneIndex, FVector Origin, TVoxelDataInfoPtr VoxelDataInfo) {
 		if (VoxelDataInfo->DataState == TVoxelDataState::UNDEFINED) {
 			UE_LOG(LogSandboxTerrain, Warning, TEXT("Zone: %d %d %d -> Invalid zone vd state (UNDEFINED)"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
+
+			AsyncTask(ENamedThreads::GameThread, [=]() {
+				DrawDebugBox(GetWorld(), GetZonePos(ZoneIndex), FVector(USBT_ZONE_SIZE / 2), FColor(255, 0, 0, 0), false, 5);
+			});
+
 			bIsValid = false;
 		}
 	});

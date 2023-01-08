@@ -176,14 +176,20 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 
 		FString PlayerUid = PlayerInfo.PlayerUid;
 		RegisterSandboxPlayerUid(PlayerUid);
+
 		FindOrCreateCharacter();
-		BlockGameInput();
+
+		bool bDebug = TerrainController && !TerrainController->bGenerateOnlySmallSpawnPoint;
+		if (bDebug) {
+			BlockGameInput();
+		}
 
 		if (GetNetMode() == NM_Client || GetNetMode() == NM_Standalone) {
 			AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
 			if (MainHud) {
-				MainHud->OpenWidget(TEXT("loading_terrain"));
-				MainHud->OpenWidget(TEXT("debug_info"));
+				if (bDebug) {
+					MainHud->OpenWidget(TEXT("loading_terrain"));
+				}
 			}
 		}
 	}
@@ -271,7 +277,7 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 			PrevLocation = Location;
 			// update player position
 			if (SandboxEnvironment) {
-				SandboxEnvironment->UpdatePlayerPosition(Location);
+				SandboxEnvironment->UpdatePlayerPosition(Location, this);
 			}
 		}
 	}
@@ -288,6 +294,7 @@ void AMainPlayerController::OnFinishInitialLoad() {
 				AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
 				if (MainHud) {
 					MainHud->CloseWidget(TEXT("loading_terrain"));
+					MainHud->OpenWidget(TEXT("debug_info"));
 				}
 			}
 		});
@@ -521,7 +528,7 @@ void AMainPlayerController::SetCurrentInventorySlot(int32 Slot) {
 		}
 	}
 
-	if (IsGameInputBlocked()) {
+	if (Slot > 0 && IsGameInputBlocked()) {
 		return;
 	}
 
@@ -650,9 +657,10 @@ void AMainPlayerController::SetExtMode(int Index) {
 	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
 	if (BaseCharacter) {
 		SetCurrentInventorySlot(-1);
-		DisableGuiMode();
-		CloseMainInventoryGui();
-		MainPlayerControllerComponent->ToggleCraftMode(Index);
+		if (MainPlayerControllerComponent->ToggleCraftMode(Index)) {
+			DisableGuiMode();
+			CloseMainInventoryGui();
+		}
 	}
 }
 
