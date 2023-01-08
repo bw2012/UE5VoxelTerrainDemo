@@ -81,8 +81,7 @@ void AEnvironmentController::UpdatePlayerPosition(FVector Pos, APlayerController
 		if (PlayerZLevel < -2.5) { 
 			//UE_LOG(LogTemp, Log, TEXT("SetCaveMode = true"));
 			if (!IsCaveMode()) {
-				// bad UE5 GlobalDistanceField performance workaround
-				Controller->ConsoleCommand("r.AOGlobalDistanceField 0", true); 
+				Controller->ConsoleCommand("r.AOGlobalDistanceField 0", true);
 			}
 
 			SetCaveMode(true);

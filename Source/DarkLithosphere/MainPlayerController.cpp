@@ -277,7 +277,7 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 			PrevLocation = Location;
 			// update player position
 			if (SandboxEnvironment) {
-				SandboxEnvironment->UpdatePlayerPosition(Location);
+				SandboxEnvironment->UpdatePlayerPosition(Location, this);
 			}
 		}
 	}
