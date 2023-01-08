@@ -71,7 +71,7 @@ private:
 
 	void PerformChunk(int X, int Y) {
 		for (int Z = Params.TerrainSizeMinZ; Z <= Params.TerrainSizeMaxZ; Z++) {
-			TVoxelIndex Index(X + OriginIndex.X, Y + OriginIndex.Y, Z);
+			TVoxelIndex Index(X + OriginIndex.X, Y + OriginIndex.Y, Z + OriginIndex.Z);
 
 			if (!Params.Ignore.Contains(Index)) {
 				PerformZone(Index);
