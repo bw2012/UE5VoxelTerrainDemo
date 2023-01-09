@@ -233,32 +233,44 @@ bool AMiningTool::OnTracePlayerActionPoint(const FHitResult& Res, ABaseCharacter
 		auto* Component = Res.GetComponent();
 		FString ComponentName = Component->GetClass()->GetName();
 
-		//if (ComponentName == "VoxelMeshComponent") {
+		if (ComponentName == "VoxelMeshComponent") {
+			PlayerCharacter->CursorToWorld->SetVisibility(false);
+
 			if (DiggingToolMode == 0) {
 				const float Radius = ToolSizeArray[DiggingToolSize];
-
 				FVector MiningPos = Res.Location;
 				FVector PlayerPos = PlayerCharacter->GetActorLocation();
-
-				const FVector CursorFV = Res.ImpactNormal;
-				const FRotator CursorR = CursorFV.Rotation();
-				PlayerCharacter->CursorToWorld->SetWorldLocation(Res.Location);
-				PlayerCharacter->CursorToWorld->SetWorldRotation(CursorR);
-				PlayerCharacter->CursorToWorld->DecalSize = FVector(100.f, Radius, Radius);
-				PlayerCharacter->CursorToWorld->SetVisibility(true);
+				const float F = Radius / 100.f * 2.f;
+				PlayerCharacter->SetCursorMesh(Sphere, CursorMaterial, Res.Location, FRotator(0), FVector(F));
+				//DrawDebugSphere(World, Res.Location, Radius, 16, FColor(255, 255, 255, 100));
 			}
 
 			if (DiggingToolMode == 1) {
 				const FVector Location = SnapToGrid(Res.Location, Dig_Snap_To_Grid);
-				DrawDebugBox(World, Location, FVector(Dig_Cube_Size), FColor(255, 255, 255, 100));
-				PlayerCharacter->CursorToWorld->SetVisibility(false);
+				const float F = Dig_Cube_Size / 100.f * 2.f;
+				PlayerCharacter->SetCursorMesh(Cube, CursorMaterial, Location, FRotator(0), FVector(F));
+				//DrawDebugBox(World, Location, FVector(Dig_Cube_Size), FColor(255, 255, 255, 100));
 			}
-		
-		return true;
-	} 
+
+			return true;
+		}
+
+		if (ComponentName == "TerrainInstancedStaticMesh") {
+			PlayerCharacter->ResetCursorMesh();
+			const float Radius = ToolSizeArray[DiggingToolSize];
+			const FVector CursorFV = Res.ImpactNormal;
+			const FRotator CursorR = CursorFV.Rotation();
+			PlayerCharacter->CursorToWorld->SetWorldLocation(Res.Location);
+			PlayerCharacter->CursorToWorld->SetWorldRotation(CursorR);
+			PlayerCharacter->CursorToWorld->DecalSize = FVector(100.f, Radius, Radius);
+			PlayerCharacter->CursorToWorld->SetVisibility(true);
+			return true;
+		}
+	}
 
 	AConstructionObject* Construction = Cast<AConstructionObject>(Res.GetActor());
 	if (Construction) {
+		PlayerCharacter->ResetCursorMesh();
 		const float Radius = ToolSizeArray[DiggingToolSize];
 		const FVector CursorFV = Res.ImpactNormal;
 		const FRotator CursorR = CursorFV.Rotation();
@@ -266,9 +278,11 @@ bool AMiningTool::OnTracePlayerActionPoint(const FHitResult& Res, ABaseCharacter
 		PlayerCharacter->CursorToWorld->SetWorldRotation(CursorR);
 		PlayerCharacter->CursorToWorld->DecalSize = FVector(100.f, Radius, Radius);
 		PlayerCharacter->CursorToWorld->SetVisibility(true);
-
 		return true;
 	}
+
+	PlayerCharacter->ResetCursorMesh();
+	PlayerCharacter->CursorToWorld->SetVisibility(false);
 
 	return false;
 }

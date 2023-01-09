@@ -43,9 +43,7 @@ bool UMainPlayerControllerComponent::CanPlaceObjectToWorld(const ASandboxObject*
 }
 
 void ResetCursorMesh(ABaseCharacter* BaseCharacter) {
-	BaseCharacter->CursorMesh->SetVisibility(false, true);
-	BaseCharacter->CursorMesh->SetStaticMesh(nullptr);
-	BaseCharacter->CursorMesh->SetRelativeScale3D(FVector(1));
+	BaseCharacter->ResetCursorMesh();
 }
 
 void UMainPlayerControllerComponent::OnPlayerTick() {
@@ -137,17 +135,7 @@ void UMainPlayerControllerComponent::OnPlayerTick() {
 					Location += Rotation.RotateVector(CompLocation);
 
 					FVector Scale = BaseObj->GetRootComponent()->GetRelativeScale3D();
-					BaseCharacter->CursorMesh->SetStaticMesh(Mesh);
-					BaseCharacter->CursorMesh->SetVisibility(true, true);
-					BaseCharacter->CursorMesh->SetRelativeScale3D(Scale);
-					BaseCharacter->CursorMesh->SetWorldLocationAndRotationNoPhysics(Location, Rotation);
-
-					if (MainController->CursorMaterial) {
-						for (int I = 0; I < Mesh->GetStaticMaterials().Num(); ++I) {
-							UMaterialInstance* Material = (UMaterialInstance*)Mesh->GetMaterial(I);
-							BaseCharacter->CursorMesh->SetMaterial(I, MainController->CursorMaterial);
-						}
-					}
+					MainController->SetCursorMesh(Mesh, Location, Rotation, Scale);
 				}
 			}
 		}

@@ -21,7 +21,7 @@ class UTerrainZoneComponent;
 *
 */
 UCLASS()
-class UNREALSANDBOXTERRAIN_API UTerrainInstancedStaticMesh : public UHierarchicalInstancedStaticMeshComponent {
+class UNREALSANDBOXTERRAIN_API UTerrainInstancedStaticMesh : public UHierarchicalInstancedStaticMeshComponent { //UHierarchicalInstancedStaticMeshComponent
 	GENERATED_UCLASS_BODY()
 
 	friend class UTerrainZoneComponent;
