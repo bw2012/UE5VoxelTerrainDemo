@@ -104,6 +104,10 @@ public:
 
 	void SelectActiveInventorySlot(int SlotId);
 
+	void SetCursorMesh(UStaticMesh* NewCursorMesh, UMaterialInstance* Material, const FVector& Location, const FRotator& Rotation, const FVector& Scale);
+
+	void ResetCursorMesh();
+
 	//UFUNCTION()
 	//void BeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 

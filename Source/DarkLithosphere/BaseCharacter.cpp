@@ -400,4 +400,29 @@ void ABaseCharacter::MakeModularSkList() {
 }
 
 
+void ABaseCharacter::SetCursorMesh(UStaticMesh* NewCursorMesh, UMaterialInstance* Material, const FVector& Location, const FRotator& Rotation, const FVector& Scale) {
+	if (IsDead()) {
+		return;
+	}
+
+	CursorMesh->SetStaticMesh(NewCursorMesh);
+	CursorMesh->SetVisibility(true, true);
+	CursorMesh->SetRelativeScale3D(Scale);
+	CursorMesh->SetWorldLocationAndRotationNoPhysics(Location, Rotation);
+
+	if (Material) {
+		for (int I = 0; I < NewCursorMesh->GetStaticMaterials().Num(); ++I) {
+			CursorMesh->SetMaterial(I, Material);
+		}
+	}
+}
+
+
+
+void ABaseCharacter::ResetCursorMesh() {
+	CursorMesh->SetVisibility(false, true);
+	CursorMesh->SetStaticMesh(nullptr);
+	CursorMesh->SetRelativeScale3D(FVector(1));
+}
+
 //==========================================================================================

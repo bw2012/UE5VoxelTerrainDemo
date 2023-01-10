@@ -44,6 +44,16 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	TSubclassOf<AActor> EffectActorWood;
 
+
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	UMaterialInstance* CursorMaterial;
+
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	UStaticMesh* Sphere;
+
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	UStaticMesh* Cube;
+
 	void OnAltAction(const FHitResult& Hit, ABaseCharacter* Owner);
 
 	bool OnTracePlayerActionPoint(const FHitResult& Res, ABaseCharacter* Owner);

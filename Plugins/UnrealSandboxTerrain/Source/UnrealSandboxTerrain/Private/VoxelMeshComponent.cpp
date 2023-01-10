@@ -421,10 +421,6 @@ public:
 				const FBoxSphereBounds& ProxyBounds = GetBounds();
 				int32 LodIndex = ComputeLodIndexByScreenSize(View, ProxyBounds.Origin);
 
-				if (LodIndex == 0) {
-					//DrawBox(Collector, ViewIndex, FLinearColor::Red);
-				}
-
 				if (LodIndex > 0) {
 					// draw transition patches
 					for (auto i = 0; i < 6; i++) {

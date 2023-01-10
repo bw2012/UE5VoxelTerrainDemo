@@ -173,6 +173,8 @@ public:
 
 	bool OnContainerDropCheck(int32 SlotId, FName ContainerName, const ASandboxObject* Obj) const override;
 
+	void SetCursorMesh(UStaticMesh* Mesh, const FVector& Location, const FRotator& Rotation, const FVector& Scale);
+
 protected:
 
 	void OnFinishInitialLoad();

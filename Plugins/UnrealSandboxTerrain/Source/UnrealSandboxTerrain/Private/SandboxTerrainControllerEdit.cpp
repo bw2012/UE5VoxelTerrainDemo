@@ -382,7 +382,7 @@ void ASandboxTerrainController::FillTerrainRound(const FVector& Origin, float Ex
 // Edit Terrain
 //======================================================================================================================================================================
 
-void ASandboxTerrainController::RemoveInstanceAtMesh(UHierarchicalInstancedStaticMeshComponent* InstancedMeshComp, int32 ItemIndex) {
+void ASandboxTerrainController::RemoveInstanceAtMesh(UInstancedStaticMeshComponent* InstancedMeshComp, int32 ItemIndex) {
 	InstancedMeshComp->RemoveInstance(ItemIndex);
 	TArray<USceneComponent*> Parents;
 	InstancedMeshComp->GetParentComponents(Parents);
@@ -409,7 +409,11 @@ void ASandboxTerrainController::PerformTerrainChange(H Handler) {
 
 	double Start = FPlatformTime::Seconds();
 
-	bool bIsOverlap = GetWorld()->OverlapMultiByChannel(Result, Handler.Origin, FQuat(), ECC_Visibility, FCollisionShape::MakeSphere(Handler.Extend * 1.5f)); // ECC_Visibility
+	const float R = Handler.Extend;
+
+	//DrawDebugSphere(GetWorld(), Handler.Origin, R, 20, FColor(255, 255, 255, 100), false, 5);
+
+	bool bIsOverlap = GetWorld()->OverlapMultiByChannel(Result, Handler.Origin, FQuat(), ECC_Visibility, FCollisionShape::MakeSphere(R)); // ECC_Visibility
 	double End = FPlatformTime::Seconds();
 	double Time = (End - Start) * 1000;
 	UE_LOG(LogSandboxTerrain, Log, TEXT("Trace terrain -> %f ms"), Time);
@@ -417,7 +421,7 @@ void ASandboxTerrainController::PerformTerrainChange(H Handler) {
 	if (bIsOverlap) {
 		for (FOverlapResult& Overlap : Result) {
 			if (Cast<ASandboxTerrainController>(Overlap.GetActor())) {
-				UHierarchicalInstancedStaticMeshComponent* InstancedMesh = Cast<UHierarchicalInstancedStaticMeshComponent>(Overlap.GetComponent());
+				UTerrainInstancedStaticMesh* InstancedMesh = Cast<UTerrainInstancedStaticMesh>(Overlap.GetComponent());
 				if (InstancedMesh) {
 					//UE_LOG(LogSandboxTerrain, Warning, TEXT("InstancedMesh: %s -> %d"), *InstancedMesh->GetName(), Overlap.ItemIndex);
 					//FTransform Transform;
@@ -434,17 +438,18 @@ void ASandboxTerrainController::PerformTerrainChange(H Handler) {
 	}
 
 	// UE5 bad collision performance workaround
+	//DrawDebugSphere(GetWorld(), Handler.Origin, Handler.Extend, 20, FColor(255, 255, 255, 100), false, 5);
 	PerformEachZone(Handler.Origin, Handler.Extend, [&](TVoxelIndex ZoneIndex, FVector Origin, TVoxelDataInfoPtr VoxelDataInfo) {
 		UTerrainZoneComponent* Zone = GetZoneByVectorIndex(ZoneIndex);
 		if (Zone) {
 			TArray<USceneComponent*> Childs;
 			Zone->GetChildrenComponents(true, Childs);
 			for (USceneComponent* Child : Childs) {
-				UHierarchicalInstancedStaticMeshComponent* InstancedMesh = Cast<UHierarchicalInstancedStaticMeshComponent>(Child);
+				UTerrainInstancedStaticMesh* InstancedMesh = Cast<UTerrainInstancedStaticMesh>(Child);
 				if (InstancedMesh && !InstancedMesh->IsCollisionEnabled()) {
 					TArray<int32> Instances = InstancedMesh->GetInstancesOverlappingSphere(Handler.Origin, Handler.Extend, true);
-					for (int32 Instance : Instances) {
-						InstancedMesh->RemoveInstance(Instance);
+					if (Instances.Num() > 0) {
+						InstancedMesh->RemoveInstances(Instances);
 					}
 				}
 			}
@@ -469,7 +474,8 @@ void ASandboxTerrainController::PerformEachZone(const FVector& Origin, const flo
 				FVector Upper(ZoneOrigin.X + ZoneVolumeSize, ZoneOrigin.Y + ZoneVolumeSize, ZoneOrigin.Z + ZoneVolumeSize);
 				FVector Lower(ZoneOrigin.X - ZoneVolumeSize, ZoneOrigin.Y - ZoneVolumeSize, ZoneOrigin.Z - ZoneVolumeSize);
 
-				if (FMath::SphereAABBIntersection(FSphere(Origin, Extend * 2.f), FBox(Lower, Upper))) {
+				const float R = Extend * 2.f; // TODO check 2.f 
+				if (FMath::SphereAABBIntersection(FSphere(Origin, R), FBox(Lower, Upper))) {
 					Function(ZoneIndex, ZoneOrigin, GetVoxelDataInfo(ZoneIndex));
 				}
 			}

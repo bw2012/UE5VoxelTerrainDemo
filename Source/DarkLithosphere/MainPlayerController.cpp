@@ -841,3 +841,12 @@ void AMainPlayerController::OnWheelDown() {
 		MainPlayerControllerComponent->OnWheelDown();
 	}
 }
+
+void AMainPlayerController::SetCursorMesh(UStaticMesh* Mesh, const FVector& Location, const FRotator& Rotation, const FVector& Scale) {
+	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
+	if (BaseCharacter) {
+		if (CursorMaterial) {
+			BaseCharacter->SetCursorMesh(Mesh, CursorMaterial, Location, Rotation, Scale);
+		}
+	}
+}
