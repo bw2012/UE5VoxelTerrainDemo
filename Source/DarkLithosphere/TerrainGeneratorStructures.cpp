@@ -20,7 +20,7 @@ public:
 
 		const FVector Origin = Generator->GetController()->GetZonePos(OriginIndex);
 
-		const float R = Radius;
+		const float R = Radius + 100;
 
 		const FVector Max(Origin.X + R, Origin.Y + R, Origin.Z + R);
 		const FVector Min(Origin.X - R, Origin.Y - R, Origin.Z - R);
@@ -521,8 +521,11 @@ void UMainTerrainGeneratorComponent::RegionGenerateStructures(int RegionX, int R
 
 
 void UMainTerrainGeneratorComponent::GenerateStructures() {
-	//TStructureGeoSphere TestGeoSphere(TVoxelIndex(0, -2, -1), 1500);
+	//TStructureGeoSphere TestGeoSphere(TVoxelIndex(0, -2, -1), 1400);
 	//TestGeoSphere.MakeMetaData(this);
+
+	//TStructureSphereCavern Test2(TVoxelIndex(0, -2, -1), 1400);
+	//Test2.MakeMetaData(this);
 
 	MakeDungeon1(this);
 
@@ -562,7 +565,7 @@ void UMainTerrainGeneratorComponent::GenerateStructures() {
 			bIsValid = true;
 			FVector Origin(X * 1000, Y * 1000, -10000);
 
-			TStructureSphereCavern Test(TVoxelIndex(X, Y, -10), 1500);
+			TStructureSphereCavern Test(TVoxelIndex(X, Y, -10), 1400);
 			Test.MakeMetaData(this);
 		} while (!bIsValid);
 	}
