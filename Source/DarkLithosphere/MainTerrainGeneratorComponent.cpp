@@ -738,11 +738,7 @@ void UMainTerrainGeneratorComponent::ExtVdGenerationData(TGenerateVdTempItm& VdG
 
 
 TMaterialId UMainTerrainGeneratorComponent::MaterialFuncionExt(const TGenerateVdTempItm* GenItm, const TMaterialId MatId, const FVector& WorldPos) const {
-
 	auto ZoneIndex = GenItm->ZoneIndex;
-	if (ZoneIndex.X == 0 && ZoneIndex.Y == 0 && ZoneIndex.Z == -2) {
-//		UE_LOG(LogTemp, Warning, TEXT("MaterialFuncionExt"));
-	}
 
 	if (GenItm->OreData != nullptr) {
 		const TZoneOreData* ZoneOreData = GenItm->OreData.get();
@@ -752,19 +748,6 @@ TMaterialId UMainTerrainGeneratorComponent::MaterialFuncionExt(const TGenerateVd
 			return ZoneOreData->MatId;
 		}
 	}
-	
-	
-	/*
-	const TZoneOreData* ZoneOreItmPtr = ZoneOreMap.Find(GenItm->ZoneIndex);
-	if (ZoneOreItmPtr) {
-		FVector Tmp = WorldPos - ZoneOreItmPtr->Origin;
-		float R = std::sqrt(Tmp.X * Tmp.X + Tmp.Y * Tmp.Y + Tmp.Z * Tmp.Z);
-
-		if (R < 250) {
-			//return 6;
-		}
-	}
-	*/
 	
 	return MatId;
 }
