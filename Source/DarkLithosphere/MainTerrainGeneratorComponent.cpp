@@ -48,8 +48,8 @@ bool UMainTerrainGeneratorComponent::IsForcedComplexZone(const TVoxelIndex& Zone
 // TODO noise factor
 float UMainTerrainGeneratorComponent::FunctionMakeSphere(const float InDensity, const FVector& V, const FVector& Origin, const float Radius, const float NoiseFactor) const {
 	static const float E = 50;
-	static const float NoiseMediumPositionScale = 0.007f / 2;
-	const float NoiseMediumValueScale = 0.18;
+	static const float NoisePosScale = 0.007f / 2;
+	static const float NoiseScale = 0.18;
 
 	if (InDensity > 0.5f) {
 		const FVector P = V - Origin;
@@ -58,7 +58,7 @@ float UMainTerrainGeneratorComponent::FunctionMakeSphere(const float InDensity, 
 			if (R < Radius - E) {
 				return 0.f;
 			} else {
-				const float N = PerlinNoise(P, NoiseMediumPositionScale, NoiseMediumValueScale);
+				const float N = PerlinNoise(P, NoisePosScale, NoiseScale);
 				float Density = 1 / (1 + exp((Radius - R) / 100)) + N;
 				if (Density < InDensity) {
 					return Density;
