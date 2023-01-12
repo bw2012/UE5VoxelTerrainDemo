@@ -248,7 +248,6 @@ void ASandboxTerrainController::DigTerrainCubeHoleComplex(const FVector& Origin,
 	ASandboxTerrainController::PerformTerrainChange(Zh);
 }
 
-
 void ASandboxTerrainController::DigTerrainCubeHole(const FVector& Origin, float Extend, const FRotator& Rotator) {
 	if (GetNetMode() != NM_Standalone) {
 		UE_LOG(LogSandboxTerrain, Error, TEXT("Not implemented yet"));
@@ -265,27 +264,31 @@ void ASandboxTerrainController::DigTerrainCubeHole(const FVector& Origin, float 
 			bool bIsRotator = !Rotator.IsZero();
 			FBox Box(FVector(-(Extend + 20)), FVector(Extend + 20));
 			vd->forEachWithCache([&](int x, int y, int z) {
-				FVector o = vd->voxelIndexToVector(x, y, z);
-				o += vd->getOrigin();
-				o -= Origin;
-
+				FVector V = vd->voxelIndexToVector(x, y, z) + vd->getOrigin() - Origin;
 				if (bIsRotator) {
-					o = Rotator.RotateVector(o);
+					V = Rotator.RotateVector(V);
 				}
 
-				bool bIsIntersect = FMath::PointBoxIntersection(o, Box);
+				bool bIsIntersect = FMath::PointBoxIntersection(V, Box);
 				if (bIsIntersect) {
+					const float OldDensity = vd->getDensity(x, y, z);
 					unsigned short  MatId = vd->getMaterial(x, y, z);
 					FSandboxTerrainMaterial& Mat = MaterialMapPtr->FindOrAdd(MatId);
 
-					const float DensityXP = 1 / (1 + exp((Extend - o.X) / 10));
-					const float DensityXN = 1 / (1 + exp((-Extend - o.X) / 10));
-					const float DensityYP = 1 / (1 + exp((Extend - o.Y) / 10));
-					const float DensityYN = 1 / (1 + exp((-Extend - o.Y) / 10));
-					const float DensityZP = 1 / (1 + exp((Extend - o.Z) / 10));
-					const float DensityZN = 1 / (1 + exp((-Extend - o.Z) / 10));
-					const float Density = DensityXP * DensityXN * DensityYP * DensityYN * DensityZP * DensityZN;
-					vd->setDensity(x, y, z, Density);
+					const float DensityXP = 1 / (1 + exp((Extend - V.X) / 10));
+					const float DensityXN = 1 / (1 + exp((-Extend - V.X) / 10));
+					const float DensityYP = 1 / (1 + exp((Extend - V.Y) / 10));
+					const float DensityYN = 1 / (1 + exp((-Extend - V.Y) / 10));
+					const float DensityZP = 1 / (1 + exp((Extend - V.Z) / 10));
+					const float DensityZN = 1 / (1 + exp((-Extend - V.Z) / 10));
+
+					const float N = Noise(V) * 10 * 1.05;
+					const float Density = DensityXP * DensityXN * DensityYP * DensityYN * DensityZP * DensityZN + N;
+
+					if (OldDensity > Density) {
+						vd->setDensity(x, y, z, Density);
+					}
+
 					changed = true;
 				}
 			}, USBT_ENABLE_LOD);
@@ -298,6 +301,7 @@ void ASandboxTerrainController::DigTerrainCubeHole(const FVector& Origin, float 
 	Zh.Origin = Origin;
 	Zh.Extend = Extend;
 	Zh.Rotator = Rotator;
+	Zh.Controller = this;
 	ASandboxTerrainController::PerformTerrainChange(Zh);
 }
 

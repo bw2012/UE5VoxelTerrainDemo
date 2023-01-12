@@ -7,18 +7,22 @@
 
 float LodScreenSizeArray[LOD_ARRAY_SIZE];
 
+TAutoConsoleVariable<int32> CVarMainDistance (
+	TEXT("vt.MainDistance"),
+	-1,
+	TEXT("Override voxel terrain view/generation distance (zones)\n")
+	TEXT(" -1 = Off. Use terrain actor settings \n")
+	TEXT(" 0...30 = View and terrain stream distance \n"),
+	ECVF_Scalability);
+
 void FUnrealSandboxTerrainModule::StartupModule() {
-	// This code will execute after your module is loaded into memory; the exact timing is specified in the .uplugin file per-module
-
-	UE_LOG(LogSandboxTerrain, Warning, TEXT("FUnrealSandboxTerrainModule::StartupModule()"));
-
 	float LodRatio = 2.f;
 	float ScreenSize = 1.f;
 	for (auto LodIdx = 0; LodIdx < LOD_ARRAY_SIZE; LodIdx++) {
-		//UE_LOG(LogSandboxTerrain, Warning, TEXT("Lod %d -> %f"), LodIdx, ScreenSize);
 		LodScreenSizeArray[LodIdx] = ScreenSize;
 		ScreenSize /= LodRatio;
 	}
+
 }
 
 void FUnrealSandboxTerrainModule::ShutdownModule() {

@@ -48,8 +48,8 @@ bool UMainTerrainGeneratorComponent::IsForcedComplexZone(const TVoxelIndex& Zone
 // TODO noise factor
 float UMainTerrainGeneratorComponent::FunctionMakeSphere(const float InDensity, const FVector& V, const FVector& Origin, const float Radius, const float NoiseFactor) const {
 	static const float E = 50;
-	static const float NoiseMediumPositionScale = 0.007f / 2;
-	const float NoiseMediumValueScale = 0.18;
+	static const float NoisePosScale = 0.007f / 2;
+	static const float NoiseScale = 0.18;
 
 	if (InDensity > 0.5f) {
 		const FVector P = V - Origin;
@@ -58,7 +58,7 @@ float UMainTerrainGeneratorComponent::FunctionMakeSphere(const float InDensity, 
 			if (R < Radius - E) {
 				return 0.f;
 			} else {
-				const float N = PerlinNoise(P, NoiseMediumPositionScale, NoiseMediumValueScale);
+				const float N = PerlinNoise(P, NoisePosScale, NoiseScale);
 				float Density = 1 / (1 + exp((Radius - R) / 100)) + N;
 				if (Density < InDensity) {
 					return Density;
@@ -738,11 +738,7 @@ void UMainTerrainGeneratorComponent::ExtVdGenerationData(TGenerateVdTempItm& VdG
 
 
 TMaterialId UMainTerrainGeneratorComponent::MaterialFuncionExt(const TGenerateVdTempItm* GenItm, const TMaterialId MatId, const FVector& WorldPos) const {
-
 	auto ZoneIndex = GenItm->ZoneIndex;
-	if (ZoneIndex.X == 0 && ZoneIndex.Y == 0 && ZoneIndex.Z == -2) {
-//		UE_LOG(LogTemp, Warning, TEXT("MaterialFuncionExt"));
-	}
 
 	if (GenItm->OreData != nullptr) {
 		const TZoneOreData* ZoneOreData = GenItm->OreData.get();
@@ -752,19 +748,6 @@ TMaterialId UMainTerrainGeneratorComponent::MaterialFuncionExt(const TGenerateVd
 			return ZoneOreData->MatId;
 		}
 	}
-	
-	
-	/*
-	const TZoneOreData* ZoneOreItmPtr = ZoneOreMap.Find(GenItm->ZoneIndex);
-	if (ZoneOreItmPtr) {
-		FVector Tmp = WorldPos - ZoneOreItmPtr->Origin;
-		float R = std::sqrt(Tmp.X * Tmp.X + Tmp.Y * Tmp.Y + Tmp.Z * Tmp.Z);
-
-		if (R < 250) {
-			//return 6;
-		}
-	}
-	*/
 	
 	return MatId;
 }

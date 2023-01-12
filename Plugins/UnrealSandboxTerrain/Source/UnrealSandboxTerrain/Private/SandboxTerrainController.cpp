@@ -33,6 +33,8 @@ bool IsGameShutdown() {
 }
 // ====================================
 
+extern TAutoConsoleVariable<int32> CVarMainDistance;
+
 
 //======================================================================================================================================================================
 // Terrain Controller
@@ -91,7 +93,8 @@ extern float LodScreenSizeArray[LOD_ARRAY_SIZE];
 
 void ASandboxTerrainController::BeginPlay() {
 	Super::BeginPlay();
-	UE_LOG(LogSandboxTerrain, Log, TEXT("ASandboxTerrainController::BeginPlay()"));
+
+	LoadConsoleVars();
 
 #if !UE_BUILD_SHIPPING && !UE_BUILD_TEST
 	UE_LOG(LogSandboxTerrain, Warning, TEXT("Debug mode"));
@@ -191,6 +194,8 @@ void ASandboxTerrainController::EndPlay(const EEndPlayReason::Type EndPlayReason
 
 void ASandboxTerrainController::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
+
+	LoadConsoleVars();
 
 	double ConvTime = 0;
 	while (ConvTime < ConveyorMaxTime) {
@@ -1016,4 +1021,11 @@ void ASandboxTerrainController::UE51MaterialIssueWorkaround() {
 	double End = FPlatformTime::Seconds();
 	double Time = (End - Start) * 1000;
 	UE_LOG(LogSandboxTerrain, Log, TEXT("UE51MaterialIssueWorkaround --> %f ms"), Time);
+}
+
+void ASandboxTerrainController::LoadConsoleVars() {
+	int32 MainDistanceOverride = CVarMainDistance.GetValueOnGameThread();
+	if (MainDistanceOverride > 0) {
+		ActiveAreaSize = MainDistanceOverride;
+	}
 }
