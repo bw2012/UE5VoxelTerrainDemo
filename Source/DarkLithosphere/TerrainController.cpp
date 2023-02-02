@@ -14,7 +14,6 @@
 
 UTerrainGeneratorComponent* ATerrainController::NewTerrainGenerator() {
 	UMainTerrainGeneratorComponent* Generator = NewObject<UMainTerrainGeneratorComponent>(this, TEXT("TerrainGenerator"));
-	UE_LOG(LogTemp, Warning, TEXT("NewTerrainGenerator -> %s"), *Generator->GetClass()->GetName());
 	return Generator;
 }
 

@@ -642,7 +642,26 @@ void UMainTerrainGeneratorComponent::GenerateZoneSandboxObject(const TVoxelIndex
 
 float UMainTerrainGeneratorComponent::GroundLevelFunction(const TVoxelIndex& Index, const FVector& WorldPos) const {
 	const TVoxelIndex ZoneIndex(Index.X, Index.Y, 0);
-	float Lvl = Super::GroundLevelFunction(ZoneIndex, WorldPos);
+	const FVector& V = WorldPos;
+
+	const float scale1 = 0.001f; // small
+	const float scale2 = 0.0004f; // medium
+	const float scale3 = 0.00009f; // big
+	const float scale4 = scale3 / 3; // huge
+
+	const float MaxR = 10000000 / 2;
+	float R = FMath::Sqrt(V.X * V.X + V.Y * V.Y);
+	float T = 1 - exp(-pow(R, 2) / (MaxR * 100));
+
+	float noise_small = PerlinNoise(V.X * scale1, V.Y * scale1, 0) * 0.5f; // 0.5
+	float noise_medium = PerlinNoise(V.X * scale2, V.Y * scale2, 0) * 5.f;
+	float noise_big = PerlinNoise(V.X * scale3, V.Y * scale3, 0) * 10.f;
+	float noise_huge = PerlinNoise(V.X * scale4, V.Y * scale4, 0) * 50.f;
+	const float gl = noise_small + noise_medium + noise_big + noise_huge * T;
+
+	float Lvl = (gl * 100) + 205.f;
+
+	//float Lvl = Super::GroundLevelFunction(ZoneIndex, WorldPos);
 
 	if (LandscapeStructureMap.find(ZoneIndex) != LandscapeStructureMap.end()) {
 		const auto& StructureList = LandscapeStructureMap.at(ZoneIndex);
@@ -736,7 +755,6 @@ void UMainTerrainGeneratorComponent::ExtVdGenerationData(TGenerateVdTempItm& VdG
 	}
 }
 
-
 TMaterialId UMainTerrainGeneratorComponent::MaterialFuncionExt(const TGenerateVdTempItm* GenItm, const TMaterialId MatId, const FVector& WorldPos) const {
 	auto ZoneIndex = GenItm->ZoneIndex;
 
@@ -751,4 +769,3 @@ TMaterialId UMainTerrainGeneratorComponent::MaterialFuncionExt(const TGenerateVd
 	
 	return MatId;
 }
-
