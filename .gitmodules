@@ -1,0 +1,3 @@
+[submodule "Plugins/UnrealSandboxTerrain"]
+	path = Plugins/UnrealSandboxTerrain
+	url = https://github.com/bw2012/UnrealSandboxTerrain.git

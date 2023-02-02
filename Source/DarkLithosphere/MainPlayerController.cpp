@@ -179,15 +179,15 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 
 		FindOrCreateCharacter();
 
-		bool bDebug = TerrainController && !TerrainController->bGenerateOnlySmallSpawnPoint;
-		if (bDebug) {
+		bool bDebugOff = TerrainController && !TerrainController->IsDebugModeOn(); 
+		if (bDebugOff) {
 			BlockGameInput();
 		}
 
 		if (GetNetMode() == NM_Client || GetNetMode() == NM_Standalone) {
 			AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
 			if (MainHud) {
-				if (bDebug) {
+				if (bDebugOff) {
 					MainHud->OpenWidget(TEXT("loading_terrain"));
 				}
 			}

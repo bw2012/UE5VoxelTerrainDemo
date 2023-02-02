@@ -74,12 +74,23 @@ void AEnvironmentController::UpdatePlayerPosition(FVector Pos, APlayerController
 	Super::UpdatePlayerPosition(Pos, Controller);
 
 	if (TerrainController) {
-		float Level = TerrainController->GetGroundLevel(Pos);
+		const float Level = TerrainController->GetGroundLevel(Pos);
+		const float P = Pos.Z - Level;
 		PlayerZLevel = (Pos.Z - Level) / 1000;
-		//UE_LOG(LogTemp, Log, TEXT("TEST -> %f"), PlayerZLevel);
+		UE_LOG(LogTemp, Log, TEXT("TEST -> %f"), P);
+
+		if (AmbientSound) {
+			float Value = 0;
+			if (P < -1000) {
+				Value = P / -3000;
+				if (Value > 1) {
+					Value = 1;
+				}
+			}
+			AmbientSound->GetAudioComponent()->SetFloatParameter(TEXT("Z"), Value);
+		}
 
 		if (PlayerZLevel < -2.5) { 
-			//UE_LOG(LogTemp, Log, TEXT("SetCaveMode = true"));
 			if (!IsCaveMode()) {
 				// bad UE5 GlobalDistanceField performance workaround
 				Controller->ConsoleCommand("r.AOGlobalDistanceField 0", true); 
@@ -87,7 +98,6 @@ void AEnvironmentController::UpdatePlayerPosition(FVector Pos, APlayerController
 
 			SetCaveMode(true);
 		} else {
-			//UE_LOG(LogTemp, Log, TEXT("SetCaveMode = false"));
 			if (IsCaveMode()) {
 				Controller->ConsoleCommand("r.AOGlobalDistanceField 1", true);
 			}

@@ -15,10 +15,7 @@ ASandboxEnvironment::ASandboxEnvironment() {
 	PlayerPos = FVector::ZeroVector;
 	InitialSkyIntensity = 0.1;
 	CaveSkyLightIntensity = 1;
-	//CaveSkyLightRatio = 1;
-
 	CaveFogDensity = 0.5;
-	//CaveFogOpacity = 0.5;
 }
 
 float GetSkyLightIntensity(ASkyLight* SkyLight) {
@@ -45,9 +42,7 @@ void ASandboxEnvironment::BeginPlay() {
 
 	if (GlobalFog) {
 		UExponentialHeightFogComponent* FogCmoponent = GlobalFog->GetComponent();
-		//InitialFogOpacity = FogCmoponent->FogMaxOpacity;
 		InitialFogDensity = FogCmoponent->FogDensity;
-		//FogColor = FogCmoponent->FogInscatteringColor;
 	}
 
 	if (SkyLight) {
@@ -68,30 +63,11 @@ void SetSkyLightIntensity(ASkyLight* SkyLight, float Intensity) {
 		USkyLightComponent* SkyLightComponent = SkyLight->GetLightComponent();
 		if (SkyLightComponent) {
 			SkyLightComponent->Intensity = Intensity;
-			//SkyLightComponent->RecaptureSky();
+			//SkyLightComponent->RecaptureSky(); // ue4 only
 			SkyLightComponent->MarkRenderStateDirty();
 		}
 	}
 }
-
-/*
-void SetFogParams(AExponentialHeightFog* GlobalFog, float Density) {
-	if (GlobalFog) {
-		UExponentialHeightFogComponent* FogCmoponent = GlobalFog->GetComponent();
-		FogCmoponent->SetFogDensity(Density);
-		//FogCmoponent->SetFogMaxOpacity(Opacity);
-	}
-}
-
-void SetFogParams(AExponentialHeightFog* GlobalFog, float Density, float Opacity, FLinearColor Color) {
-	if (GlobalFog) {
-		UExponentialHeightFogComponent* FogCmoponent = GlobalFog->GetComponent();
-		FogCmoponent->SetFogDensity(Density);
-		FogCmoponent->SetFogMaxOpacity(Opacity);
-		FogCmoponent->SetFogInscatteringColor(Color);
-	}
-}
-*/
 
 float ASandboxEnvironment::ClcHeightFactor() const {
 	return 1.f;
@@ -273,17 +249,6 @@ void ASandboxEnvironment::UpdatePlayerPosition(FVector Pos, APlayerController* C
 
 	if (GlobalFog) {
 		GlobalFog->SetActorLocation(Pos);
-	}
-
-	if (AmbientSound) {
-		float Value = 0;
-		if (Pos.Z < -1000) {
-			Value = Pos.Z / -3000;
-			if (Value > 1) {
-				Value = 1;
-			}
-		}
-		AmbientSound->GetAudioComponent()->SetFloatParameter(TEXT("Z"), Value);
 	}
 }
 
