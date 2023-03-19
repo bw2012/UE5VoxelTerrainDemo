@@ -46,6 +46,8 @@ struct FCraftRecipeData {
 	TArray<FCraftPartData> Parts;
 };
 
+class FDummyPawnHelper; // linux
+
 
 UCLASS()
 class DARKLITHOSPHERE_API AMainPlayerController : public ASandboxPlayerController

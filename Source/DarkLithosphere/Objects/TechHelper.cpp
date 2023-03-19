@@ -16,6 +16,10 @@ void ATechHelper::BeginPlay() {
 void ATechHelper::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
+/*
+
+linux
+
 	float TotalPower = 0;
 	for (auto& Itm : ElectricityProducersMap) {
 		auto ActorWeakPtr = Itm.Value;
@@ -35,6 +39,8 @@ void ATechHelper::Tick(float DeltaTime) {
 			C->InElectricPower(TotalPower);
 		}
 	}
+*/
+
 }
 
 void ATechHelper::RegisterElectricityProducer(AActor* Actor) {

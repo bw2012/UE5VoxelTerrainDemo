@@ -23,3 +23,10 @@ Saved
 /Content
 .vsconfig
 /enc_temp_folder
+
+
+.ignore
+.vscode/
+DarkLithosphere.code-workspace
+Makefile
+

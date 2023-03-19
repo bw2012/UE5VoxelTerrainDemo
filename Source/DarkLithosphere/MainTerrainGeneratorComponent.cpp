@@ -23,7 +23,8 @@ void UMainTerrainGeneratorComponent::BeginPlay() {
 static const float CaveLayerZ = 20000.f; //18000
 
 bool IsCaveLayerZone(int Z) {
-	static constexpr int const ZoneCaveLevel = -(CaveLayerZ / 1000);
+	//static constexpr  linux
+	const int ZoneCaveLevel = -(CaveLayerZ / 1000);
 	return Z <= ZoneCaveLevel + 1 && Z >= ZoneCaveLevel - 1;
 }
 

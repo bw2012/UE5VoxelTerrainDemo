@@ -77,7 +77,7 @@ void AEnvironmentController::UpdatePlayerPosition(FVector Pos, APlayerController
 		const float Level = TerrainController->GetGroundLevel(Pos);
 		const float P = Pos.Z - Level;
 		PlayerZLevel = (Pos.Z - Level) / 1000;
-		UE_LOG(LogTemp, Log, TEXT("TEST -> %f"), P);
+		//UE_LOG(LogTemp, Log, TEXT("TEST -> %f"), P);
 
 		if (AmbientSound) {
 			float Value = 0;
