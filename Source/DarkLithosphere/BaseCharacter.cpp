@@ -28,7 +28,7 @@ ABaseCharacter::ABaseCharacter(const FObjectInitializer& ObjectInitializer) : Su
 
 	CursorToWorld->DecalSize = FVector(50.f, 100.f, 100.f);
 	CursorToWorld->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f).Quaternion());
-
+	CursorToWorld->SetVisibility(false);
 }
 
 // Called when the game starts or when spawned
@@ -416,8 +416,6 @@ void ABaseCharacter::SetCursorMesh(UStaticMesh* NewCursorMesh, UMaterialInstance
 		}
 	}
 }
-
-
 
 void ABaseCharacter::ResetCursorMesh() {
 	CursorMesh->SetVisibility(false, true);

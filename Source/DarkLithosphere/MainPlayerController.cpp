@@ -152,7 +152,9 @@ void AMainPlayerController::FindOrCreateCharacterInternal() {
 					}
 
 					MainCharacter = Cast<ABaseCharacter>(NewCharacter);
-					MainCharacter->RebuildEquipment();
+					if (NewCharacter) {
+						MainCharacter->RebuildEquipment();
+					}
 				}
 			}
 		}
@@ -177,7 +179,17 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 		FString PlayerUid = PlayerInfo.PlayerUid;
 		RegisterSandboxPlayerUid(PlayerUid);
 
-		FindOrCreateCharacter();
+		ADummyPawn* DummyPawn = Cast<ADummyPawn>(GetPawn());
+		if (DummyPawn) {
+			if (GetLevelController()) {
+				auto Map = GetLevelController()->GetTempCharacterMap();
+				if (Map.Contains(PlayerUid)) {
+					DummyPawn->SetActorLocation(Map[PlayerUid].Location);
+				}
+			}
+		}
+
+		//FindOrCreateCharacter();
 
 		bool bDebugOff = TerrainController && !TerrainController->IsDebugModeOn(); 
 		if (bDebugOff) {
@@ -288,7 +300,7 @@ void AMainPlayerController::OnFinishInitialLoad() {
 		FPlatformProcess::Sleep(0.5f);
 
 		AsyncTask(ENamedThreads::GameThread, [&] {
-			//FindOrCreateCharacter(); 
+			FindOrCreateCharacter(); 
 			UnblockGameInput();
 			if (GetNetMode() == NM_Client || GetNetMode() == NM_Standalone) {
 				AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());

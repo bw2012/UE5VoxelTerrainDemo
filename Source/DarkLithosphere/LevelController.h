@@ -58,6 +58,8 @@ public:
 
 	const TArray<FTempCharacterLoadInfo>& GetTempCharacterList() const;
 
+	const TMap<FString, FTempCharacterLoadInfo>& GetTempCharacterMap() const;
+
 	void SpawnTempCharacterList();
 
 	ACharacter* SpawnCharacterByTypeId(const int TypeId, const FVector& Location, const FRotator& Rotation);
@@ -82,4 +84,5 @@ private:
 
 	TArray<FTempCharacterLoadInfo> TempCharacterList;
 	
+	TMap<FString, FTempCharacterLoadInfo> TempCharacterMap;
 };

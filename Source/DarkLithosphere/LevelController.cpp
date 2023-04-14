@@ -237,6 +237,7 @@ void ALevelController::LoadLevelJsonExt(TSharedPtr<FJsonObject> JsonParsed) {
 				TSubclassOf<ABaseCharacter> BaseCharacterSubclass = (TSubclassOf<ABaseCharacter>)CharacterMap->CharacterTypeMap[TempCharacterInfo.TypeId];
 				if (BaseCharacterSubclass) {
 					TempCharacterList.Add(TempCharacterInfo);
+					TempCharacterMap.Add(TempCharacterInfo.SandboxPlayerUid, TempCharacterInfo);
 				}
 			}
 		}
@@ -275,6 +276,10 @@ void ALevelController::SpawnTempCharacterList() {
 
 const TArray<FTempCharacterLoadInfo>& ALevelController::GetTempCharacterList() const {
 	return TempCharacterList;
+}
+
+const TMap<FString, FTempCharacterLoadInfo>& ALevelController::GetTempCharacterMap() const {
+	return TempCharacterMap;
 }
 
 ACharacter* ALevelController::SpawnCharacterByTypeId(const int TypeId, const FVector& Location, const FRotator& Rotation) {
