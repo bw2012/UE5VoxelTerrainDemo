@@ -13,6 +13,9 @@ class ADarkLithosphereGameMode : public AGameModeBase
 
 public:
 	ADarkLithosphereGameMode();
+
+	virtual void PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) override;
+
 };
 
 

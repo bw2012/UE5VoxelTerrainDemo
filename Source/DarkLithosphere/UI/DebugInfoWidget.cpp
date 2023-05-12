@@ -65,6 +65,21 @@ FString UDebugInfoWidget::SandboxDebugInfo3Text() {
 	return FString(TEXT(""));
 }
 
+FString UDebugInfoWidget::SandboxDebugInfo4Text() {
+	if (!IsDatailedInfo()) {
+		//return FString(TEXT(""));
+	}
+
+	if (TerrainController) {
+		FTerrainDebugInfo Memstat = TerrainController->GetMemstat();
+
+		FString Res = FString::Printf(TEXT("offsync: %d"), Memstat.OutOfSync);
+		return Res;
+	}
+
+	return FString(TEXT(""));
+}
+
 FString UDebugInfoWidget::SandboxPlayerCrdText() {
 	if (!IsDatailedInfo()) {
 		return FString(TEXT(""));

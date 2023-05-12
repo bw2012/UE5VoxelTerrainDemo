@@ -6,6 +6,8 @@
 #include "TerrainZoneComponent.h"
 #include "MainTerrainGeneratorComponent.h"
 #include "NotificationHelper.h"
+#include "TerrainZoneComponent.h"
+#include "MainGameInstance.h"
 
 
 //======================================================================================================================================================================
@@ -60,14 +62,15 @@ void ATerrainController::BeginPlayServer() {
 	Super::BeginPlayServer();
 
 	if (LevelController) {
-		LevelController->SpawnTempCharacterList();
+		// потом доделаю
+		// disconnect == character sleep
+		//LevelController->SpawnTempCharacterList();
 	}
 }
 
 void ATerrainController::BeginPlayClient() {
 	Super::BeginPlayClient();
 }
-
 
 void ATerrainController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 	Super::EndPlay(EndPlayReason);
@@ -95,16 +98,38 @@ void ATerrainController::ShutdownAndSaveMap() {
 	UE_LOG(LogTemp, Log, TEXT("Start save terrain manual"));
 	auto SaveFunction = [&]() {
 		std::function<void(uint32, uint32)> OnProgress = [=](uint32 Processed, uint32 Total) {
+			UE_LOG(LogTemp, Log, TEXT("Save terrain: %d / %d "), Processed, Total);
+
 			if (Processed == Total) {
-				AsyncTask(ENamedThreads::GameThread, [=]() { OnProgressSaveTerrain(1.f); });
+				//AsyncTask(ENamedThreads::GameThread, [=]() { OnProgressSaveTerrain(1.f); });
+
+				UMainGameInstance* GI = Cast<UMainGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
+				if (GI) {
+					GI->SetProgressString(TEXT("100%"));
+					GI->SetProgress(1.f);
+				}
+
 			} else if (Processed % 10 == 0) {
 				float Progress = (float)Processed / (float)Total;
-				//UE_LOG(LogTemp, Log, TEXT("Save terrain: %d / %d - %f%%"), Processed, Total, Progress);
-				AsyncTask(ENamedThreads::GameThread, [=]() { OnProgressSaveTerrain(Progress); });
+				UE_LOG(LogTemp, Log, TEXT("Save terrain: %d / %d - %f%%"), Processed, Total, Progress);
+
+				UMainGameInstance* GI = Cast<UMainGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
+				if (GI) {
+					GI->SetProgressString(FString::Printf(TEXT("%.0f%%"), Progress * 100));
+					GI->SetProgress(Progress);
+				}
+
+				//AsyncTask(ENamedThreads::GameThread, [=]() { OnProgressSaveTerrain(Progress); });
 			}
 		};
 
 		std::function<void(uint32)> OnFinish = [=](uint32 Processed) {
+			UMainGameInstance* GI = Cast<UMainGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
+			if (GI) {
+				GI->SetProgressString(TEXT("100%"));
+				GI->SetProgress(1.f);
+			}
+
 			AsyncTask(ENamedThreads::GameThread, [=]() { OnFinishSaveTerrain(); });
 		};
 
@@ -115,18 +140,32 @@ void ATerrainController::ShutdownAndSaveMap() {
 }
 
 void ATerrainController::OnStartBackgroundSaveTerrain() {
+	TNotificationHelper::SendNotification("start_background_save");
+
 	AsyncTask(ENamedThreads::GameThread, [=]() { 
 		EventStartBackgroundSave();
 	});
 }
 
 void ATerrainController::OnFinishBackgroundSaveTerrain() {
+	UMainGameInstance* GI = Cast<UMainGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
+	if (GI) {
+		GI->SetBkgProgressString(TEXT(""));
+	}
+
+	TNotificationHelper::SendNotification("finish_background_save");
+
 	AsyncTask(ENamedThreads::GameThread, [=]() {
 		EventFinishBackgroundSave();
 	});
 }
 
 void ATerrainController::OnProgressBackgroundSaveTerrain(float Progress) {
+	UMainGameInstance* GI = Cast<UMainGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
+	if (GI)	{
+		GI->SetBkgProgressString(FString::Printf(TEXT("%.0f%%"), Progress * 100));
+	}
+
 	AsyncTask(ENamedThreads::GameThread, [=]() {
 		EventProgressBackgroundSave(Progress);
 	});
@@ -306,11 +345,26 @@ TArray<FVector> ATerrainController::Test(FVector PlayerLocation, float Radius) {
 
 	double End = FPlatformTime::Seconds();
 	double Time = (End - Start) * 1000;
-	//UE_LOG(LogSandboxTerrain, Log, TEXT("UnloadFarZones --> %f ms"), Time);
 
 	return Result;
 }
 
 void ATerrainController::OnFinishInitialLoad() {
 	TNotificationHelper::SendNotification("finish_init_map_load");
+}
+
+void ATerrainController::OnDestroyInstanceMesh(UTerrainInstancedStaticMesh* InstancedMeshComp, int32 ItemIndex) {
+	//UE_LOG(LogTemp, Log, TEXT("OnDestroyInstanceMesh --> %d"), InstancedMeshComp->MeshTypeId);
+
+	auto MeshTypeId = InstancedMeshComp->MeshTypeId;
+	if (MeshTypeId == 909) {
+		if (TestActor) {
+			FTransform Transform;
+			InstancedMeshComp->GetInstanceTransform(ItemIndex, Transform, true);
+
+			UE_LOG(LogTemp, Log, TEXT("%f %f %f "), Transform.GetLocation().X, Transform.GetLocation().Y, Transform.GetLocation().Z);
+
+			GetWorld()->SpawnActor(TestActor->ClassDefaultObject->GetClass(), &Transform);
+		}
+	}
 }

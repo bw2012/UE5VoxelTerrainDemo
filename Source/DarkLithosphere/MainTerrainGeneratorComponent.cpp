@@ -510,6 +510,14 @@ void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxel
 		}
 	}
 
+
+	// rocks
+	if (ZoneType == TZoneGenerationType::Landscape) {
+		if (ZoneIndex.X == 0 && ZoneIndex.Y == 0) {
+			GenerateRandomInstMesh(ZoneInstanceMeshMap, 909, Rnd, ZoneIndex, Vd, 5);
+		}
+	}
+
 	// green crystals
 	if (ZoneIndex.Z <= -8 && ZoneIndex.Z > -20) {
 		FVector Pos(0);
@@ -614,6 +622,11 @@ void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxel
 		GenerateRandomInstMesh(ZoneInstanceMeshMap, 902, Rnd, ZoneIndex, Vd, 1, 5); // logs
 		GenerateRandomInstMesh(ZoneInstanceMeshMap, 903, Rnd, ZoneIndex, Vd);	// stump
 	}
+
+	if (CheckExtZoneParam(ZoneIndex, "blue_crystalls", "Y")) {
+		GenerateRandomInstMesh(ZoneInstanceMeshMap, 909, Rnd, ZoneIndex, Vd, 5, 10);
+	}
+
 }
 
 void UMainTerrainGeneratorComponent::OnBatchGenerationFinished() {
@@ -740,6 +753,11 @@ void UMainTerrainGeneratorComponent::ExtVdGenerationData(TGenerateVdTempItm& VdG
 			float Probability = Rnd.FRandRange(0.f, 1.f);
 			if (Probability < 0.025) {
 				ZoneExtData.FindOrAdd(ZoneIndex).Add("wood_logs", "Y");
+
+
+				if (Rnd.FRandRange(0.f, 1.f) < 0.3) {
+					ZoneExtData.FindOrAdd(ZoneIndex).Add("blue_crystalls", "Y");
+				}
 			}
 
 			Probability = Rnd.FRandRange(0.f, 1.f);

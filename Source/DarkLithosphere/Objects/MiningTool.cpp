@@ -135,15 +135,15 @@ void AMiningTool::OnAltAction(const FHitResult& Hit, ABaseCharacter* PlayerChara
 		if (LevelController) {
 			FVector Location = Construction->GetActorLocation();
 
-			LevelController->RemoveSandboxObject(Construction);
+			//LevelController->RemoveSandboxObject(Construction);
 
 			if (EffectActorWood) {
 				FRotator Rotation(0, 0, 0);
-				World->SpawnActor(EffectActorWood, &Location, &Rotation);
+				//World->SpawnActor(EffectActorWood, &Location, &Rotation);
 			}
 
 			if (HitWoodSound) {
-				UGameplayStatics::PlaySoundAtLocation(World, this->HitWoodSound, Location, FRotator(0));
+				//UGameplayStatics::PlaySoundAtLocation(World, this->HitWoodSound, Location, FRotator(0));
 			}
 		}
 	}
@@ -160,7 +160,7 @@ void AMiningTool::OnAltAction(const FHitResult& Hit, ABaseCharacter* PlayerChara
 			if (MatId > 0) {
 				FSandboxTerrainMaterial MatInfo;
 				if (Terrain->GetTerrainMaterialInfoById(MatId, MatInfo)) {
-					PlaySound(MatInfo, Hit.Location, World);
+					//PlaySound(MatInfo, Hit.Location, World);
 				}
 			}
 
@@ -170,32 +170,33 @@ void AMiningTool::OnAltAction(const FHitResult& Hit, ABaseCharacter* PlayerChara
 				const FVector P = Hit.Normal * Radius * F + Hit.Location;
 				//DrawDebugSphere(World, P, Radius, 24, FColor(255, 255, 255, 100));
 
-				Terrain->DigTerrainRoundHole(P, Radius);
+				MainController->ServerRpcDigTerrain1(P, Radius);
 
 				FVector Location = Hit.Normal * 50 + Hit.Location;
 
 				if (EffectActor && bShowEffects) {
 					FRotator Rotation(0, 0, 0);
-					World->SpawnActor(EffectActor, &Location, &Rotation);
+					//World->SpawnActor(EffectActor, &Location, &Rotation);
 				}
 
 				if (LevelController && bSpawnStones) {
-					SpawnStones(LevelController, Location, MatId, 1, 2);
+					//SpawnStones(LevelController, Location, MatId, 1, 2);
 				}
 			}
 
 			if (DiggingToolMode == 1) {
 				FVector Location = SnapToGrid(Hit.Location, Dig_Snap_To_Grid);
-				Terrain->DigTerrainCubeHole(Location, Dig_Cube_Size);
+
+				MainController->ServerRpcDigTerrain2(Location, Dig_Cube_Size);
 
 				if (EffectActor && bShowEffects) {
 					FVector Location2 = Hit.Normal * 50 + Location;
 					FRotator Rotation(0, 0, 0);
-					World->SpawnActor(EffectActor, &Location2, &Rotation);
+					//World->SpawnActor(EffectActor, &Location2, &Rotation);
 				}
 
 				if (LevelController && bSpawnStones) {
-					SpawnStones(LevelController, Hit.Location, MatId, 2, 4);
+					//SpawnStones(LevelController, Hit.Location, MatId, 2, 4);
 				}
 			}
 		}
@@ -207,19 +208,24 @@ void AMiningTool::OnAltAction(const FHitResult& Hit, ABaseCharacter* PlayerChara
 
 				if (EffectActorWood) {
 					FRotator Rotation(0, 0, 0);
-					World->SpawnActor(EffectActorWood, &Location, &Rotation);
+					//World->SpawnActor(EffectActorWood, &Location, &Rotation);
 				}
 
 				if (HitWoodSound) {
-					UGameplayStatics::PlaySoundAtLocation(World, this->HitWoodSound, Location, FRotator(0));
+					//UGameplayStatics::PlaySoundAtLocation(World, this->HitWoodSound, Location, FRotator(0));
 				}
 
 				FTransform InstanceTransform;
 				TerrainInstMesh->GetInstanceTransform(Hit.Item, InstanceTransform, true);
-				Terrain->RemoveInstanceAtMesh(TerrainInstMesh, Hit.Item);
+
+				TVoxelIndex Index = Terrain->GetZoneIndex(TerrainInstMesh->GetComponentLocation());
+				MainController->ServerRpcDestroyTerrainMesh(Index.X, Index.Y, Index.Z, TerrainInstMesh->MeshTypeId, TerrainInstMesh->MeshVariantId, Hit.Item);
+
+				//TODO network
+				//Terrain->RemoveInstanceAtMesh(TerrainInstMesh, Hit.Item);
 
 				if (LevelController) {
-					SpawnWoods(LevelController, InstanceTransform.GetLocation());
+					//SpawnWoods(LevelController, InstanceTransform.GetLocation());
 				}
 			}
 		}

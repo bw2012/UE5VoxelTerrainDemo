@@ -316,7 +316,7 @@ void ABaseCharacter::OnFinishSound() {
 //==========================================================================================
 
 void ABaseCharacter::RebuildEquipment() {
-	//UE_LOG(LogTemp, Warning, TEXT("RebuildEquipment"));
+	//UE_LOG(LogTemp, Warning, TEXT("RpcRebuildEquipment"));
 
 	//reset foot heel offset
 	LeftFootRotator = DefaultFootRotator; 

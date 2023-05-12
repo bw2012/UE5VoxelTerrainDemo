@@ -188,6 +188,7 @@ ASandboxObject* UContainerComponent::GetSandboxObject(int SlotId) {
 }
 
 void UContainerComponent::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(UContainerComponent, Content);
 }
 

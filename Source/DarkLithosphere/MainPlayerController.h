@@ -155,13 +155,22 @@ public:
 	virtual void OnWheelDown();
 
 	UFUNCTION(Server, Reliable)
-	void FindOrCreateCharacter();
+	void ServerRpcFindOrCreateCharacter();
 
 	UFUNCTION(Server, Reliable)
-	void RegisterSandboxPlayerUid(const FString& NewSandboxPlayerUid);
+	void ServerRpcRegisterSandboxPlayer(const FString& NewSandboxPlayerUid, const FString& ClientSoftwareVersion);
 
 	UFUNCTION(Server, Reliable)
-	void RebuildEquipment();
+	void ServerRpcRebuildEquipment();
+
+	UFUNCTION(Server, Reliable)
+	void ServerRpcDigTerrain1(FVector Origin, float Radius);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRpcDigTerrain2(FVector Origin, float Extend);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRpcDestroyTerrainMesh(int32 X, int32 Y, int32 Z, uint32 TypeId, uint32 VariantId, int32 Item);
 
 	FHitResult TracePlayerActionPoint();
 
@@ -181,15 +190,15 @@ protected:
 
 	void OnFinishInitialLoad();
 
+	void OnStartBackgroundSave();
+
+	void OnFinishBackgroundSave();
+
 	void FindOrCreateCharacterInternal();
 
 	virtual void PlayerTick(float DeltaTime) override;
 
 	virtual void SetupInputComponent() override;
-
-	//void PerformAction();
-
-	//virtual void OnTracePlayerActionPoint(const FHitResult& Res) override;
 
 	virtual void OnSelectActionObject(AActor* Actor) override;
 
@@ -249,8 +258,6 @@ private:
 	std::shared_ptr<FDummyPawnHelper> DummyPawnHelperPtr;
 
 	APawn* SelectedPawn;
-
-	//APawn* PickedPawn;
 
 	ASandboxObject* SelectedObj;
 

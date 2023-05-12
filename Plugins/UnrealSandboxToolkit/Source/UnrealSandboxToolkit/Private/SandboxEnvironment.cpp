@@ -3,9 +3,11 @@
 #include "SandboxEnvironment.h"
 #include <ctime>
 #include "SunPos.h"
+#include "Net/UnrealNetwork.h"
 
 
 ASandboxEnvironment::ASandboxEnvironment() {
+	bReplicates = true;
 	PrimaryActorTick.bCanEverTick = true;
 	TimeSpeed = 10.f;
 	bEnableDayNightCycle = true;
@@ -285,4 +287,9 @@ FString ASandboxEnvironment::GetCurrentTimeAsString() {
 
 	FString Str = FString::Printf(TEXT("%02d:%02d"), CurrentTime.hours, CurrentTime.minutes);
 	return Str;
+}
+
+void ASandboxEnvironment::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ASandboxEnvironment, RealTimeOffset);
 }

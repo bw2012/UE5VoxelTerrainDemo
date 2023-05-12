@@ -8,6 +8,7 @@
 
 
 struct TVdGenBlock;
+class UTerrainInstancedStaticMesh;
 
 typedef int(*PCudaGetInfo)();
 typedef int(*PCudaGenerateVd)(TVdGenBlock*);
@@ -40,6 +41,11 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
 	ALevelController* LevelController;
+
+	// TODO remove
+	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
+	TSubclassOf<AActor> TestActor;
+	// test
 
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On Progress Save Voxel Terrain"))
 	void OnProgressSaveTerrain(float Progress);
@@ -110,6 +116,8 @@ protected:
 	virtual void OnProgressBackgroundSaveTerrain(float Progress) override;
 
 	virtual void OnFinishInitialLoad();
+
+	virtual void OnDestroyInstanceMesh(UTerrainInstancedStaticMesh* InstancedMeshComp, int32 ItemIndex) override;
 
 private:
 

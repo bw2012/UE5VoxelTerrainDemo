@@ -101,6 +101,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox DayNight cycle")
 	float Lng;
 
+	UPROPERTY(Replicated)
+	double RealTimeOffset = 0;
+
 	float ClcGameTime(float RealServerTime);
 
 	TSandboxGameTime ClcLocalGameTime(float RealServerTime);
@@ -139,8 +142,6 @@ private:
 	float InitialFogOpacity;
 
 	float InitialFogDensity;
-
-	double RealTimeOffset = 0;
 
 	void PerformDayNightCycle();
 

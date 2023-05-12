@@ -2,11 +2,14 @@
 
 #include "MainPlayerController.h"
 #include "TerrainController.h"
+#include "TerrainZoneComponent.h"
 #include "SandboxCharacter.h"
 #include "VoxelIndex.h"
 #include "MainHUD.h"
 #include "SpawnHelper.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
+
+#include "Globals.h"
 
 #include "SandboxObject.h"
 #include "BaseCharacter.h"
@@ -42,6 +45,8 @@ void AMainPlayerController::BeginPlay() {
 
 	bFirstStart = true;
 	TNotificationHelper::AddObserver(TCHAR_TO_UTF8(*GetName()), "finish_init_map_load", std::bind(&AMainPlayerController::OnFinishInitialLoad, this));
+	TNotificationHelper::AddObserver(TCHAR_TO_UTF8(*GetName()), "start_background_save", std::bind(&AMainPlayerController::OnStartBackgroundSave, this));
+	TNotificationHelper::AddObserver(TCHAR_TO_UTF8(*GetName()), "finish_background_save", std::bind(&AMainPlayerController::OnFinishBackgroundSave, this));
 
 	//warning C4996 : 'UWorld::IsClient' : Use GetNetMode or IsNetMode instead for more accurate results.Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.
 	if (GetNetMode() == NM_Client) {
@@ -110,19 +115,27 @@ APawn* PawnUnderCursor(const FHitResult& Hit) {
 	return nullptr;
 }
 
-void AMainPlayerController::RebuildEquipment_Implementation() {
+void AMainPlayerController::ServerRpcRebuildEquipment_Implementation() {
 	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
 	if (BaseCharacter) {
 		BaseCharacter->RebuildEquipment();
 	}
 }
 
-void AMainPlayerController::RegisterSandboxPlayerUid_Implementation(const FString& NewPlayerUid){
+void AMainPlayerController::ServerRpcRegisterSandboxPlayer_Implementation(const FString& NewPlayerUid, const FString& ClientSoftwareVersion) {
+	if (ClientSoftwareVersion != GetVersionString()) {
+		UE_LOG(LogTemp, Warning, TEXT("player %s has wrong software version %s"), *NewPlayerUid, *ClientSoftwareVersion);
+
+		AGameSession* Session = GetWorld()->GetAuthGameMode()->GameSession;
+		Session->KickPlayer(this, FText::FromString(TEXT("outdated client software")));
+		return;
+	}
+
 	PlayerInfo.PlayerUid = NewPlayerUid;
 }
 
 void AMainPlayerController::FindOrCreateCharacterInternal() {
-	FString Text = TEXT("Spawn player character: ") + PlayerInfo.PlayerUid;
+	FString Text = TEXT("Spawn player: ") + PlayerInfo.PlayerUid;
 	//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::White, Text);
 
 	ABaseCharacter* MainCharacter = nullptr;
@@ -166,7 +179,7 @@ void AMainPlayerController::FindOrCreateCharacterInternal() {
 	}
 }
 
-void AMainPlayerController::FindOrCreateCharacter_Implementation() {
+void AMainPlayerController::ServerRpcFindOrCreateCharacter_Implementation() {
 	FindOrCreateCharacterInternal();
 }
 
@@ -177,7 +190,7 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 		bFirstStart = false;
 
 		FString PlayerUid = PlayerInfo.PlayerUid;
-		RegisterSandboxPlayerUid(PlayerUid);
+		ServerRpcRegisterSandboxPlayer(PlayerUid, GetVersionString());
 
 		ADummyPawn* DummyPawn = Cast<ADummyPawn>(GetPawn());
 		if (DummyPawn) {
@@ -189,19 +202,17 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 			}
 		}
 
-		//FindOrCreateCharacter();
+		//RpcFindOrCreateCharacter();
 
 		bool bDebugOff = TerrainController && !TerrainController->IsDebugModeOn(); 
 		if (bDebugOff) {
 			BlockGameInput();
 		}
 
-		if (GetNetMode() == NM_Client || GetNetMode() == NM_Standalone) {
-			AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
-			if (MainHud) {
-				if (bDebugOff) {
-					MainHud->OpenWidget(TEXT("loading_terrain"));
-				}
+		AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
+		if (MainHud) {
+			if (bDebugOff) {
+				MainHud->OpenWidget(TEXT("loading_terrain"));
 			}
 		}
 	}
@@ -294,19 +305,38 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 		}
 	}
 }
+void AMainPlayerController::OnStartBackgroundSave() {
+	AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
+	if (MainHud) {
+		MainHud->OpenWidget(TEXT("background_save"));
+	}
+}
+
+void AMainPlayerController::OnFinishBackgroundSave() {
+	AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
+	if (MainHud) {
+		MainHud->CloseWidget(TEXT("background_save"));
+	}
+}
 
 void AMainPlayerController::OnFinishInitialLoad() {
 	AsyncTask(ENamedThreads::AnyBackgroundThreadNormalTask, [&] {
 		FPlatformProcess::Sleep(0.5f);
 
 		AsyncTask(ENamedThreads::GameThread, [&] {
-			FindOrCreateCharacter(); 
+			ServerRpcFindOrCreateCharacter();
 			UnblockGameInput();
-			if (GetNetMode() == NM_Client || GetNetMode() == NM_Standalone) {
+
+
+			if (GetNetMode() != NM_DedicatedServer) {
+				bShowMouseCursor = false;
+				UWidgetBlueprintLibrary::SetInputMode_GameOnly(this);
+
 				AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
 				if (MainHud) {
 					MainHud->CloseWidget(TEXT("loading_terrain"));
 					MainHud->OpenWidget(TEXT("debug_info"));
+					MainHud->OpenWidget(TEXT("crosshair"));
 				}
 			}
 		});
@@ -408,7 +438,7 @@ void AMainPlayerController::OnAltActionPressed() {
 		MainPlayerControllerComponent->PerformAltAction();
 
 		if (GetNetMode() == NM_Client) {
-			RebuildEquipment();
+			ServerRpcRebuildEquipment();
 		}
 	}
 }
@@ -860,5 +890,24 @@ void AMainPlayerController::SetCursorMesh(UStaticMesh* Mesh, const FVector& Loca
 		if (CursorMaterial) {
 			BaseCharacter->SetCursorMesh(Mesh, CursorMaterial, Location, Rotation, Scale);
 		}
+	}
+}
+
+void AMainPlayerController::ServerRpcDigTerrain1_Implementation(FVector Origin, float Radius) {
+	if (TerrainController) {
+		TerrainController->DigTerrainRoundHole(Origin, Radius);
+	}
+}
+
+void AMainPlayerController::ServerRpcDigTerrain2_Implementation(FVector Origin, float Extend) {
+	if (TerrainController) {
+		TerrainController->DigTerrainCubeHole(Origin, Extend);
+	}
+}
+
+void AMainPlayerController::ServerRpcDestroyTerrainMesh_Implementation(int32 X, int32 Y, int32 Z, uint32 TypeId, uint32 VariantId, int32 Item) {
+	if (TerrainController) {
+		TVoxelIndex ZoneIndex(X, Y, Z);
+		TerrainController->RemoveInstanceAtMesh(ZoneIndex, TypeId, VariantId, Item);
 	}
 }

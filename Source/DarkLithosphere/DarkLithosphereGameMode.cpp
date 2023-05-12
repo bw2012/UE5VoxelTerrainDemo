@@ -15,3 +15,8 @@ ADarkLithosphereGameMode::ADarkLithosphereGameMode()
 	}
 	*/
 }
+
+
+void ADarkLithosphereGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage) {
+	Super::PreLogin(Options, Address, UniqueId, ErrorMessage);
+}
