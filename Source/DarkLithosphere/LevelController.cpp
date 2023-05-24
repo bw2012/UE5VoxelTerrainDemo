@@ -305,6 +305,18 @@ ASandboxObject* ALevelController::SpawnSandboxObject(const int ClassId, const FT
 	return Obj;
 }
 
+void ALevelController::SpawnEffect(const int32 EffectId, const FTransform& Transform) {
+	if (GetNetMode() != NM_Client) {
+		if (ObjectMap->Effects.Contains(EffectId)) {
+			TSubclassOf<ASandboxEffect> Effect = ObjectMap->Effects[EffectId];
+			if (Effect) {
+				UClass* SpawnClass = Effect->ClassDefaultObject->GetClass();
+				GetWorld()->SpawnActor(SpawnClass, &Transform);
+			}
+		}
+	}
+}
+
 void ALevelController::SpawnPreparedObjects(const TArray<FSandboxObjectDescriptor>& ObjDescList) {
 	if (TerrainController) {
 		for (const auto& ObjDesc : ObjDescList) {

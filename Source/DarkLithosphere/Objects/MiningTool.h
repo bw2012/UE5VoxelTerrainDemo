@@ -21,31 +21,6 @@ public:
 	AMiningTool();
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	float Strength;
-
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	USoundCue* DiggingRockSound;
-
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	USoundCue* DiggingSoilSound;
-
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	USoundCue* HitWoodSound;
-
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	bool bShowEffects;
-
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	bool bSpawnStones;
-
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	TSubclassOf<AActor> EffectActor;
-
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	TSubclassOf<AActor> EffectActorWood;
-
-
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	UMaterialInstance* CursorMaterial;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")

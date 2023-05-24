@@ -228,7 +228,7 @@ bool ATerrainController::OnZoneSoftUnload(const TVoxelIndex& ZoneIndex) {
 			FSandboxObjectDescriptor SandboxObjectDescriptor = FSandboxObjectDescriptor::MakeObjDescriptor(Object);
 			ZonePtr->Stash.Add(Name, SandboxObjectDescriptor);
 
-			UE_LOG(LogTemp, Warning, TEXT("DestroyObject -> %s"), *Name);
+			//UE_LOG(LogTemp, Warning, TEXT("DestroyObject -> %s"), *Name);
 			Object->Destroy();
 		}
 
@@ -273,7 +273,6 @@ void ATerrainController::AddToStash(const FSandboxObjectDescriptor& ObjDesc) {
 	ZoneObjects.Stash.Add(Str, ObjDesc);
 }
 
-
 void ATerrainController::UnRegisterSandboxObject(ASandboxObject* SandboxObject) {
 	if (SandboxObject) {
 		const FVector ObjectPos = SandboxObject->GetActorLocation();
@@ -281,6 +280,14 @@ void ATerrainController::UnRegisterSandboxObject(ASandboxObject* SandboxObject) 
 		auto& ZoneObjects = ObjectsByZoneMap.FindOrAdd(ZoneIndex);
 		FString ObjectName = SandboxObject->GetName();
 		ZoneObjects.WorldObjectMap.Remove(ObjectName);
+	}
+}
+
+void ATerrainController::DestroySandboxObjectByName(const TVoxelIndex& ZoneIndex, const FString& Name) {
+	auto& ZoneObjects = ObjectsByZoneMap.FindOrAdd(ZoneIndex);
+
+	if (ZoneObjects.WorldObjectMap.Contains(Name)) {
+		LevelController->RemoveSandboxObject(ZoneObjects.WorldObjectMap[Name]);		
 	}
 }
 
@@ -322,33 +329,6 @@ void ATerrainController::OnFinishLoadZone(const TVoxelIndex& Index) {
 	SpawnFromStash(Index);
 }
 
-
-TArray<FVector> ATerrainController::Test(FVector PlayerLocation, float Radius) {
-	UE_LOG(LogTemp, Log, TEXT("ATerrainController::Test"));
-	TArray<FVector> Result;
-
-	double Start = FPlatformTime::Seconds();
-
-	TArray<UTerrainZoneComponent*> Components;
-	GetComponents<UTerrainZoneComponent>(Components);
-	for (UTerrainZoneComponent* ZoneComponent : Components) {
-		FVector ZonePos = ZoneComponent->GetComponentLocation();
-		const TVoxelIndex ZoneIndex = GetZoneIndex(ZonePos);
-		float ZoneDistance = FVector::Distance(ZonePos, PlayerLocation);
-		if (ZoneDistance > Radius) {
-			if (ZoneIndex.Z > -1) { // TODO landscape only
-				//DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
-				Result.Add(ZonePos);
-			}
-		} 
-	}
-
-	double End = FPlatformTime::Seconds();
-	double Time = (End - Start) * 1000;
-
-	return Result;
-}
-
 void ATerrainController::OnFinishInitialLoad() {
 	TNotificationHelper::SendNotification("finish_init_map_load");
 }
@@ -361,8 +341,6 @@ void ATerrainController::OnDestroyInstanceMesh(UTerrainInstancedStaticMesh* Inst
 		if (TestActor) {
 			FTransform Transform;
 			InstancedMeshComp->GetInstanceTransform(ItemIndex, Transform, true);
-
-			UE_LOG(LogTemp, Log, TEXT("%f %f %f "), Transform.GetLocation().X, Transform.GetLocation().Y, Transform.GetLocation().Z);
 
 			GetWorld()->SpawnActor(TestActor->ClassDefaultObject->GetClass(), &Transform);
 		}

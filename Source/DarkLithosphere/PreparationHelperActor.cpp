@@ -3,7 +3,9 @@
 #include "HttpModule.h"
 #include "Interfaces/IHttpRequest.h"
 #include "Interfaces/IHttpResponse.h"
-
+#include "MainGameInstance.h"
+#include "MainHUD.h"
+#include "Runtime/UMG/Public/Blueprint/UserWidget.h"
 
 #include "Globals.h"
 #include "SandboxPlayerController.h" // player info
@@ -65,6 +67,21 @@ void APreparationHelperActor::CheckUpdates() {
 
 void APreparationHelperActor::BeginPlay() {
 	Super::BeginPlay();
+
+	UMainGameInstance* GI = Cast<UMainGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
+
+	if (GI) {
+		if (GI->IsFatalMessage()) {
+
+			if (FatalMessageWidget) {
+				UUserWidget* Wigdet = CreateWidget<UUserWidget>(GetWorld(), FatalMessageWidget);
+				if (Wigdet) {
+					Wigdet->AddToViewport(999);
+				}
+			}
+		}
+	}
+
 
 	// TODO finish
 	FString MapName = TEXT("World 0");

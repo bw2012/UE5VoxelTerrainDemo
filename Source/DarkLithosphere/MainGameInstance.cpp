@@ -24,3 +24,21 @@ float UMainGameInstance::GetProgress() {
 void UMainGameInstance::SetProgress(float Val) {
 	Progress = Val;
 }
+
+void UMainGameInstance::SetMessageString(FString Title, FString Str) {
+	MessageString = Str;
+	MessageTitle = Title;
+	bFatalMessage = true;
+}
+
+FString UMainGameInstance::GetMessageString() {
+	return MessageString;
+}
+
+bool UMainGameInstance::IsFatalMessage() {
+	return bFatalMessage;
+}
+
+FString UMainGameInstance::GetMessageTitle() {
+	return MessageTitle;
+}

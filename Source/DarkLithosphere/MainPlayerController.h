@@ -164,13 +164,15 @@ public:
 	void ServerRpcRebuildEquipment();
 
 	UFUNCTION(Server, Reliable)
-	void ServerRpcDigTerrain1(FVector Origin, float Radius);
+	void ServerRpcDestroyTerrainMesh(int32 X, int32 Y, int32 Z, uint32 TypeId, uint32 VariantId, int32 Item, FVector Origin);
 
 	UFUNCTION(Server, Reliable)
-	void ServerRpcDigTerrain2(FVector Origin, float Extend);
+	void ServerRpcDigTerrain(int32 Type, FVector DigOrigin, FVector Origin, float Size, int32 X, int32 Y, int32 Z, int32 FaceIndex);
 
 	UFUNCTION(Server, Reliable)
-	void ServerRpcDestroyTerrainMesh(int32 X, int32 Y, int32 Z, uint32 TypeId, uint32 VariantId, int32 Item);
+	void ServerRpcDestroyActor(int32 X, int32 Y, int32 Z, const FString& Name, FVector Origin);
+
+	void ClientWasKicked_Implementation(const FText& KickReason);
 
 	FHitResult TracePlayerActionPoint();
 

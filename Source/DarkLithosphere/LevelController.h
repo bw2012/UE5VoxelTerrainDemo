@@ -68,6 +68,8 @@ public:
 
 	virtual bool RemoveSandboxObject(ASandboxObject* Obj) override;
 
+	void SpawnEffect(const int32 EffectId, const FTransform& Transform);
+
 protected:
 
 	void ContainerToJson(const UContainerComponent* Containre, TSharedRef<TJsonWriter<TCHAR>> JsonWriter);

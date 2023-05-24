@@ -30,12 +30,28 @@ public:
 
 	void SetProgress(float Val);
 
+	void SetMessageString(FString Title, FString Str);
+
+	UFUNCTION(BlueprintCallable, Category = "Sandbox")
+	FString GetMessageString();
+
+	UFUNCTION(BlueprintCallable, Category = "Sandbox")
+	FString GetMessageTitle();
+
+	bool IsFatalMessage();
+
 private:
 
 	FString BkgProgressString;
 
 	FString ProgressString;
 
+	FString MessageTitle;
+
+	FString MessageString;
+
 	float Progress;
+
+	bool bFatalMessage = false;
 
 };

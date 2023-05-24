@@ -65,6 +65,8 @@ void UMainPlayerControllerComponent::OnPlayerTick() {
 		if (Delta >= 0.25) {
 			Timestamp = T;
 			bRepeatingAction = true;
+			//UE_LOG(LogTemp, Warning, TEXT("Timestamp2 %f"), Timestamp);
+			//UE_LOG(LogTemp, Warning, TEXT("Delta %f"), Delta);
 		}
 	}
 
@@ -183,6 +185,7 @@ void UMainPlayerControllerComponent::PerformAltAction() {
 		if (MiningTool) {
 			bAltActionPressed = true;
 			Timestamp = FPlatformTime::Seconds();
+			//UE_LOG(LogTemp, Warning, TEXT("Timestamp1 %f"), Timestamp);
 
 			FHitResult Hit = MainController->TracePlayerActionPoint();
 			if (Hit.bBlockingHit) {

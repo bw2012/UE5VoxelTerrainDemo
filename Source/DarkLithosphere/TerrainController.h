@@ -83,6 +83,8 @@ public:
 
 	ASandboxObject* SpawnSandboxObject(const int32 ClassId, const FTransform& Transform);
 
+	void DestroySandboxObjectByName(const TVoxelIndex& ZoneIndex, const FString& Name);
+
 	const TMap<TVoxelIndex, FSandboxObjectsByZone>& GetObjectsByZoneMap() const;
 
 	void AddToStash(const FSandboxObjectDescriptor& ObjDesc);

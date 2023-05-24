@@ -4,6 +4,7 @@
 
 #include "Engine.h"
 #include "SandboxObject.h"
+#include "SandboxEffect.h"
 #include "Runtime/Engine/Classes/Engine/DataAsset.h"
 #include "SandboxObjectMap.generated.h"
 
@@ -30,4 +31,8 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
 	TMap<uint64, FSandboxStaticData> StaticData;
+
+	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
+	TMap<int32, TSubclassOf<ASandboxEffect>> Effects;
+
 };

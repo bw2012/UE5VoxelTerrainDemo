@@ -18,6 +18,9 @@ protected:
 
 public:	
 
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	TSubclassOf<class UUserWidget> FatalMessageWidget;
+
 	virtual void Tick(float DeltaTime) override;
 
 private:

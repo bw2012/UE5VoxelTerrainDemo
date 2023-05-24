@@ -23,6 +23,7 @@ void AEnvironmentController::Tick(float DeltaTime) {
 			}
 
 			if (TerrainController) {
+				/*
 				TArray<FVector> R = TerrainController->Test(FVector(0), 12000.f);
 
 				if (R.Num() > 0) {
@@ -44,6 +45,7 @@ void AEnvironmentController::Tick(float DeltaTime) {
 						}
 					}
 				}
+				*/
 			}
 
 		} else {

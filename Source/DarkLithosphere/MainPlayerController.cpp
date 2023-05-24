@@ -10,6 +10,7 @@
 #include "Blueprint/WidgetBlueprintLibrary.h"
 
 #include "Globals.h"
+#include "MainGameInstance.h"
 
 #include "SandboxObject.h"
 #include "BaseCharacter.h"
@@ -127,11 +128,22 @@ void AMainPlayerController::ServerRpcRegisterSandboxPlayer_Implementation(const 
 		UE_LOG(LogTemp, Warning, TEXT("player %s has wrong software version %s"), *NewPlayerUid, *ClientSoftwareVersion);
 
 		AGameSession* Session = GetWorld()->GetAuthGameMode()->GameSession;
-		Session->KickPlayer(this, FText::FromString(TEXT("outdated client software")));
+		Session->KickPlayer(this, FText::FromString(TEXT("Outdated client")));
 		return;
 	}
 
 	PlayerInfo.PlayerUid = NewPlayerUid;
+}
+
+void AMainPlayerController::ClientWasKicked_Implementation(const FText& KickReason) {
+	FString Msg = KickReason.ToString();
+	UE_LOG(LogTemp, Warning, TEXT("KickReason: %s"), *Msg);
+
+	UMainGameInstance* GI = Cast<UMainGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
+	if (GI) {
+		GI->SetMessageString(TEXT("Kicked by server:"), Msg);
+	}
+
 }
 
 void AMainPlayerController::FindOrCreateCharacterInternal() {
@@ -893,21 +905,60 @@ void AMainPlayerController::SetCursorMesh(UStaticMesh* Mesh, const FVector& Loca
 	}
 }
 
-void AMainPlayerController::ServerRpcDigTerrain1_Implementation(FVector Origin, float Radius) {
-	if (TerrainController) {
-		TerrainController->DigTerrainRoundHole(Origin, Radius);
-	}
-}
-
-void AMainPlayerController::ServerRpcDigTerrain2_Implementation(FVector Origin, float Extend) {
-	if (TerrainController) {
-		TerrainController->DigTerrainCubeHole(Origin, Extend);
-	}
-}
-
-void AMainPlayerController::ServerRpcDestroyTerrainMesh_Implementation(int32 X, int32 Y, int32 Z, uint32 TypeId, uint32 VariantId, int32 Item) {
+void AMainPlayerController::ServerRpcDigTerrain_Implementation(int32 Type, FVector DigOrigin, FVector SpawnOrigin, float Size, int32 X, int32 Y, int32 Z, int32 FaceIndex) {
 	if (TerrainController) {
 		TVoxelIndex ZoneIndex(X, Y, Z);
-		TerrainController->RemoveInstanceAtMesh(ZoneIndex, TypeId, VariantId, Item);
+		UVoxelMeshComponent* ZoneMesh = TerrainController->GetVoxelMeshComponent(ZoneIndex);
+
+		if (!ZoneMesh) {
+			return;
+		}
+
+		uint16 MatId = ZoneMesh->GetMaterialIdFromCollisionFaceIndex(FaceIndex);
+		//UE_LOG(LogTemp, Warning, TEXT("MatId -> %d"), MatId);
+
+		if (Type == 0) {
+			TerrainController->DigTerrainRoundHole(DigOrigin, Size);	
+		}
+
+		if (Type == 1) {
+			TerrainController->DigTerrainCubeHole(DigOrigin, Size);
+		}
+
+		FTransform Transform(SpawnOrigin);
+		if (MatId > 0) {
+			FSandboxTerrainMaterial MatInfo;
+			TerrainController->GetTerrainMaterialInfoById(MatId, MatInfo);
+			if (TerrainController->GetTerrainMaterialInfoById(MatId, MatInfo)) {
+				if (MatInfo.Type == FSandboxTerrainMaterialType::Rock) {
+					((ALevelController*)LevelController)->SpawnEffect(1, Transform);
+				}
+
+				if (MatInfo.Type == FSandboxTerrainMaterialType::Soil) {
+					((ALevelController*)LevelController)->SpawnEffect(4, Transform);
+				}
+			}
+
+		} else {
+			((ALevelController*)LevelController)->SpawnEffect(1, Transform);
+		}
+
+	}
+}
+
+void AMainPlayerController::ServerRpcDestroyTerrainMesh_Implementation(int32 X, int32 Y, int32 Z, uint32 TypeId, uint32 VariantId, int32 Item, FVector Origin) {
+	if (TerrainController) {
+		TerrainController->RemoveInstanceAtMesh(TVoxelIndex(X, Y, Z), TypeId, VariantId, Item);
+
+		((ALevelController*)LevelController)->SpawnEffect(2, FTransform(Origin));
+	}
+}
+
+void AMainPlayerController::ServerRpcDestroyActor_Implementation(int32 X, int32 Y, int32 Z, const FString& Name, FVector Origin) {
+	if (TerrainController) {
+		TVoxelIndex ZoneIndex(X, Y, Z);
+		TerrainController->DestroySandboxObjectByName(TVoxelIndex(X, Y, Z), Name);
+
+		((ALevelController*)LevelController)->SpawnEffect(2, FTransform(Origin));
 	}
 }
