@@ -204,6 +204,8 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 		FString PlayerUid = PlayerInfo.PlayerUid;
 		ServerRpcRegisterSandboxPlayer(PlayerUid, GetVersionString());
 
+		TNotificationHelper::SendNotification("finish_register_player");
+
 		ADummyPawn* DummyPawn = Cast<ADummyPawn>(GetPawn());
 		if (DummyPawn) {
 			if (GetLevelController()) {

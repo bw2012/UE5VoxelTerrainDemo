@@ -121,6 +121,8 @@ protected:
 
 	virtual void OnDestroyInstanceMesh(UTerrainInstancedStaticMesh* InstancedMeshComp, int32 ItemIndex) override;
 
+	virtual void OnFinishRegisterPlayer();
+
 private:
 
 	TMap<TVoxelIndex, FSandboxObjectsByZone> ObjectsByZoneMap;

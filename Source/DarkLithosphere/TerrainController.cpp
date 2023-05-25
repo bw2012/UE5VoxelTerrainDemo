@@ -8,6 +8,7 @@
 #include "NotificationHelper.h"
 #include "TerrainZoneComponent.h"
 #include "MainGameInstance.h"
+#include "NotificationHelper.h"
 
 
 //======================================================================================================================================================================
@@ -28,6 +29,8 @@ void ATerrainController::OnOverlapActorTerrainEdit(const FOverlapResult& Overlap
 
 void ATerrainController::BeginPlay() {
 	Super::BeginPlay();
+
+	TNotificationHelper::AddObserver(TCHAR_TO_UTF8(*GetName()), "finish_register_player", std::bind(&ATerrainController::OnFinishRegisterPlayer, this));
 }
 
 void ATerrainController::BeginPlayServer() {
@@ -75,9 +78,11 @@ void ATerrainController::BeginPlayClient() {
 void ATerrainController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 	Super::EndPlay(EndPlayReason);
 
+	TNotificationHelper::RemoveObserver(TCHAR_TO_UTF8(*GetName()));
+
 	if (GetNetMode() == NM_DedicatedServer) {
 		if (LevelController) {
-			UE_LOG(LogTemp, Warning, TEXT("Save dedicated server lavel"));
+			UE_LOG(LogTemp, Warning, TEXT("Save dedicated server level"));
 			LevelController->SaveMap();
 		}
 	}
@@ -344,5 +349,11 @@ void ATerrainController::OnDestroyInstanceMesh(UTerrainInstancedStaticMesh* Inst
 
 			GetWorld()->SpawnActor(TestActor->ClassDefaultObject->GetClass(), &Transform);
 		}
+	}
+}
+
+void ATerrainController::OnFinishRegisterPlayer() {
+	if (GetNetMode() == NM_Client) {
+		ClientConnect();
 	}
 }
