@@ -475,11 +475,6 @@ void UMainTerrainGeneratorComponent::GenerateRandomInstMesh(TInstanceMeshTypeMap
 	}
 }
 
-void UMainTerrainGeneratorComponent::GenerateRandomInstMeshAsFoliage(TInstanceMeshTypeMap& ZoneInstanceMeshMap, uint32 MeshTypeId, FRandomStream& Rnd, const TVoxelIndex& ZoneIndex, const TVoxelData* Vd, int Min, int Max) const {
-
-}
-
-
 void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxelIndex& ZoneIndex, const TZoneGenerationType ZoneType, const TVoxelData* Vd, TInstanceMeshTypeMap& ZoneInstanceMeshMap) const {
 	if (Vd->getDensityFillState() != TVoxelDataFillState::MIXED) {
 		return;
@@ -537,8 +532,6 @@ void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxel
 	}
 
 	if (IsCaveLayerZone(ZoneIndex.Z)) {
-		//GenerateRandomInstMeshAsFoliage(ZoneInstanceMeshMap, 999, Rnd, ZoneIndex, Vd, 2, 5);
-
 		const int Min = 10;
 		const int Max = 30;
 		const int MeshTypeId = 999;

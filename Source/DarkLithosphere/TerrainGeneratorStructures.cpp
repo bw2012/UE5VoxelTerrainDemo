@@ -566,7 +566,7 @@ void UMainTerrainGeneratorComponent::GenerateStructures() {
 			FVector Origin(X * 1000, Y * 1000, -10000);
 
 			TStructureSphereCavern Test(TVoxelIndex(X, Y, -10), 1400);
-			Test.MakeMetaData(this);
+			//Test.MakeMetaData(this);
 		} while (!bIsValid);
 	}
 }
