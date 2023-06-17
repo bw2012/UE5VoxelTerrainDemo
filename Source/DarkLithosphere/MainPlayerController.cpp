@@ -978,3 +978,18 @@ void AMainPlayerController::ServerRpcDestroyActor_Implementation(int32 X, int32 
 		((ALevelController*)LevelController)->SpawnEffect(2, FTransform(Origin));
 	}
 }
+
+void AMainPlayerController::SandboxAddItem(int ItemId) {
+	UE_LOG(LogTemp, Warning, TEXT("Add item id = %d"), ItemId);
+	ServerRpcAddItem(ItemId);
+}
+
+void AMainPlayerController::ServerRpcAddItem_Implementation(int ItemId) {
+	UContainerComponent* Inventory = GetInventory();
+	if (Inventory && LevelController) {
+		ASandboxObject* Obj = LevelController->GetSandboxObject(ItemId);
+		if (Obj) {
+			Inventory->AddObject(Obj);
+		}
+	}
+}

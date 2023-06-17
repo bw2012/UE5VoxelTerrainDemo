@@ -51,6 +51,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	UCharacterMap* CharacterMap;
 
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	TSubclassOf <AActor> Waypoint;
+
 	UFUNCTION(BlueprintCallable, Category = "Sandbox")
 	void SaveMap();
 
@@ -75,6 +78,8 @@ public:
 	void SpawnEffect(const int32 EffectId, const FTransform& Transform);
 
 protected:
+
+	virtual void BeginPlay() override;
 
 	void ContainerToJson(const UContainerComponent* Containre, TSharedRef<TJsonWriter<TCHAR>> JsonWriter);
 

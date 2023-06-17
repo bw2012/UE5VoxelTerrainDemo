@@ -435,3 +435,23 @@ void ALevelController::PrepareObjectForSave(TArray<FSandboxObjectDescriptor>& Ob
 void ALevelController::CharacterConservation(const FCharacterLoadInfo& TempCharacterInfo) {
 	ConservedCharacterMap.Add(TempCharacterInfo.SandboxPlayerUid, TempCharacterInfo);
 }
+
+void ALevelController::BeginPlay() {
+	Super::BeginPlay();
+
+
+	if(TerrainController){
+		TVoxelIndex RegionIndex(-1, 0, 0);
+		TVoxelIndex RegionOrigin = TerrainController->ClcRegionOrigin(RegionIndex);
+
+		FVector Pos = TerrainController->GetZonePos(RegionOrigin);
+
+		if (Waypoint) {
+			FRotator Rot(0);
+			UClass* SpawnClass = Waypoint->ClassDefaultObject->GetClass();
+			//GetWorld()->SpawnActor(SpawnClass, &Pos, &Rot);
+		}
+	
+	}
+
+}

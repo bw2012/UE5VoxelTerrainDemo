@@ -107,8 +107,33 @@ FString UDebugInfoWidget::SandboxZoneIndexText() {
 	if (MainPlayerController) {
 		APawn* Pawn = MainPlayerController->GetPawn();
 		if (Pawn) {
-			FVector Pos = Pawn->GetActorLocation();
-			return FString::Printf(TEXT("%d, %d, %d"), (int)(Pos.X / 1000), (int)(Pos.Y / 1000), (int)(Pos.Z / 1000));
+			if (TerrainController) {
+				FVector Pos = Pawn->GetActorLocation();
+				TVoxelIndex Tmp = TerrainController->GetZoneIndex(Pos);
+				return FString::Printf(TEXT("%d, %d, %d"), Tmp.X, Tmp.Y, Tmp.Z);
+			}
+		}
+	}
+
+	return FString(TEXT(""));
+}
+
+
+FString UDebugInfoWidget::SandboxRegionIndexText() {
+	if (CVarDebugInfo.GetValueOnGameThread() < 1) {
+		return FString(TEXT(""));
+	}
+
+	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
+	if (MainPlayerController) {
+		APawn* Pawn = MainPlayerController->GetPawn();
+		if (Pawn) {
+			if (TerrainController) {
+				FVector Pos = Pawn->GetActorLocation();
+				TVoxelIndex ZoneIndex = TerrainController->GetZoneIndex(Pos);
+				TVoxelIndex RegionIndex = TerrainController->ClcRegionByZoneIndex(ZoneIndex);
+				return FString::Printf(TEXT("region: %d, %d"), RegionIndex.X, RegionIndex.Y);
+			}
 		}
 	}
 

@@ -154,6 +154,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sandbox")
 	virtual void OnWheelDown();
 
+	UFUNCTION(Exec, Category = "Sandbox")
+	void SandboxAddItem(int ItemId);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRpcAddItem(int ItemId);
+
 	UFUNCTION(Server, Reliable)
 	void ServerRpcFindOrCreateCharacter();
 

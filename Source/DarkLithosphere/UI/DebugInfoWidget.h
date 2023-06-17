@@ -42,6 +42,9 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "Sandbox System info")
 	FString SandboxDebugInfo4Text();
+
+	UFUNCTION(BlueprintCallable, Category = "Sandbox System info")
+	FString SandboxRegionIndexText();
 	
 private:
 
