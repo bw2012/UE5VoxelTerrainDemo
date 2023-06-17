@@ -5,8 +5,6 @@ std::unordered_map<std::string, std::unordered_map<std::string, std::function<vo
 
 void TNotificationHelper::AddObserver(std::string ObjectName, std::string NotificationName, std::function<void()> Function) {
 	FString Test(ObjectName.c_str());
-	UE_LOG(LogTemp, Warning, TEXT("TEST -> %s"), *Test);
-
 	auto& M = ObserverMap[ObjectName];
 	M[NotificationName] = Function;
 }

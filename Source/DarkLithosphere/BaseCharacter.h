@@ -37,6 +37,8 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason);
+
 	//virtual void OnDeath() override;
 
 public:	
@@ -100,7 +102,7 @@ public:
 
 	virtual int GetTypeId();
 
-	UContainerComponent* GetInventory(FString Name);
+	UContainerComponent* GetContainer(FString Name);
 
 	void SelectActiveInventorySlot(int SlotId);
 

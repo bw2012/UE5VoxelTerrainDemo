@@ -326,8 +326,10 @@ bool UMainPlayerControllerComponent::PlaceCurrentObjectToWorld() {
 							InternalSpawnObject(Obj->GetSandboxClassId(), Transform);
 						}
 
+						// TODO переделать
 						if (GetNetMode() == NM_Client) {
-							ServerSpawnObject(Obj->GetSandboxClassId(), Transform);
+							ServerRpcSpawnObject(Obj->GetSandboxClassId(), Transform);
+							ServerRpcDecreaseObjectsInContainer(TEXT("Inventory"), MainController->CurrentInventorySlot);
 						}
 
 						bool NotEmpty = Inventory->DecreaseObjectsInContainer(MainController->CurrentInventorySlot, 1);
@@ -345,8 +347,20 @@ bool UMainPlayerControllerComponent::PlaceCurrentObjectToWorld() {
 	return false;
 }
 
+void UMainPlayerControllerComponent::ServerRpcDecreaseObjectsInContainer_Implementation(const FString& Name, int Slot) {
+	AMainPlayerController* MainController = (AMainPlayerController*) GetOwner();
+	if (!MainController) {
+		return;
+	}
 
-void UMainPlayerControllerComponent::ServerSpawnObject_Implementation(uint64 SandboxClassId, FTransform Transform) {
+	UContainerComponent* Inventory = MainController->GetInventory();
+	if (Inventory) {
+		Inventory->DecreaseObjectsInContainer(Slot, 1);
+	}
+}
+
+
+void UMainPlayerControllerComponent::ServerRpcSpawnObject_Implementation(uint64 SandboxClassId, FTransform Transform) {
 	InternalSpawnObject(SandboxClassId, Transform);
 }
 
@@ -406,7 +420,7 @@ bool UMainPlayerControllerComponent::PlaceCraftedObjectToWorld() {
 							}
 
 							if (GetNetMode() == NM_Client) {
-								ServerSpawnObject(SandboxClassId, Transform);
+								ServerRpcSpawnObject(SandboxClassId, Transform);
 							}
 
 							if (CraftRecipeData->bOnlyOne) {

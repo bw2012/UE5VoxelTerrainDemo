@@ -5,14 +5,14 @@
 #include "CoreMinimal.h"
 #include "SandboxLevelController.h"
 #include "Marker.h"
-#include "SandboxEnvironment.h"
+#include "EnvironmentController.h"
 #include "BaseCharacter.h" // TODO
 #include "LevelController.generated.h"
 
 class ATerrainController;
 
 
-struct FTempCharacterLoadInfo {
+struct FCharacterLoadInfo {
 
 	int TypeId;
 
@@ -40,7 +40,7 @@ class DARKLITHOSPHERE_API ALevelController : public ASandboxLevelController
 public:
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	ASandboxEnvironment* Environment;
+	AEnvironmentController* Environment;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	ATerrainController* TerrainController;
@@ -56,13 +56,17 @@ public:
 
 	void LoadMap();
 
-	const TArray<FTempCharacterLoadInfo>& GetTempCharacterList() const;
+	const TArray<FCharacterLoadInfo>& GetTempCharacterList() const;
 
-	const TMap<FString, FTempCharacterLoadInfo>& GetTempCharacterMap() const;
+	const TMap<FString, FCharacterLoadInfo>& GetConservedCharacterMap() const;
 
 	void SpawnTempCharacterList();
 
 	ACharacter* SpawnCharacterByTypeId(const int TypeId, const FVector& Location, const FRotator& Rotation);
+
+	ACharacter* SpawnCharacter(const FCharacterLoadInfo& TempCharacterInfo);
+
+	void CharacterConservation(const FCharacterLoadInfo& TempCharacterInfo);
 
 	virtual ASandboxObject* SpawnSandboxObject(const int ClassId, const FTransform& Transform) override;
 
@@ -84,7 +88,9 @@ protected:
 
 private:
 
-	TArray<FTempCharacterLoadInfo> TempCharacterList;
+	void LoadCaharacterListJson(FString Name, TSharedPtr<FJsonObject> JsonParsed);
+
+	TArray<FCharacterLoadInfo> TempCharacterList;
 	
-	TMap<FString, FTempCharacterLoadInfo> TempCharacterMap;
+	TMap<FString, FCharacterLoadInfo> ConservedCharacterMap;
 };

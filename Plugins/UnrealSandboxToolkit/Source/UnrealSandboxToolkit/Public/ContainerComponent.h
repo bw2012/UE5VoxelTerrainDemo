@@ -22,6 +22,8 @@ struct FContainerStack {
 		Clear();
 	}
 
+	FContainerStack(int32 Amount_, uint64 SandboxClassId_) : Amount(Amount_), SandboxClassId(SandboxClassId_) { }
+
 	void Clear() {
 		Amount = 0;
 		SandboxClassId = 0;

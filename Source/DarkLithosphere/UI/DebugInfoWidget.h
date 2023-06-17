@@ -26,6 +26,9 @@ protected:
 	FString SandboxPlayerCrdText();
 
 	UFUNCTION(BlueprintCallable, Category = "Sandbox System info")
+	FString SandboxTimeString();
+
+	UFUNCTION(BlueprintCallable, Category = "Sandbox System info")
 	FString SandboxZoneIndexText();
 
 	UFUNCTION(BlueprintCallable, Category = "Sandbox System info")

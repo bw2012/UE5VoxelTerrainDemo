@@ -65,7 +65,7 @@ public:
 	//UPROPERTY(EditAnywhere, Category = "Sandbox")
 	//UCurveFloat* GlobalFogOpacityCurve;
 
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	UPROPERTY(EditAnywhere, Replicated, Category = "Sandbox")
 	float TimeSpeed;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox Cave")

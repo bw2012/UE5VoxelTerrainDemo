@@ -192,7 +192,7 @@ TSandboxGameTime ASandboxEnvironment::ClcGameTimeOfDay(float RealServerTime, boo
 	time_t initial_time = std::mktime(&initial_ptm);
 
 	//static const uint64 InitialOffset = 60 * 60 * 12; // always start game at 12:00
-	const uint64 InitialOffset = initial_time;
+	const uint64 InitialOffset = initial_time; 
 	const uint64 TimezoneOffset = bAccordingTimeZone ? 60 * 60 * TimeZone : 0;
 	const uint64 input_seconds = (int)ClcGameTime(RealServerTime) + InitialOffset + TimezoneOffset;
 
@@ -292,4 +292,5 @@ FString ASandboxEnvironment::GetCurrentTimeAsString() {
 void ASandboxEnvironment::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(ASandboxEnvironment, RealTimeOffset);
+	DOREPLIFETIME(ASandboxEnvironment, TimeSpeed);
 }

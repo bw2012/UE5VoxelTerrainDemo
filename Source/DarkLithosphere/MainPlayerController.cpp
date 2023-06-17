@@ -83,7 +83,7 @@ void AMainPlayerController::BeginPlay() {
 			UE_LOG(LogTemp, Warning, TEXT("Error loading json file"));
 
 			// new player info
-			PlayerInfo.PlayerUid = TEXT("player") + FString::FromInt(FMath::FRandRange(0, 255));
+			PlayerInfo.PlayerUid = TEXT("player") + FString::FromInt(FMath::FRandRange(0.f, 255.f));
 
 			FString JsonStr;
 			FJsonObjectConverter::UStructToJsonObjectString(PlayerInfo, JsonStr);
@@ -123,8 +123,15 @@ void AMainPlayerController::ServerRpcRebuildEquipment_Implementation() {
 	}
 }
 
+void AMainPlayerController::ClientRpcRegisterFinished_Implementation() {
+	UE_LOG(LogTemp, Warning, TEXT("AMainPlayerController::ClientRpcRegisterFinished"));
+	TNotificationHelper::SendNotification("finish_register_player");
+}
+
 void AMainPlayerController::ServerRpcRegisterSandboxPlayer_Implementation(const FString& NewPlayerUid, const FString& ClientSoftwareVersion) {
 	if (ClientSoftwareVersion != GetVersionString()) {
+		// TODO возможно это больше не нужно
+
 		UE_LOG(LogTemp, Warning, TEXT("player %s has wrong software version %s"), *NewPlayerUid, *ClientSoftwareVersion);
 
 		AGameSession* Session = GetWorld()->GetAuthGameMode()->GameSession;
@@ -133,6 +140,7 @@ void AMainPlayerController::ServerRpcRegisterSandboxPlayer_Implementation(const 
 	}
 
 	PlayerInfo.PlayerUid = NewPlayerUid;
+	ClientRpcRegisterFinished();
 }
 
 void AMainPlayerController::ClientWasKicked_Implementation(const FText& KickReason) {
@@ -143,7 +151,6 @@ void AMainPlayerController::ClientWasKicked_Implementation(const FText& KickReas
 	if (GI) {
 		GI->SetMessageString(TEXT("Kicked by server:"), Msg);
 	}
-
 }
 
 void AMainPlayerController::FindOrCreateCharacterInternal() {
@@ -157,6 +164,15 @@ void AMainPlayerController::FindOrCreateCharacterInternal() {
 			UE_LOG(LogTemp, Warning, TEXT("BaseCharacter: %s => %s"), *BaseCharacter->SandboxPlayerUid, *BaseCharacter->GetName());
 			if (BaseCharacter->SandboxPlayerUid == PlayerInfo.PlayerUid) {
 				MainCharacter = BaseCharacter;
+			}
+		}
+	}
+
+	if (!MainCharacter) {
+		if (GetLevelController()) {
+			auto Map = GetLevelController()->GetConservedCharacterMap();
+			if (Map.Contains(PlayerInfo.PlayerUid)) {
+				MainCharacter = Cast<ABaseCharacter>(GetLevelController()->SpawnCharacter(Map[PlayerInfo.PlayerUid]));
 			}
 		}
 	}
@@ -204,12 +220,10 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 		FString PlayerUid = PlayerInfo.PlayerUid;
 		ServerRpcRegisterSandboxPlayer(PlayerUid, GetVersionString());
 
-		TNotificationHelper::SendNotification("finish_register_player");
-
 		ADummyPawn* DummyPawn = Cast<ADummyPawn>(GetPawn());
 		if (DummyPawn) {
 			if (GetLevelController()) {
-				auto Map = GetLevelController()->GetTempCharacterMap();
+				auto Map = GetLevelController()->GetConservedCharacterMap();
 				if (Map.Contains(PlayerUid)) {
 					DummyPawn->SetActorLocation(Map[PlayerUid].Location);
 				}

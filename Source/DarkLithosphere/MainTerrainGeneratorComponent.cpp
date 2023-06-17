@@ -29,7 +29,7 @@ bool IsCaveLayerZone(int Z) {
 }
 
 void UMainTerrainGeneratorComponent::PrepareMetaData() {
-	UE_LOG(LogTemp, Warning, TEXT("UMainTerrainGeneratorComponent::PrepareMetaData()"));
+	UE_LOG(LogTemp, Log, TEXT("Prepare terrain generator metadata..."));
 	GenerateStructures();
 }
 
@@ -260,7 +260,7 @@ float UMainTerrainGeneratorComponent::FunctionMakeCaveLayer(float Density, const
 	const FVector& V = WorldPos;
 	const FVector v00(V.X * scale30, V.Y * scale30, 0);
 	const float noise_big = PerlinNoise(v00) * 10.f;
-	const static float test = 0.8; // ширина
+	const static float test = 0.8; // пїЅпїЅпїЅпїЅпїЅпїЅ
 
 	const static float ExtendXP = 1;
 	float Density2 = 1 / (1 + exp(0.7 - FMath::Abs(noise_big)));

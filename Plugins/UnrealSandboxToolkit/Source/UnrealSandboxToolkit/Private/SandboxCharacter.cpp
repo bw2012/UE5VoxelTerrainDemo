@@ -199,7 +199,7 @@ void ASandboxCharacter::ZoomIn() {
 		}
 	}
 
-	//UE_LOG(LogSandboxTerrain, Log, TEXT("ZoomIn: %f"), GetCameraBoom()->TargetArmLength);
+	//UE_LOG(LogVt, Log, TEXT("ZoomIn: %f"), GetCameraBoom()->TargetArmLength);
 }
 
 void ASandboxCharacter::ZoomOut() {
@@ -222,7 +222,7 @@ void ASandboxCharacter::ZoomOut() {
 		GetCameraBoom()->TargetArmLength += ZoomStep;
 	}
 
-	//UE_LOG(LogSandboxTerrain, Log, TEXT("ZoomOut: %f"), GetCameraBoom()->TargetArmLength);
+	//UE_LOG(LogVt, Log, TEXT("ZoomOut: %f"), GetCameraBoom()->TargetArmLength);
 }
 
 FVector ASandboxCharacter::GetThirdPersonViewCameraPos() {

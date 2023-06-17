@@ -123,6 +123,9 @@ void ASandboxLevelController::SavePreparedObjects(const TArray<FSandboxObjectDes
 	TSharedRef <TJsonWriter<TCHAR>> JsonWriter = TJsonWriterFactory<>::Create(&JsonStr);
 
 	JsonWriter->WriteObjectStart();
+
+	SaveLevelJsonExt(JsonWriter);
+
 	JsonWriter->WriteArrayStart("SandboxObjectList");
 
 	for (const auto& ObjDesc : ObjDescList) {
@@ -130,8 +133,6 @@ void ASandboxLevelController::SavePreparedObjects(const TArray<FSandboxObjectDes
 	}
 
 	JsonWriter->WriteArrayEnd();
-
-	SaveLevelJsonExt(JsonWriter);
 
 	JsonWriter->WriteObjectEnd();
 	JsonWriter->Close();
@@ -261,7 +262,6 @@ void ASandboxLevelController::LoadLevelJson() {
 		for (int Idx = 0; Idx < SandboxObjectList.Num(); Idx++) {
 			TSharedPtr<FJsonObject> ObjPtr = SandboxObjectList[Idx]->AsObject();
 			TSharedPtr<FJsonObject> SandboxObjectPtr = ObjPtr->GetObjectField(TEXT("Object"));
-			FString ClassName = SandboxObjectPtr->GetStringField(TEXT("Class"));
 
 			FSandboxObjectDescriptor ObjDesc;
 

@@ -2,12 +2,13 @@
 
 #include "DebugInfoWidget.h"
 #include "../TerrainController.h"
+#include "../EnvironmentController.h"
 #include "../Globals.h"
 #include "../MainPlayerController.h"
 
-bool IsDatailedInfo() {
-	return false;
-}
+
+extern TAutoConsoleVariable<int32> CVarDebugInfo;
+
 
 FString UDebugInfoWidget::SandboxDebugInfo1Text() {
 	if (!TerrainController) {
@@ -21,7 +22,7 @@ FString UDebugInfoWidget::SandboxDebugInfo1Text() {
 		}
 	}
 
-	if (!IsDatailedInfo()) {
+	if (CVarDebugInfo.GetValueOnGameThread() < 2) {
 		return FString(TEXT(""));
 	}
 
@@ -36,7 +37,7 @@ FString UDebugInfoWidget::SandboxDebugInfo1Text() {
 }
 
 FString UDebugInfoWidget::SandboxDebugInfo2Text() {
-	if (!IsDatailedInfo()) {
+	if (CVarDebugInfo.GetValueOnGameThread() < 2) {
 		return FString(TEXT(""));
 	}
 
@@ -51,7 +52,7 @@ FString UDebugInfoWidget::SandboxDebugInfo2Text() {
 }
 
 FString UDebugInfoWidget::SandboxDebugInfo3Text() {
-	if (!IsDatailedInfo()) {
+	if (CVarDebugInfo.GetValueOnGameThread() < 2) {
 		return FString(TEXT(""));
 	}
 
@@ -66,8 +67,8 @@ FString UDebugInfoWidget::SandboxDebugInfo3Text() {
 }
 
 FString UDebugInfoWidget::SandboxDebugInfo4Text() {
-	if (!IsDatailedInfo()) {
-		//return FString(TEXT(""));
+	if (CVarDebugInfo.GetValueOnGameThread() < 2) {
+		return FString(TEXT(""));
 	}
 
 	if (TerrainController) {
@@ -81,7 +82,7 @@ FString UDebugInfoWidget::SandboxDebugInfo4Text() {
 }
 
 FString UDebugInfoWidget::SandboxPlayerCrdText() {
-	if (!IsDatailedInfo()) {
+	if (CVarDebugInfo.GetValueOnGameThread() < 2) {
 		return FString(TEXT(""));
 	}
 
@@ -98,12 +99,32 @@ FString UDebugInfoWidget::SandboxPlayerCrdText() {
 }
 
 FString UDebugInfoWidget::SandboxZoneIndexText() {
+	if (CVarDebugInfo.GetValueOnGameThread() < 1) {
+		return FString(TEXT(""));
+	}
+
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
 	if (MainPlayerController) {
 		APawn* Pawn = MainPlayerController->GetPawn();
 		if (Pawn) {
 			FVector Pos = Pawn->GetActorLocation();
 			return FString::Printf(TEXT("%d, %d, %d"), (int)(Pos.X / 1000), (int)(Pos.Y / 1000), (int)(Pos.Z / 1000));
+		}
+	}
+
+	return FString(TEXT(""));
+}
+
+FString UDebugInfoWidget::SandboxTimeString() {
+	if (CVarDebugInfo.GetValueOnGameThread() < 1) {
+		return FString(TEXT(""));
+	}
+
+	for (TActorIterator<ATerrainController> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+		AEnvironmentController* Env = Cast<AEnvironmentController>(*ActorItr);
+		if (Env) {
+			return Env->GetCurrentTimeAsString();
+			break;
 		}
 	}
 

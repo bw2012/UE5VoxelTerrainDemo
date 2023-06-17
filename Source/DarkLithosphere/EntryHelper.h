@@ -1,16 +1,17 @@
+
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "PreparationHelperActor.generated.h"
+#include "EntryHelper.generated.h"
 
 UCLASS()
-class DARKLITHOSPHERE_API APreparationHelperActor : public AActor {
+class DARKLITHOSPHERE_API AEntryHelper : public AActor {
 	GENERATED_BODY()
 	
 public:	
 
-	APreparationHelperActor();
+	AEntryHelper();
 
 protected:
 
@@ -18,12 +19,16 @@ protected:
 
 public:	
 
+	virtual void Tick(float DeltaTime) override;
+
+public:
+
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	TSubclassOf<class UUserWidget> FatalMessageWidget;
 
-	virtual void Tick(float DeltaTime) override;
-
 private:
 	void CheckUpdates();
+
+	bool bFirstTick = true;
 
 };

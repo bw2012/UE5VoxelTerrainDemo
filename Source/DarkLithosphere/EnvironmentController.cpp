@@ -13,10 +13,11 @@ void AEnvironmentController::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
 	TSandboxGameTime Time = ClcGameTimeOfDay();
-
 	if (bIsNightPrev != IsNight()) {
 		if (IsNight()) {
-			GEngine->AddOnScreenDebugMessage(-1, 10, FColor::White, TEXT("Night"));
+			UE_LOG(LogTemp, Log, TEXT("Night    %s"), *GetCurrentTimeAsString());
+
+			//GEngine->AddOnScreenDebugMessage(-1, 10, FColor::White, TEXT("Night"));
 
 			if (Night1AmbientSound) {
 				Night1AmbientSound->GetAudioComponent()->FadeIn(5);
@@ -49,7 +50,8 @@ void AEnvironmentController::Tick(float DeltaTime) {
 			}
 
 		} else {
-			GEngine->AddOnScreenDebugMessage(-1, 10, FColor::White, TEXT("Day"));
+			DayNumber++;
+			UE_LOG(LogTemp, Log, TEXT("Day %d    %s"), DayNumber, *GetCurrentTimeAsString());
 
 			if (Night1AmbientSound) {
 				Night1AmbientSound->GetAudioComponent()->FadeOut(2, 0.1);
@@ -59,7 +61,6 @@ void AEnvironmentController::Tick(float DeltaTime) {
 	}
 
 	bIsNightPrev = IsNight();
-
 }
 
 float AEnvironmentController::ClcHeightFactor() const {

@@ -15,6 +15,14 @@ class DARKLITHOSPHERE_API UMainGameInstance : public UGameInstance {
 
 public:
 
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	USoundMix* MutedSoundMix;
+
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	USoundMix* UnmutedSoundMix;
+
+	void Init() override;
+
 	UFUNCTION(BlueprintCallable, Category = "Sandbox")
 	FString GetBkgProgressString();
 
@@ -39,6 +47,12 @@ public:
 	FString GetMessageTitle();
 
 	bool IsFatalMessage();
+
+	void HandleNetworkFailure(UWorld* World, UNetDriver* NetDriver, ENetworkFailure::Type FailureType, const FString& ErrorString);
+
+	void Mute();
+
+	void Unmute();
 
 private:
 

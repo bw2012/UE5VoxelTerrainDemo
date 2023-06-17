@@ -172,6 +172,9 @@ public:
 	UFUNCTION(Server, Reliable)
 	void ServerRpcDestroyActor(int32 X, int32 Y, int32 Z, const FString& Name, FVector Origin);
 
+	UFUNCTION(Reliable, Client)
+	void ClientRpcRegisterFinished();
+
 	void ClientWasKicked_Implementation(const FText& KickReason);
 
 	FHitResult TracePlayerActionPoint();

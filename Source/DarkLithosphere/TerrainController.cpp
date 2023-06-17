@@ -11,6 +11,8 @@
 #include "NotificationHelper.h"
 
 
+
+
 //======================================================================================================================================================================
 // Terrain generator 
 //======================================================================================================================================================================
@@ -29,7 +31,6 @@ void ATerrainController::OnOverlapActorTerrainEdit(const FOverlapResult& Overlap
 
 void ATerrainController::BeginPlay() {
 	Super::BeginPlay();
-
 	TNotificationHelper::AddObserver(TCHAR_TO_UTF8(*GetName()), "finish_register_player", std::bind(&ATerrainController::OnFinishRegisterPlayer, this));
 }
 
@@ -38,8 +39,8 @@ void ATerrainController::BeginPlayServer() {
 		LevelController->LoadMap();
 
 		bool bFirst = true; // temp solution
-		const TArray<FTempCharacterLoadInfo>& TempCharacterList = LevelController->GetTempCharacterList();
-		for (const FTempCharacterLoadInfo& TempCharacterInfo : TempCharacterList) {
+		const TArray<FCharacterLoadInfo>& TempCharacterList = LevelController->GetTempCharacterList();
+		for (const FCharacterLoadInfo& TempCharacterInfo : TempCharacterList) {
 			const TVoxelIndex ZoneIndex = GetZoneIndex(TempCharacterInfo.Location);
 			UE_LOG(LogTemp, Log, TEXT("Server PlayerId -> %s "), *TempCharacterInfo.SandboxPlayerUid);
 
@@ -89,6 +90,11 @@ void ATerrainController::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 }
 
 void ATerrainController::ShutdownAndSaveMap() {
+	UMainGameInstance* GI = Cast<UMainGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
+	if (GI) {
+		GI->Mute();
+	}
+
 	ShutdownThreads();
 
 	if (LevelController) {
@@ -96,18 +102,14 @@ void ATerrainController::ShutdownAndSaveMap() {
 	}
 
 	if (GetNetMode() == NM_Client) {
-		AsyncTask(ENamedThreads::GameThread, [=]() { OnFinishSaveTerrain(); });
-		return; // TODO save to client cache
+		//AsyncTask(ENamedThreads::GameThread, [=]() { OnFinishSaveTerrain(); });
+		//return; // TODO save to client cache
 	}
 
 	UE_LOG(LogTemp, Log, TEXT("Start save terrain manual"));
 	auto SaveFunction = [&]() {
 		std::function<void(uint32, uint32)> OnProgress = [=](uint32 Processed, uint32 Total) {
-			UE_LOG(LogTemp, Log, TEXT("Save terrain: %d / %d "), Processed, Total);
-
 			if (Processed == Total) {
-				//AsyncTask(ENamedThreads::GameThread, [=]() { OnProgressSaveTerrain(1.f); });
-
 				UMainGameInstance* GI = Cast<UMainGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
 				if (GI) {
 					GI->SetProgressString(TEXT("100%"));
@@ -115,16 +117,12 @@ void ATerrainController::ShutdownAndSaveMap() {
 				}
 
 			} else if (Processed % 10 == 0) {
-				float Progress = (float)Processed / (float)Total;
-				UE_LOG(LogTemp, Log, TEXT("Save terrain: %d / %d - %f%%"), Processed, Total, Progress);
-
 				UMainGameInstance* GI = Cast<UMainGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
 				if (GI) {
+					float Progress = (float)Processed / (float)Total;
 					GI->SetProgressString(FString::Printf(TEXT("%.0f%%"), Progress * 100));
 					GI->SetProgress(Progress);
 				}
-
-				//AsyncTask(ENamedThreads::GameThread, [=]() { OnProgressSaveTerrain(Progress); });
 			}
 		};
 
@@ -336,6 +334,11 @@ void ATerrainController::OnFinishLoadZone(const TVoxelIndex& Index) {
 
 void ATerrainController::OnFinishInitialLoad() {
 	TNotificationHelper::SendNotification("finish_init_map_load");
+
+	UMainGameInstance* GI = Cast<UMainGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
+	if (GI) {
+		GI->Unmute();
+	}
 }
 
 void ATerrainController::OnDestroyInstanceMesh(UTerrainInstancedStaticMesh* InstancedMeshComp, int32 ItemIndex) {
@@ -354,6 +357,6 @@ void ATerrainController::OnDestroyInstanceMesh(UTerrainInstancedStaticMesh* Inst
 
 void ATerrainController::OnFinishRegisterPlayer() {
 	if (GetNetMode() == NM_Client) {
-		ClientConnect();
+		ClientStart();
 	}
 }

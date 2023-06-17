@@ -121,7 +121,10 @@ private:
 protected:
 
 	UFUNCTION(Server, Reliable)
-	void ServerSpawnObject(uint64 SandboxClassId, FTransform Transform);
+	void ServerRpcSpawnObject(uint64 SandboxClassId, FTransform Transform);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRpcDecreaseObjectsInContainer(const FString& Name, int Slot);
 
 	void InternalSpawnObject(uint64 SandboxClassId, FTransform Transform);
 

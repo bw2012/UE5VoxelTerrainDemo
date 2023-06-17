@@ -35,6 +35,12 @@ ABaseCharacter::ABaseCharacter(const FObjectInitializer& ObjectInitializer) : Su
 void ABaseCharacter::BeginPlay() {
 	Super::BeginPlay();
 
+	UCharacterMovementComponent* MovCmp = Cast<UCharacterMovementComponent>(GetMovementComponent());
+	if (MovCmp) {
+		MovCmp->bServerAcceptClientAuthoritativePosition = true;
+		MovCmp->bIgnoreClientMovementErrorChecksAndCorrection = true;
+	}
+
 	bFirstRun = true;
 
 	MakeModularSkList();
@@ -53,6 +59,48 @@ void ABaseCharacter::BeginPlay() {
 	AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &ABaseCharacter::OnNotifyBeginReceived);
 	AnimInstance->OnPlayMontageNotifyEnd.AddDynamic(this, &ABaseCharacter::OnNotifyEndReceived);
 
+}
+
+void ConservateContainer(const UContainerComponent* Container, TArray<FTempContainerStack>& ConservedContainer) {
+	if (Container) {
+		int SlotId = 0;
+		for (const auto& Stack : Container->Content) {
+			if (Stack.Amount > 0) {
+				ConservedContainer.Add(FTempContainerStack{SlotId, FContainerStack{Stack.Amount, Stack.SandboxClassId} });
+			}
+			SlotId++;
+		}
+	}
+}
+
+void ABaseCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason) {
+	Super::EndPlay(EndPlayReason);
+
+	if (GetNetMode() == NM_DedicatedServer || GetNetMode() == NM_ListenServer) {
+		for (TActorIterator<ALevelController> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+			ALevelController* Lc = Cast<ALevelController>(*ActorItr);
+			if (Lc) {
+
+				FCharacterLoadInfo Conserved;
+				Conserved.TypeId = SandboxTypeId;
+				Conserved.SandboxPlayerUid = SandboxPlayerUid;
+				Conserved.Location = GetActorLocation();
+				Conserved.Rotation = GetActorRotation();
+
+				ConservateContainer(GetContainer("Inventory"), Conserved.Inventory);
+				ConservateContainer(GetContainer("Equipment"), Conserved.Equipment);
+
+				UE_LOG(LogTemp, Warning, TEXT("Server: character conservation: %s"), *Conserved.SandboxPlayerUid);
+
+				if (Lc) {
+					Lc->CharacterConservation(Conserved);
+				}
+
+				break;
+			}
+		}
+
+	}
 }
 
 /*
@@ -145,7 +193,7 @@ bool ABaseCharacter::IsDead() {
 	return false;
 }
 
-UContainerComponent* ABaseCharacter::GetInventory(FString Name) {
+UContainerComponent* ABaseCharacter::GetContainer(FString Name) {
 	TArray<UContainerComponent*> Components;
 	GetComponents<UContainerComponent>(Components);
 	for (UContainerComponent* Container : Components) {

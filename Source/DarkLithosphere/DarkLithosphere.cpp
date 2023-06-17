@@ -5,8 +5,31 @@
 
 IMPLEMENT_PRIMARY_GAME_MODULE( FDarkLithosphereGameModule, DarkLithosphere, "DarkLithosphere" );
 
+TAutoConsoleVariable<int32> CVarFullscreen (
+	TEXT("dl.EntryFullscreen"),
+	1,
+	TEXT("Entry map set up fullscreen\n")
+	TEXT(" 0 = Off \n")
+	TEXT(" 1 = On \n"),
+	ECVF_SetBySystemSettingsIni);
+
+TAutoConsoleVariable<int32> CVarDebugInfo(
+	TEXT("dl.DebugInfo"),
+	0,
+	TEXT("Draw debug text\n")
+	TEXT(" 0 = Off \n")
+	TEXT(" 1 = On \n"),
+	ECVF_SetBySystemSettingsIni);
+
+
+FString GetVersionString();
+
 void FDarkLithosphereGameModule::StartupModule() {
-	UE_LOG(LogTemp, Warning, TEXT("FDarkLithosphereGameModule::StartupModule()"));
+	UE_LOG(LogTemp, Warning, TEXT("Start FDarkLithosphereGameModule %s"), *GetVersionString());
+
+	FNetworkVersion::GetLocalNetworkVersionOverride.BindLambda([]() {
+		return GetTypeHash(GetVersionString());
+	});
 
 	FString SaveDir = FPaths::ProjectSavedDir() + TEXT("Map/");
 	UE_LOG(LogTemp, Log, TEXT("Check directory: %s"), *SaveDir);
@@ -20,13 +43,12 @@ void FDarkLithosphereGameModule::StartupModule() {
 	}
 }
 
-
 void FDarkLithosphereGameModule::ShutdownModule() {
 
 }
 
 FString GetVersionString() {
-	return TEXT("v0.0.37i-alpha-L");
+	return TEXT("v0.0.38-alpha-L");
 }
 
 FString GlobalSandboxPlayerId;
