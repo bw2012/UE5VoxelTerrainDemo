@@ -995,7 +995,7 @@ void AMainPlayerController::ServerRpcAddItem_Implementation(int ItemId) {
 }
 
 void AMainPlayerController::SandboxTp(int X, int Y, int Z) {
-	UE_LOG(LogTemp, Warning, TEXT("Teleport player to zone: %d %d %d"), X, Y, Z);
+	UE_LOG(LogTemp, Warning, TEXT("Teleport player %d to zone: %d %d %d"), GetUniqueID(), X, Y, Z);
 
 	if (TerrainController) {
 		APawn* MainPawn = GetPawn();
