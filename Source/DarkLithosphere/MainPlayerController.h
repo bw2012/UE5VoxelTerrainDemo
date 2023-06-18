@@ -157,8 +157,14 @@ public:
 	UFUNCTION(Exec, Category = "Sandbox")
 	void SandboxAddItem(int ItemId);
 
+	UFUNCTION(Exec, Category = "Sandbox")
+	void SandboxTp(int X, int Y, int Z);
+
 	UFUNCTION(Server, Reliable)
 	void ServerRpcAddItem(int ItemId);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRpcTp(int X, int Y, int Z);
 
 	UFUNCTION(Server, Reliable)
 	void ServerRpcFindOrCreateCharacter();
