@@ -37,7 +37,7 @@ void ABaseCharacter::BeginPlay() {
 
 	UCharacterMovementComponent* MovCmp = Cast<UCharacterMovementComponent>(GetMovementComponent());
 	if (MovCmp) {
-		MovCmp->bServerAcceptClientAuthoritativePosition = true;
+		//MovCmp->bServerAcceptClientAuthoritativePosition = true;
 		MovCmp->bIgnoreClientMovementErrorChecksAndCorrection = true;
 	}
 
