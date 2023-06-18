@@ -218,6 +218,49 @@ void MakeLandscapeHill(UMainTerrainGeneratorComponent* Generator, const FVector&
 	}
 }
 
+void MakeLandscapeHollow(UMainTerrainGeneratorComponent* Generator, const FVector& Origin, const int TypeIdx = 0) {
+	FVector O(Origin.X, Origin.Y, 0);
+	TVoxelIndex Index = Generator->GetController()->GetZoneIndex(O);
+
+	struct TSizeType {
+		TSizeType(float MaxR_, float H_, int S_) : MaxR(MaxR_), H(H_), S(S_) { };
+		float MaxR;
+		float H;
+		int S;
+	};
+
+	const TSizeType SizeType[] = { TSizeType(4800, 6, 2), TSizeType(4800 * 20, 6 * 6, 9), TSizeType(4800 * 20 * 2, 6 * 6 * 2, 9 * 2) };
+
+	const float MaxR = SizeType[TypeIdx].MaxR; // max radius
+	const float H = SizeType[TypeIdx].H; // height
+
+	const auto Function = [=](const float InLvl, const TVoxelIndex& VoxelIndex, const FVector& WorldPos) {
+		FVector Tmp = WorldPos - O;
+		float R = std::sqrt(Tmp.X * Tmp.X + Tmp.Y * Tmp.Y);
+		float T = (1 - exp(-pow(R, 2) / ( MaxR * 100))) * H ; // hollow
+		return InLvl + (T * 100);
+	};
+
+	const int S = SizeType[TypeIdx].S; //3;
+
+	for (auto X = -S; X <= S; X++) {
+		for (auto Y = -S; Y <= S; Y++) {
+			TLandscapeZoneHandler LandscapeZoneHandler;
+			LandscapeZoneHandler.ZoneIndex = TVoxelIndex(Index.X + X, Index.Y + Y, 0);
+			LandscapeZoneHandler.Function = Function;
+			Generator->AddLandscapeStructure(LandscapeZoneHandler);
+
+			AsyncTask(ENamedThreads::GameThread, [=]() {
+
+				const FVector Pos2 = Generator->GetController()->GetZonePos(LandscapeZoneHandler.ZoneIndex);
+
+				DrawDebugBox(Generator->GetWorld(), Origin, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
+			});
+		}
+	}
+}
+
+
 class TStructureBigHill : public TMetaStructure {
 
 private:
@@ -255,6 +298,30 @@ public:
 		FVector Origin(OriginIndex.X * 1000, OriginIndex.Y * 1000, 0);
 		MakeLandscapeHill(Generator, Origin, 1);
 		Cavern->MakeMetaData(Generator);
+	}
+
+};
+
+
+class TStructureBigHollow : public TMetaStructure {
+
+public:
+
+	TStructureBigHollow(TVoxelIndex OriginIndex_) {
+		OriginIndex = OriginIndex_;
+	};
+
+	TArray<TVoxelIndex> GetRelevantZones(UMainTerrainGeneratorComponent* Generator) const {
+		TArray<TVoxelIndex> Res;
+
+		// TODO
+
+		return Res;
+	}
+
+	void MakeMetaData(UMainTerrainGeneratorComponent* Generator) const {
+		FVector Origin(OriginIndex.X * 1000, OriginIndex.Y * 1000, 0);
+		MakeLandscapeHollow(Generator, Origin, 1);		
 	}
 
 };
@@ -569,4 +636,8 @@ void UMainTerrainGeneratorComponent::GenerateStructures() {
 			//Test.MakeMetaData(this);
 		} while (!bIsValid);
 	}
+
+
+	TStructureBigHollow Hollow(TVoxelIndex(-200, 0, 0));
+	Hollow.MakeMetaData(this);
 }
