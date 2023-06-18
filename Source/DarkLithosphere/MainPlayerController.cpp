@@ -996,10 +996,7 @@ void AMainPlayerController::ServerRpcAddItem_Implementation(int ItemId) {
 
 void AMainPlayerController::SandboxTp(int X, int Y, int Z) {
 	UE_LOG(LogTemp, Warning, TEXT("Teleport player to zone: %d %d %d"), X, Y, Z);
-	ServerRpcTp(X, Y, Z);
-}
 
-void AMainPlayerController::ServerRpcTp_Implementation(int X, int Y, int Z) {
 	if (TerrainController) {
 		APawn* MainPawn = GetPawn();
 		if (MainPawn) {
@@ -1007,4 +1004,12 @@ void AMainPlayerController::ServerRpcTp_Implementation(int X, int Y, int Z) {
 			MainPawn->SetActorLocation(Pos);
 		}
 	}
+
+	if (GetNetMode() == NM_Client) {
+		ServerRpcTp(X, Y, Z);
+	}
+}
+
+void AMainPlayerController::ServerRpcTp_Implementation(int X, int Y, int Z) {
+	SandboxTp(X, Y, Z);
 }
