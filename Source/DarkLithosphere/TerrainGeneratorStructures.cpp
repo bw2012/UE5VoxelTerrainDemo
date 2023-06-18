@@ -3,7 +3,7 @@
 #include "UnrealSandboxTerrain.h"
 
 
-class TStructureSphereCavern : public TMetaStructure2 {
+class TStructureSphereCavern : public TMetaStructure {
 
 private:
 
@@ -70,7 +70,7 @@ public:
 };
 
 
-class TStructureGeoSphere : public TMetaStructure2 {
+class TStructureGeoSphere : public TMetaStructure {
 
 private:
 
@@ -136,7 +136,7 @@ public:
 };
 
 
-class TStructureTunnel1 : public TMetaStructure2 {
+class TStructureTunnel1 : public TMetaStructure {
 
 private:
 
@@ -256,11 +256,11 @@ void MakeLandscapeHollow(TStructuresGenerator* Generator, const FVector& Origin,
 }
 
 
-class TStructureBigHill : public TMetaStructure2 {
+class TStructureBigHill : public TMetaStructure {
 
 private:
 
-	std::shared_ptr<TMetaStructure2> Cavern = nullptr;
+	std::shared_ptr<TMetaStructure> Cavern = nullptr;
 
 public:
 
@@ -278,7 +278,7 @@ public:
 		const FVector Min(Origin.X - W, Origin.Y - W, Origin.Z - H);
 		const FVector Max(Origin.X + W, Origin.Y + W, Origin.Z + H);
 		FBox Box(Min, Max);
-		Cavern = std::shared_ptr<TMetaStructure2>(new TStructureTunnel1(Box));
+		Cavern = std::shared_ptr<TMetaStructure>(new TStructureTunnel1(Box));
 	};
 
 	TArray<TVoxelIndex> GetRelevantZones(TStructuresGenerator* Generator) const {
@@ -298,7 +298,7 @@ public:
 };
 
 
-class TStructureBigHollow : public TMetaStructure2 {
+class TStructureBigHollow : public TMetaStructure {
 
 public:
 
