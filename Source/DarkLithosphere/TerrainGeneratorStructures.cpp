@@ -3,7 +3,7 @@
 #include "UnrealSandboxTerrain.h"
 
 
-class TStructureSphereCavern : public TMetaStructure {
+class TStructureSphereCavern : public TMetaStructure2 {
 
 private:
 
@@ -15,7 +15,7 @@ public:
 		OriginIndex = OriginIndex_;
 	};
 
-	TArray<TVoxelIndex> GetRelevantZones(UMainTerrainGeneratorComponent* Generator) const {
+	TArray<TVoxelIndex> GetRelevantZones(TStructuresGenerator* Generator) const {
 		TArray<TVoxelIndex> Res;
 
 		const FVector Origin = Generator->GetController()->GetZonePos(OriginIndex);
@@ -39,11 +39,11 @@ public:
 		return Res;
 	}
 
-	void MakeMetaData(UMainTerrainGeneratorComponent* Generator) const {
+	void MakeMetaData(TStructuresGenerator* Generator) const {
 		const FVector Origin = Generator->GetController()->GetZonePos(OriginIndex);
 
 		const float Radius2 = Radius;
-		const UMainTerrainGeneratorComponent* Generator2 = Generator;
+		const UMainTerrainGeneratorComponent* Generator2 = (UMainTerrainGeneratorComponent*)Generator->GetGeneratorComponent();
 
 		const auto Function = [=](const float InDensity, const TMaterialId InMaterialId, const TVoxelIndex& VoxelIndex, const FVector& LocalPos, const FVector& WorldPos) {
 			const float Density = Generator2->FunctionMakeSphere(InDensity, WorldPos, Origin, Radius2, 1);
@@ -70,7 +70,7 @@ public:
 };
 
 
-class TStructureGeoSphere : public TMetaStructure {
+class TStructureGeoSphere : public TMetaStructure2 {
 
 private:
 
@@ -82,7 +82,7 @@ public:
 		OriginIndex = OriginIndex_;
 	};
 
-	TArray<TVoxelIndex> GetRelevantZones(UMainTerrainGeneratorComponent* Generator) const {
+	TArray<TVoxelIndex> GetRelevantZones(TStructuresGenerator* Generator) const {
 		TArray<TVoxelIndex> Res;
 
 		const FVector Origin = Generator->GetController()->GetZonePos(OriginIndex);
@@ -106,11 +106,11 @@ public:
 		return Res;
 	}
 
-	void MakeMetaData(UMainTerrainGeneratorComponent* Generator) const {
+	void MakeMetaData(TStructuresGenerator* Generator) const {
 		const FVector Origin = Generator->GetController()->GetZonePos(OriginIndex);
 
 		const float Radius2 = Radius;
-		const UMainTerrainGeneratorComponent* Generator2 = Generator;
+		const UMainTerrainGeneratorComponent* Generator2 = (UMainTerrainGeneratorComponent*)Generator->GetGeneratorComponent();
 
 		const auto Function = [=](const float InDensity, const TMaterialId InMaterialId, const TVoxelIndex& VoxelIndex, const FVector& LocalPos, const FVector& WorldPos) {
 			return Generator2->FunctionMakeSolidSphere(InDensity, InMaterialId, WorldPos, Origin, Radius2, 90);
@@ -136,7 +136,7 @@ public:
 };
 
 
-class TStructureTunnel1 : public TMetaStructure {
+class TStructureTunnel1 : public TMetaStructure2 {
 
 private:
 
@@ -148,7 +148,7 @@ public:
 		TunnelBox = TunnelBox_;
 	};
 
-	TArray<TVoxelIndex> GetRelevantZones(UMainTerrainGeneratorComponent* Generator) const {
+	TArray<TVoxelIndex> GetRelevantZones(TStructuresGenerator* Generator) const {
 		TArray<TVoxelIndex> Res;
 
 		const TVoxelIndex MinIndex = Generator->GetController()->GetZoneIndex(TunnelBox.Min);
@@ -163,9 +163,9 @@ public:
 		return Res;
 	}
 
-	void MakeMetaData(UMainTerrainGeneratorComponent* Generator) const {
+	void MakeMetaData(TStructuresGenerator* Generator) const {
 		const FBox Box = TunnelBox;
-		const UMainTerrainGeneratorComponent* Generator2 = Generator;
+		const UMainTerrainGeneratorComponent* Generator2 = (UMainTerrainGeneratorComponent*)Generator->GetGeneratorComponent();
 
 		const auto Function = [=](const float InDensity, const TMaterialId InMaterialId, const TVoxelIndex& VoxelIndex, const FVector& LocalPos, const FVector& WorldPos) {
 			const float Density = Generator2->FunctionMakeBox(InDensity, WorldPos, Box);
@@ -182,7 +182,7 @@ public:
 	}
 };
 
-void MakeLandscapeHill(UMainTerrainGeneratorComponent* Generator, const FVector& Origin, const int TypeIdx = 0) {
+void MakeLandscapeHill(TStructuresGenerator* Generator, const FVector& Origin, const int TypeIdx = 0) {
 	FVector O(Origin.X, Origin.Y, 0);
 	TVoxelIndex Index = Generator->GetController()->GetZoneIndex(O);
 
@@ -218,9 +218,11 @@ void MakeLandscapeHill(UMainTerrainGeneratorComponent* Generator, const FVector&
 	}
 }
 
-void MakeLandscapeHollow(UMainTerrainGeneratorComponent* Generator, const FVector& Origin, const int TypeIdx = 0) {
+void MakeLandscapeHollow(TStructuresGenerator* Generator, const FVector& Origin, const int TypeIdx = 0) {
 	FVector O(Origin.X, Origin.Y, 0);
 	TVoxelIndex Index = Generator->GetController()->GetZoneIndex(O);
+
+	const UMainTerrainGeneratorComponent* Generator2 = (UMainTerrainGeneratorComponent*)Generator->GetGeneratorComponent();
 
 	struct TSizeType {
 		TSizeType(float MaxR_, float H_, int S_) : MaxR(MaxR_), H(H_), S(S_) { };
@@ -249,23 +251,16 @@ void MakeLandscapeHollow(UMainTerrainGeneratorComponent* Generator, const FVecto
 			LandscapeZoneHandler.ZoneIndex = TVoxelIndex(Index.X + X, Index.Y + Y, 0);
 			LandscapeZoneHandler.Function = Function;
 			Generator->AddLandscapeStructure(LandscapeZoneHandler);
-
-			AsyncTask(ENamedThreads::GameThread, [=]() {
-
-				const FVector Pos2 = Generator->GetController()->GetZonePos(LandscapeZoneHandler.ZoneIndex);
-
-				DrawDebugBox(Generator->GetWorld(), Origin, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
-			});
 		}
 	}
 }
 
 
-class TStructureBigHill : public TMetaStructure {
+class TStructureBigHill : public TMetaStructure2 {
 
 private:
 
-	std::shared_ptr<TMetaStructure> Cavern = nullptr;
+	std::shared_ptr<TMetaStructure2> Cavern = nullptr;
 
 public:
 
@@ -283,10 +278,10 @@ public:
 		const FVector Min(Origin.X - W, Origin.Y - W, Origin.Z - H);
 		const FVector Max(Origin.X + W, Origin.Y + W, Origin.Z + H);
 		FBox Box(Min, Max);
-		Cavern = std::shared_ptr<TMetaStructure>(new TStructureTunnel1(Box));
+		Cavern = std::shared_ptr<TMetaStructure2>(new TStructureTunnel1(Box));
 	};
 
-	TArray<TVoxelIndex> GetRelevantZones(UMainTerrainGeneratorComponent* Generator) const {
+	TArray<TVoxelIndex> GetRelevantZones(TStructuresGenerator* Generator) const {
 		TArray<TVoxelIndex> Res;
 
 		// TODO
@@ -294,7 +289,7 @@ public:
 		return Res;
 	}
 
-	void MakeMetaData(UMainTerrainGeneratorComponent* Generator) const {
+	void MakeMetaData(TStructuresGenerator* Generator) const {
 		FVector Origin(OriginIndex.X * 1000, OriginIndex.Y * 1000, 0);
 		MakeLandscapeHill(Generator, Origin, 1);
 		Cavern->MakeMetaData(Generator);
@@ -303,7 +298,7 @@ public:
 };
 
 
-class TStructureBigHollow : public TMetaStructure {
+class TStructureBigHollow : public TMetaStructure2 {
 
 public:
 
@@ -311,7 +306,7 @@ public:
 		OriginIndex = OriginIndex_;
 	};
 
-	TArray<TVoxelIndex> GetRelevantZones(UMainTerrainGeneratorComponent* Generator) const {
+	TArray<TVoxelIndex> GetRelevantZones(TStructuresGenerator* Generator) const {
 		TArray<TVoxelIndex> Res;
 
 		// TODO
@@ -319,7 +314,7 @@ public:
 		return Res;
 	}
 
-	void MakeMetaData(UMainTerrainGeneratorComponent* Generator) const {
+	void MakeMetaData(TStructuresGenerator* Generator) const {
 		FVector Origin(OriginIndex.X * 1000, OriginIndex.Y * 1000, 0);
 		MakeLandscapeHollow(Generator, Origin, 1);		
 	}
@@ -329,9 +324,12 @@ public:
 // =============================================================================================
 
 
-void StructureHotizontalBoxTunnel(UMainTerrainGeneratorComponent* Generator, const FBox TunnelBox) {
+void StructureHotizontalBoxTunnel(TStructuresGenerator* Generator, const FBox TunnelBox) {
+
+	const UMainTerrainGeneratorComponent* Generator2 = (UMainTerrainGeneratorComponent*)Generator->GetGeneratorComponent();
+
 	const auto Function = [=](const float InDensity, const TMaterialId InMaterialId, const TVoxelIndex& VoxelIndex, const FVector& LocalPos, const FVector& WorldPos) {
-		const float Density = Generator->FunctionMakeBox(InDensity, WorldPos, TunnelBox);
+		const float Density = Generator2->FunctionMakeBox(InDensity, WorldPos, TunnelBox);
 		const TMaterialId MaterialId = InMaterialId;
 		return std::make_tuple(Density, MaterialId);
 	};
@@ -350,9 +348,12 @@ void StructureHotizontalBoxTunnel(UMainTerrainGeneratorComponent* Generator, con
 	}
 }
 
-void StructureVerticalCylinderTunnel(UMainTerrainGeneratorComponent* Generator, const FVector& Origin, const float Radius, const float Top, const float Bottom) {
+void StructureVerticalCylinderTunnel(TStructuresGenerator* Generator, const FVector& Origin, const float Radius, const float Top, const float Bottom) {
+
+	const UMainTerrainGeneratorComponent* Generator2 = (UMainTerrainGeneratorComponent*)Generator->GetGeneratorComponent();
+
 	const auto Function = [=](const float InDensity, const TMaterialId InMaterialId, const TVoxelIndex& VoxelIndex, const FVector& LocalPos, const FVector& WorldPos) {
-		const float Density = Generator->FunctionMakeVerticalCylinder(InDensity, WorldPos, Origin, 300.f, 2000.f, -3000.f);
+		const float Density = Generator2->FunctionMakeVerticalCylinder(InDensity, WorldPos, Origin, 300.f, 2000.f, -3000.f);
 		return std::make_tuple(Density, InMaterialId);
 	};
 
@@ -385,9 +386,11 @@ void StructureVerticalCylinderTunnel(UMainTerrainGeneratorComponent* Generator, 
 	}
 }
 
-void StructureDiagonalCylinderTunnel(UMainTerrainGeneratorComponent* Generator, const FVector& Origin, const float Radius, const float Top, const float Bottom, const int Dir) {
+void StructureDiagonalCylinderTunnel(TStructuresGenerator* Generator, const FVector& Origin, const float Radius, const float Top, const float Bottom, const int Dir) {
 	static const FRotator DirRotation[2] = { FRotator(-45, 0, 0), FRotator(0, 0, -45) };
 	static const TVoxelIndex DirIndex[2] = { TVoxelIndex(1, 0, 0), TVoxelIndex(0, -1, 0) };
+
+	const UMainTerrainGeneratorComponent* Generator2 = (UMainTerrainGeneratorComponent*)Generator->GetGeneratorComponent();
 
 	const auto Function = [=](const float InDensity, const TMaterialId InMaterialId, const TVoxelIndex& VoxelIndex, const FVector& LocalPos, const FVector& WorldPos) {
 		const FRotator& Rotator = DirRotation[Dir];
@@ -396,7 +399,7 @@ void StructureDiagonalCylinderTunnel(UMainTerrainGeneratorComponent* Generator, 
 
 		const static float Sqrt2 = 1.414213;
 
-		const float Density = Generator->FunctionMakeVerticalCylinder(InDensity, Tmp, Origin, Radius, Top, Bottom * Sqrt2 - 350, 0.66);
+		const float Density = Generator2->FunctionMakeVerticalCylinder(InDensity, Tmp, Origin, Radius, Top, Bottom * Sqrt2 - 350, 0.66);
 		return std::make_tuple(Density, InMaterialId);
 	};
 
@@ -461,7 +464,7 @@ void StructureDiagonalCylinderTunnel(UMainTerrainGeneratorComponent* Generator, 
 
 
 
-void MakeDungeon1(UMainTerrainGeneratorComponent* Generator) {
+void MakeDungeon1(TStructuresGenerator* Generator) {
 	const int StartX = 4000;
 	const int StartY = 0;
 	const int StartZ = 0;
@@ -474,10 +477,12 @@ void MakeDungeon1(UMainTerrainGeneratorComponent* Generator) {
 
 	const static float Deep = 4000;
 
+	const UMainTerrainGeneratorComponent* Generator2 = (UMainTerrainGeneratorComponent*)Generator->GetGeneratorComponent();
+
 	MakeLandscapeHill(Generator, FVector(StartX + 500, StartY, 0));
 
 	const TVoxelIndex Index = Generator->GetController()->GetZoneIndex(FVector(StartX, StartY, StartZ));
-	float G = Generator->GroundLevelFunction(Index, FVector(StartX, StartY, 0));
+	float G = Generator2->GroundLevelFunction(Index, FVector(StartX, StartY, 0));
 
 	FVector V(StartX, StartY, G);
 
@@ -594,7 +599,7 @@ void UMainTerrainGeneratorComponent::GenerateStructures() {
 	//TStructureSphereCavern Test2(TVoxelIndex(0, -2, -1), 1400);
 	//Test2.MakeMetaData(this);
 
-	MakeDungeon1(this);
+	MakeDungeon1(GetStructuresGenerator());
 
 	const int32 WorldSeed = 13666;
 
@@ -618,7 +623,7 @@ void UMainTerrainGeneratorComponent::GenerateStructures() {
 			FVector Origin(X * 1000, Y * 1000, 0);
 
 			TStructureBigHill Bighill(TVoxelIndex(X, Y, 0));
-			Bighill.MakeMetaData(this);
+			Bighill.MakeMetaData(GetStructuresGenerator());
 
 		} while (!bIsValid);
 	}
@@ -639,5 +644,5 @@ void UMainTerrainGeneratorComponent::GenerateStructures() {
 
 
 	TStructureBigHollow Hollow(TVoxelIndex(-200, 0, 0));
-	Hollow.MakeMetaData(this);
+	Hollow.MakeMetaData(GetStructuresGenerator());
 }

@@ -6,35 +6,12 @@
 #include "TerrainGeneratorComponent.h"
 #include "MainTerrainGeneratorComponent.generated.h"
 
-
-struct TLandscapeZoneHandler {
-	TVoxelIndex ZoneIndex;
-
-	std::function<float(const float, const TVoxelIndex&, const FVector&)> Function = nullptr;
-};
-
 struct TBiome {
 
 	float ValForestMeadow = 0;
 
 	bool IsForest() const;
 
-};
-
-
-class TMetaStructure {
-
-protected:
-
-	TVoxelIndex OriginIndex;
-
-public:
-
-	virtual ~TMetaStructure() { };
-
-	virtual TArray<TVoxelIndex> GetRelevantZones(UMainTerrainGeneratorComponent* Generator) const;
-	
-	virtual void MakeMetaData(UMainTerrainGeneratorComponent* Generator) const;
 };
 
 
@@ -52,8 +29,6 @@ public:
 	virtual float DensityFunctionExt(float Density, const TVoxelIndex& ZoneIndex, const FVector& WorldPos, const FVector& LocalPos) const override;
 
 	virtual FSandboxFoliage FoliageExt(const int32 FoliageTypeId, const FSandboxFoliage & FoliageType, const TVoxelIndex & ZoneIndex, const FVector & WorldPos) override;
-
-	void AddLandscapeStructure(const TLandscapeZoneHandler& Structure);
 
 protected:
 
@@ -95,7 +70,4 @@ public:
 
 	virtual float GroundLevelFunction(const TVoxelIndex& ZoneIndex, const FVector& WorldPos) const;
 
-private:
-
-	std::unordered_map<TVoxelIndex, std::vector<TLandscapeZoneHandler>> LandscapeStructureMap;
 };

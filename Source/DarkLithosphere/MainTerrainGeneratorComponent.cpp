@@ -4,14 +4,6 @@
 #include "UnrealSandboxTerrain.h"
 
 
-TArray<TVoxelIndex> TMetaStructure::GetRelevantZones(UMainTerrainGeneratorComponent* Generator) const {
-	return TArray<TVoxelIndex>();
-}
-
-void TMetaStructure::MakeMetaData(UMainTerrainGeneratorComponent* Generator) const {
-
-}
-
 void UMainTerrainGeneratorComponent::BeginPlay() {
 	Super::BeginPlay();
 }
@@ -668,25 +660,9 @@ float UMainTerrainGeneratorComponent::GroundLevelFunction(const TVoxelIndex& Ind
 
 	float Lvl = (gl * 100) + 205.f;
 
-	//float Lvl = Super::GroundLevelFunction(ZoneIndex, WorldPos);
-
-	if (LandscapeStructureMap.find(ZoneIndex) != LandscapeStructureMap.end()) {
-		const auto& StructureList = LandscapeStructureMap.at(ZoneIndex);
-		if (StructureList.size() > 0) {
-			for (const auto& LandscapeHandler : StructureList) {
-				if (LandscapeHandler.Function) {
-					Lvl = LandscapeHandler.Function(Lvl, ZoneIndex, WorldPos);
-				}
-			}
-		}
-	}
+	Lvl = PerformLandscapeZone(ZoneIndex, WorldPos, Lvl);
 
 	return Lvl;
-}
-
-void UMainTerrainGeneratorComponent::AddLandscapeStructure(const TLandscapeZoneHandler& Structure) {
-	auto& StructureList = LandscapeStructureMap[Structure.ZoneIndex];
-	StructureList.push_back(Structure);
 }
 
 void UMainTerrainGeneratorComponent::ExtVdGenerationData(TGenerateVdTempItm& VdGenerationData) {
