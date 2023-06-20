@@ -160,6 +160,9 @@ public:
 	UFUNCTION(Exec, Category = "Sandbox")
 	void SandboxTp(int X, int Y, int Z);
 
+	UFUNCTION(Exec, Category = "Sandbox")
+	void SandboxExec(const FString& Cmd, const FString& Param);
+
 	UFUNCTION(Server, Reliable)
 	void ServerRpcAddItem(int ItemId);
 

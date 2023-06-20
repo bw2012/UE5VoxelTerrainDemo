@@ -231,7 +231,7 @@ void MakeLandscapeHollow(TStructuresGenerator* Generator, const FVector& Origin,
 		int S;
 	};
 
-	const TSizeType SizeType[] = { TSizeType(4800, 6, 2), TSizeType(4800 * 20, 6 * 6, 9), TSizeType(4800 * 20 * 2, 6 * 6 * 2, 9 * 2) };
+	const TSizeType SizeType[] = { TSizeType(4800, 6, 2), TSizeType(4800 * 20, 6 * 6 * 1.8, 9) };
 
 	const float MaxR = SizeType[TypeIdx].MaxR; // max radius
 	const float H = SizeType[TypeIdx].H; // height
@@ -239,8 +239,9 @@ void MakeLandscapeHollow(TStructuresGenerator* Generator, const FVector& Origin,
 	const auto Function = [=](const float InLvl, const TVoxelIndex& VoxelIndex, const FVector& WorldPos) {
 		FVector Tmp = WorldPos - O;
 		float R = std::sqrt(Tmp.X * Tmp.X + Tmp.Y * Tmp.Y);
-		float T = (1 - exp(-pow(R, 2) / ( MaxR * 100))) * H ; // hollow
-		return InLvl + (T * 100);
+		//float T = (1 - exp(-pow(R, 2) / ( MaxR * 100))); // hollow
+		float T = exp(-pow(R, 2) / (MaxR * 100)) * H; // hill
+		return InLvl - (T * 100);
 	};
 
 	const int S = SizeType[TypeIdx].S; //3;
@@ -251,6 +252,12 @@ void MakeLandscapeHollow(TStructuresGenerator* Generator, const FVector& Origin,
 			LandscapeZoneHandler.ZoneIndex = TVoxelIndex(Index.X + X, Index.Y + Y, 0);
 			LandscapeZoneHandler.Function = Function;
 			Generator->AddLandscapeStructure(LandscapeZoneHandler);
+
+
+			AsyncTask(ENamedThreads::GameThread, [=]() {
+				const FVector Pos0 = Generator->GetController()->GetZonePos(LandscapeZoneHandler.ZoneIndex);
+				//DrawDebugBox(Generator->GetController()->GetWorld(), Pos0, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
+			});
 		}
 	}
 }
@@ -643,6 +650,24 @@ void UMainTerrainGeneratorComponent::GenerateStructures() {
 	}
 
 
-	TStructureBigHollow Hollow(TVoxelIndex(-200, 0, 0));
+	TVoxelIndex TestIndex(-200, 0, 0);
+	TStructureBigHollow Hollow(TestIndex);
 	Hollow.MakeMetaData(GetStructuresGenerator());
+
+
+	int S = 2;
+
+	for (auto X1 = -S; X1 <= S; X1++) {
+		for (auto Y1 = -S; Y1 <= S; Y1++) {
+			TVoxelIndex TTT(TestIndex.X + X1, TestIndex.Y + Y1, 0);
+			SetChunkTag(TTT, "no_tree", "Y");
+
+			AsyncTask(ENamedThreads::GameThread, [=]() {
+				const FVector Pos0 = GetController()->GetZonePos(TTT);
+				DrawDebugBox(GetController()->GetWorld(), Pos0, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
+			});
+
+		}
+	}
+
 }

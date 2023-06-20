@@ -1013,3 +1013,26 @@ void AMainPlayerController::SandboxTp(int X, int Y, int Z) {
 void AMainPlayerController::ServerRpcTp_Implementation(int X, int Y, int Z) {
 	SandboxTp(X, Y, Z);
 }
+
+void AMainPlayerController::SandboxExec(const FString& Cmd, const FString& Param) {
+	UE_LOG(LogTemp, Warning, TEXT("SandboxExec: %s %s"), *Cmd, *Param);
+
+	if (Cmd == "resync") {
+		if (TerrainController) {
+			UE_LOG(LogTemp, Warning, TEXT("Resync terrain"));
+			TerrainController->ForceTerrainNetResync();
+		} else {
+			UE_LOG(LogTemp, Warning, TEXT("No terrain controller"));
+		}
+	}
+
+	if (Cmd == "redraw") {
+		if (TerrainController) {
+			UE_LOG(LogTemp, Warning, TEXT("Redraw terrain zones"));
+			TerrainController->UE51MaterialIssueWorkaround();
+		} else {
+			UE_LOG(LogTemp, Warning, TEXT("No terrain controller"));
+		}
+	}
+
+}

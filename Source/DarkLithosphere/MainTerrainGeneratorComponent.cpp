@@ -337,6 +337,13 @@ FSandboxFoliage UMainTerrainGeneratorComponent::FoliageExt(const int32 FoliageTy
 
 	// tree
 	if (Foliage.Type == ESandboxFoliageType::Tree) {
+
+
+		if (CheckZoneTag(ZoneIndex, "no_tree", "Y")) {
+			Foliage.Probability = 0;
+			return Foliage;
+		}
+
 		if (IsSpawnArea(WorldPos)) {
 			Foliage.Probability *= 0.01;
 			return Foliage;
@@ -345,7 +352,7 @@ FSandboxFoliage UMainTerrainGeneratorComponent::FoliageExt(const int32 FoliageTy
 		if (Biome.IsForest()) {
 			//forest
 
-			if (CheckExtZoneParam(ZoneIndex, "wood_logs", "Y")) {
+			if (CheckZoneTag(ZoneIndex, "wood_logs", "Y")) {
 				Foliage.Probability /= 3;
 				return Foliage;
 			}
@@ -394,7 +401,7 @@ FSandboxFoliage UMainTerrainGeneratorComponent::FoliageExt(const int32 FoliageTy
 
 	if (Foliage.Type == ESandboxFoliageType::ForestFoliage) {
 		if (Biome.IsForest()) {
-			if (CheckExtZoneParam(ZoneIndex, "fern", "Y")) {
+			if (CheckZoneTag(ZoneIndex, "fern", "Y")) {
 				if (FoliageTypeId == 3) { //fern
 					Foliage.Probability *= 10;
 					Foliage.SpawnStep = 25;
@@ -405,7 +412,7 @@ FSandboxFoliage UMainTerrainGeneratorComponent::FoliageExt(const int32 FoliageTy
 				Foliage.Probability = 0;
 			}
 
-			if (CheckExtZoneParam(ZoneIndex, "nettle", "Y")) {
+			if (CheckZoneTag(ZoneIndex, "nettle", "Y")) {
 				if (FoliageTypeId == 6) { //nettle
 					Foliage.Probability = 0.1;
 				}
@@ -602,13 +609,13 @@ void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxel
 	}
 	*/
 
-	if (CheckExtZoneParam(ZoneIndex, "wood_logs", "Y")) {
+	if (CheckZoneTag(ZoneIndex, "wood_logs", "Y")) {
 		GenerateRandomInstMesh(ZoneInstanceMeshMap, 904, Rnd, ZoneIndex, Vd, 1, 7); // chopped woods
 		GenerateRandomInstMesh(ZoneInstanceMeshMap, 902, Rnd, ZoneIndex, Vd, 1, 5); // logs
 		GenerateRandomInstMesh(ZoneInstanceMeshMap, 903, Rnd, ZoneIndex, Vd);	// stump
 	}
 
-	if (CheckExtZoneParam(ZoneIndex, "blue_crystalls", "Y")) {
+	if (CheckZoneTag(ZoneIndex, "blue_crystalls", "Y")) {
 		GenerateRandomInstMesh(ZoneInstanceMeshMap, 909, Rnd, ZoneIndex, Vd, 5, 10);
 	}
 
@@ -721,21 +728,20 @@ void UMainTerrainGeneratorComponent::ExtVdGenerationData(TGenerateVdTempItm& VdG
 
 			float Probability = Rnd.FRandRange(0.f, 1.f);
 			if (Probability < 0.025) {
-				ZoneExtData.FindOrAdd(ZoneIndex).Add("wood_logs", "Y");
-
+				SetZoneTag(ZoneIndex, "wood_logs", "Y");
 
 				if (Rnd.FRandRange(0.f, 1.f) < 0.3) {
-					ZoneExtData.FindOrAdd(ZoneIndex).Add("blue_crystalls", "Y");
+					SetZoneTag(ZoneIndex, "blue_crystalls", "Y");
 				}
 			}
 
 			Probability = Rnd.FRandRange(0.f, 1.f);
 			if (Probability < 0.05) {
-				ZoneExtData.FindOrAdd(ZoneIndex).Add("fern", "Y");
+				SetZoneTag(ZoneIndex, "fern", "Y");
 			} else {
 				Probability = Rnd.FRandRange(0.f, 1.f);
 				if (Probability < 0.025) {
-					ZoneExtData.FindOrAdd(ZoneIndex).Add("nettle", "Y");
+					SetZoneTag(ZoneIndex, "nettle", "Y");
 				}
 			}
 
