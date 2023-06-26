@@ -187,6 +187,9 @@ public:
 	UFUNCTION(Server, Reliable)
 	void ServerRpcDestroyActor(int32 X, int32 Y, int32 Z, const FString& Name, FVector Origin);
 
+	UFUNCTION(Server, Reliable)
+	void ServerRpcSpawnObject(uint64 SandboxClassId, const FTransform& Transform, bool bEnablePhysics);
+
 	UFUNCTION(Reliable, Client)
 	void ClientRpcRegisterFinished();
 

@@ -330,6 +330,16 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 			if (SandboxEnvironment) {
 				SandboxEnvironment->UpdatePlayerPosition(Location, this);
 			}
+
+			if (TerrainController) {
+				int R = TerrainController->CheckPlayerPositionZone(Location);
+
+				if (R < 0) {
+					UE_LOG(LogTemp, Warning, TEXT("Incorrect player position detected: %d"), R);
+					SandboxTp(0, 0, 2);
+				}
+			}
+
 		}
 	}
 }
@@ -1036,3 +1046,13 @@ void AMainPlayerController::SandboxExec(const FString& Cmd, const FString& Param
 	}
 
 }
+
+void AMainPlayerController::ServerRpcSpawnObject_Implementation(uint64 SandboxClassId, const FTransform& Transform, bool bEnablePhysics) {
+	if (LevelController) {
+		ASandboxObject* Obj = LevelController->SpawnSandboxObject(SandboxClassId, Transform);
+		if (Obj && bEnablePhysics) {
+			Obj->SandboxRootMesh->SetSimulatePhysics(true);
+		}
+	}
+}
+

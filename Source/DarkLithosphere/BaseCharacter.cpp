@@ -26,7 +26,7 @@ ABaseCharacter::ABaseCharacter(const FObjectInitializer& ObjectInitializer) : Su
 		CursorToWorld->SetDecalMaterial(DecalMaterialAsset.Object);
 	}
 
-	CursorToWorld->DecalSize = FVector(50.f, 100.f, 100.f);
+	CursorToWorld->DecalSize = FVector(5.f, 20.f, 20.f);
 	CursorToWorld->SetRelativeRotation(FRotator(90.0f, 0.0f, 0.0f).Quaternion());
 	CursorToWorld->SetVisibility(false);
 }
@@ -387,28 +387,26 @@ void ABaseCharacter::RebuildEquipment() {
 				const int TypeId = Obj->GetSandboxTypeId();
 				if (TypeId == 500) {
 					ASandboxSkeletalModule* Clothing = Cast<ASandboxSkeletalModule>(Obj);
-					if (Clothing) {
-						if (Clothing->SkeletalMesh) {
-							FString SkMeshBindName = TEXT("ModularSk") + Clothing->SkMeshBindName.ToString() + TEXT("Mesh");
-							USkeletalMeshComponent* SkeletalMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(SkMeshBindName);
-							if (SkeletalMeshComponent) {
-								USkeletalMeshComponent* CharacterMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(TEXT("CharacterMesh0"));
-								SkeletalMeshComponent->SetSkeletalMesh(Clothing->SkeletalMesh);
-								SkeletalMeshComponent->SetMasterPoseComponent(CharacterMeshComponent, true);
+					if (Clothing && Clothing->SkeletalMesh) {
+						FString SkMeshBindName = TEXT("ModularSk") + Clothing->SkMeshBindName.ToString() + TEXT("Mesh");
+						USkeletalMeshComponent* SkeletalMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(SkMeshBindName);
+						if (SkeletalMeshComponent) {
+							USkeletalMeshComponent* CharacterMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(TEXT("CharacterMesh0"));
+							SkeletalMeshComponent->SetSkeletalMesh(Clothing->SkeletalMesh);
+							SkeletalMeshComponent->SetMasterPoseComponent(CharacterMeshComponent, true);
 
-								if (Clothing->bModifyFootPose) {
-									Clothing->GetFootPose(LeftFootRotator, RightFootRotator);
-								}
+							if (Clothing->bModifyFootPose) {
+								Clothing->GetFootPose(LeftFootRotator, RightFootRotator);
+							}
 
-								for (auto& Entry : Clothing->MorphMap) {
-									FString Name = Entry.Key;
-									float Value = Entry.Value;
+							for (auto& Entry : Clothing->MorphMap) {
+								FString Name = Entry.Key;
+								float Value = Entry.Value;
 
-									//UE_LOG(LogTemp, Warning, TEXT("%s %f"), *Name, Value);
-									SkeletalMeshComponent->SetMorphTarget(*Name, Value);
+								//UE_LOG(LogTemp, Warning, TEXT("%s %f"), *Name, Value);
+								SkeletalMeshComponent->SetMorphTarget(*Name, Value);
 
-									UsedSkMeshSet.Add(Clothing->SkMeshBindName.ToString());
-								}
+								UsedSkMeshSet.Add(Clothing->SkMeshBindName.ToString());
 							}
 						}
 					}
@@ -430,9 +428,7 @@ void ABaseCharacter::RebuildEquipment() {
 				SkeletalMeshComponent->SetSkeletalMesh(DefaultSkMesh->SkeletalMesh);
 				SkeletalMeshComponent->SetMasterPoseComponent(CharacterMeshComponent, true);
 			}
-
 		}
-
 	}
 }
 

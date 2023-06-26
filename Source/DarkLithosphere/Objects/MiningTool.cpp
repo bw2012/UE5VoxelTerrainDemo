@@ -77,6 +77,20 @@ void AMiningTool::OnAltAction(const FHitResult& Hit, ABaseCharacter* PlayerChara
 
 		UTerrainInstancedStaticMesh* TerrainInstMesh = Cast<UTerrainInstancedStaticMesh>(Hit.Component.Get());
 		if (TerrainInstMesh) {
+			// FIXME remove hardcoded tree ids
+			if (TerrainInstMesh->MeshTypeId == 100 || TerrainInstMesh->MeshTypeId == 101) {
+
+				FTransform InstanceTransform;
+				TerrainInstMesh->GetInstanceTransform(Hit.Item, InstanceTransform, true);
+
+				FRotator Rotation(0, 0, 90);
+				FVector Pos = InstanceTransform.GetLocation();
+				Pos.Z += 250;
+				FTransform NewTransform(Rotation, Pos, FVector(1));
+
+				MainController->ServerRpcSpawnObject(150, NewTransform, true);
+			}
+
 			if (TerrainInstMesh->IsFoliage()) {
 				FVector Location = Hit.Normal * 25 + Hit.Location;
 
