@@ -88,7 +88,7 @@ void AMiningTool::OnAltAction(const FHitResult& Hit, ABaseCharacter* PlayerChara
 				Pos.Z += 250;
 				FTransform NewTransform(Rotation, Pos, FVector(1));
 
-				MainController->ServerRpcSpawnObject(150, NewTransform, true);
+				//MainController->ServerRpcSpawnObject(150, NewTransform, true);
 			}
 
 			if (TerrainInstMesh->IsFoliage()) {
