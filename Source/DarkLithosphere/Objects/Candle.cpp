@@ -1,6 +1,7 @@
 
 
 #include "Candle.h"
+#include "Net/UnrealNetwork.h"
 #include "SandboxLevelController.h"
 
 
@@ -80,7 +81,6 @@ void ACandle::Tick(float DeltaTime) {
 		}
 	}
 }
-
 
 bool ACandle::PlaceToWorldClcPosition(const UWorld* World, const FVector& SourcePos, const FRotator& SourceRotation, const FHitResult& Res, FVector& Location, FRotator& Rotation, bool bFinal) const {
 	Super::PlaceToWorldClcPosition(World, SourcePos, SourceRotation, Res, Location, Rotation, bFinal);

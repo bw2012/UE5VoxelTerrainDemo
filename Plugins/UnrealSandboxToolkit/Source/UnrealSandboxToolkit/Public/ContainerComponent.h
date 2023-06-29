@@ -38,8 +38,7 @@ struct FContainerStack {
 
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class UNREALSANDBOXTOOLKIT_API UContainerComponent : public UActorComponent
-{
+class UNREALSANDBOXTOOLKIT_API UContainerComponent : public UActorComponent {
 	GENERATED_BODY()
 
 
