@@ -8,6 +8,7 @@ ACandle::ACandle() {
 	PrimaryActorTick.bCanEverTick = true;
 	MaxLifetime = 60;
 	Lifetime = 0;
+	bReplicates = true;
 }
 
 
@@ -121,4 +122,8 @@ void ACandle::OnTerrainChange() {
 	if (Ctrl) {
 		Ctrl->RemoveSandboxObject(this);
 	}
+}
+
+void ACandle::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	DOREPLIFETIME(ACandle, Lifetime);
 }

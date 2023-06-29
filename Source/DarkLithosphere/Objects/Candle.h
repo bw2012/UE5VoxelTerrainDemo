@@ -41,5 +41,9 @@ private:
 
 	float InitialIntensity;
 
+	UPROPERTY(Replicated)
 	float Lifetime;
+
+	UPROPERTY(Replicated)
+	int State = 0;
 };
