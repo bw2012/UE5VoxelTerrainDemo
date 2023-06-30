@@ -44,6 +44,11 @@ private:
 	UPROPERTY(Replicated)
 	float Lifetime;
 
-	UPROPERTY(Replicated)
+	UPROPERTY(ReplicatedUsing = OnRep_State)
 	int State = 0;
+
+	UFUNCTION()
+	void OnRep_State();
+
+	void SetBurnt();
 };

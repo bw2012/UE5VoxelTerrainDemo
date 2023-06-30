@@ -38,6 +38,9 @@ void ACandle::PostLoadProperties() {
 
 	const auto& ParamBurnt = GetProperty(TEXT("Burnt"));
 	if (ParamBurnt == "Y") {
+		State = -1;
+		Lifetime = MaxLifetime;
+
 		UParticleSystemComponent* Flame = GetFirstComponentByName<UParticleSystemComponent>(TEXT("Flame"));
 		Flame->SetVisibility(false);
 
@@ -48,11 +51,34 @@ void ACandle::PostLoadProperties() {
 	}
 }
 
+void ACandle::SetBurnt() {
+	UParticleSystemComponent* Flame = GetFirstComponentByName<UParticleSystemComponent>(TEXT("Flame"));
+	Flame->SetVisibility(false);
+
+	UPointLightComponent* LightComponent = GetFirstComponentByName<UPointLightComponent>(TEXT("CandleLight"));
+	if (LightComponent) {
+		LightComponent->SetIntensity(0);
+	}
+}
+
+void ACandle::OnRep_State() {
+	if (State < 0) {
+		SetBurnt();
+	}
+}
+
+
 void ACandle::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
-	const auto& ParamBurnt = GetProperty(TEXT("Burnt"));
-	if (ParamBurnt == "Y") {
+	if (GetNetMode() != NM_Client) {
+		const auto& ParamBurnt = GetProperty(TEXT("Burnt"));
+		if (ParamBurnt == "Y") {
+			State = -1;
+		}
+	}
+
+	if (State < 0) {
 		return;
 	}
 
@@ -66,15 +92,16 @@ void ACandle::Tick(float DeltaTime) {
 			Lifetime = MaxLifetime;
 			SetProperty(TEXT("Burnt"), TEXT("Y"));
 			RemoveProperty(TEXT("Lifetime"));
-			UParticleSystemComponent* Flame = GetFirstComponentByName<UParticleSystemComponent>(TEXT("Flame"));
-			Flame->SetVisibility(false);
+			State = -1;
+
+			SetBurnt();
+			return;
 		} else {
 			SetProperty(TEXT("Lifetime"), FString::SanitizeFloat(Lifetime));
 		}
 
 		//UE_LOG(LogTemp, Warning, TEXT("Lifetime = %f"), Lifetime);
 		float Intensity = InitialIntensity * (MaxLifetime - Lifetime) / MaxLifetime;
-
 		UPointLightComponent* LightComponent = GetFirstComponentByName<UPointLightComponent>(TEXT("CandleLight"));
 		if (LightComponent) {
 			LightComponent->SetIntensity(Intensity);
@@ -106,7 +133,7 @@ int ACandle::GetMaxStackSize() {
 
 bool ACandle::CanTake(const AActor* Actor) const {
 	const auto& ParamBurnt = GetProperty(TEXT("Burnt"));
-	if (ParamBurnt == "Y") {
+	if (ParamBurnt == "Y" || State < 0) {
 		return false;
 	}
 
@@ -126,4 +153,5 @@ void ACandle::OnTerrainChange() {
 
 void ACandle::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
 	DOREPLIFETIME(ACandle, Lifetime);
+	DOREPLIFETIME(ACandle, State);
 }
