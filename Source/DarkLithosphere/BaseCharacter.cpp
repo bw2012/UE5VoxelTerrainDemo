@@ -363,8 +363,26 @@ void ABaseCharacter::OnFinishSound() {
 //TODO to ASandboxCharacter
 //==========================================================================================
 
+void ABaseCharacter::RebuildMorphs() {
+	USkeletalMeshComponent* CharacterMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(TEXT("CharacterMesh0"));
+	if (CharacterMeshComponent) {
+		CharacterMeshComponent->ClearMorphTargets();
+	}
+
+	for (const auto& Itm : DefaultMeshMorphs) {
+		const FString& Name = Itm.Key;
+		const float Val = Itm.Value;
+		CharacterMeshComponent->SetMorphTarget(FName(*Name), Val);
+	}
+
+	//CharacterMeshComponent->SetMorphTarget("Fitness", 1.f);
+	//CharacterMeshComponent->SetMorphTarget("Mikka Head", 1.f);
+}
+
 void ABaseCharacter::RebuildEquipment() {
 	//UE_LOG(LogTemp, Warning, TEXT("RpcRebuildEquipment"));
+
+	RebuildMorphs();
 
 	//reset foot heel offset
 	LeftFootRotator = DefaultFootRotator; 
@@ -402,12 +420,18 @@ void ABaseCharacter::RebuildEquipment() {
 							for (auto& Entry : Clothing->MorphMap) {
 								FString Name = Entry.Key;
 								float Value = Entry.Value;
-
 								//UE_LOG(LogTemp, Warning, TEXT("%s %f"), *Name, Value);
 								SkeletalMeshComponent->SetMorphTarget(*Name, Value);
-
-								UsedSkMeshSet.Add(Clothing->SkMeshBindName.ToString());
 							}
+
+							for (auto& Entry : Clothing->ParentMorphMap) {
+								FString Name = Entry.Key;
+								float Value = Entry.Value;
+								//UE_LOG(LogTemp, Warning, TEXT("%s %f"), *Name, Value);
+								CharacterMeshComponent->SetMorphTarget(*Name, Value);
+							}
+
+							UsedSkMeshSet.Add(Clothing->SkMeshBindName.ToString());
 						}
 					}
 				}

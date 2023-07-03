@@ -88,6 +88,8 @@ public:
 
 	virtual void OnPossess(APawn* NewPawn) override;
 
+	virtual void OnRep_Pawn() override;
+
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:

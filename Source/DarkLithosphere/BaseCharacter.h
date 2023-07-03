@@ -79,6 +79,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	TArray<TSubclassOf<ASandboxSkeletalModule>> DefaultModularSkMesh;
 
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	TMap<FString, float> DefaultMeshMorphs;
+
 	/** A decal that projects to the cursor location. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UDecalComponent* CursorToWorld;
@@ -140,6 +143,8 @@ public:
 	bool IsDead();
 
 	void RebuildEquipment();
+
+	void RebuildMorphs();
 
 protected:
 

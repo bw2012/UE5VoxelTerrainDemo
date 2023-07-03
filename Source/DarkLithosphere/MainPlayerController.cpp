@@ -780,6 +780,12 @@ void AMainPlayerController::OnPossess(APawn* NewPawn) {
 	*/
 }
 
+void AMainPlayerController::OnRep_Pawn() {
+	Super::OnRep_Pawn();
+	SetupCamera();
+}
+
+
 void AMainPlayerController::SetupCamera() {
 	AALSBaseCharacter* ALSBaseCharacter = Cast<AALSBaseCharacter>(GetCharacter());
 	AALSPlayerCameraManager* CameraManager = Cast<AALSPlayerCameraManager>(PlayerCameraManager);
@@ -833,37 +839,7 @@ void AMainPlayerController::OnContainerMainAction(int32 SlotId, FName ContainerN
 	if (BaseCharacter) {
 		ASandboxObject* Obj = GetInventoryObject(SlotId);
 		if (Obj) {
-
-			/*
-			const int TypeId = Obj->GetSandboxTypeId();
-			if (TypeId == 500) {
-				ASandboxSkeletalModule* Clothing = Cast<ASandboxSkeletalModule>(Obj);
-				if (Clothing) {
-					if (Clothing->SkeletalMesh) {
-						USkeletalMeshComponent* SkeletalMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(BaseCharacter, TEXT("BootsMesh"));
-						if (SkeletalMeshComponent) {
-							UE_LOG(LogTemp, Warning, TEXT("Equip"));
-
-							USkeletalMeshComponent* CharacterMeshComponent = GetFirstComponentByName<USkeletalMeshComponent>(BaseCharacter, TEXT("CharacterMesh0"));
-							SkeletalMeshComponent->SetSkeletalMesh(Clothing->SkeletalMesh);
-							SkeletalMeshComponent->SetMasterPoseComponent(CharacterMeshComponent, true);
-
-							if (Clothing->bModifyFootPose) {
-								Clothing->GetFootPose(BaseCharacter->LeftFootRotator, BaseCharacter->RightFootRotator);
-							}
-
-							for (auto& Entry : Clothing->MorphMap) {
-								FString Name = Entry.Key;
-								float Value = Entry.Value;
-
-								UE_LOG(LogTemp, Warning, TEXT("%s %f"), *Name, Value);
-								SkeletalMeshComponent->SetMorphTarget(*Name, Value);
-							}
-						}
-					}
-				}
-			}
-			*/
+			// do something 
 		}
 	}
 }
@@ -1042,6 +1018,34 @@ void AMainPlayerController::SandboxExec(const FString& Cmd, const FString& Param
 			TerrainController->UE51MaterialIssueWorkaround();
 		} else {
 			UE_LOG(LogTemp, Warning, TEXT("No terrain controller"));
+		}
+	}
+
+	if (Cmd == "test_body") {
+		ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
+		if (BaseCharacter) {
+			BaseCharacter->GetMesh()->SetMorphTarget("Breasts Implants", 1.f);
+			BaseCharacter->GetMesh()->SetMorphTarget("Breasts Implants Right", 1.f);
+			BaseCharacter->GetMesh()->SetMorphTarget("Breasts Implants Left", 1.f);
+			BaseCharacter->GetMesh()->SetMorphTarget("Waist Width", -1.f);
+			BaseCharacter->GetMesh()->SetMorphTarget("Fitness", 1.f);
+			BaseCharacter->GetMesh()->SetMorphTarget("Glutes Size", 1.f);
+			BaseCharacter->GetMesh()->SetMorphTarget("Glutes Width", 1.f);
+			BaseCharacter->GetMesh()->SetMorphTarget("Body Size", 1.f);
+		}
+	}
+
+	if (Cmd == "test_body2") {
+		ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
+		if (BaseCharacter) {
+			BaseCharacter->GetMesh()->SetMorphTarget("Breasts Implants", 1.f);
+			BaseCharacter->GetMesh()->SetMorphTarget("Breasts Implants Right", 0.f);
+			BaseCharacter->GetMesh()->SetMorphTarget("Breasts Implants Left", 0.f);
+			BaseCharacter->GetMesh()->SetMorphTarget("Waist Width", -1.f);
+			BaseCharacter->GetMesh()->SetMorphTarget("Fitness", 1.f);
+			BaseCharacter->GetMesh()->SetMorphTarget("Glutes Size", 0.5f);
+			BaseCharacter->GetMesh()->SetMorphTarget("Glutes Width", 1.f);
+			BaseCharacter->GetMesh()->SetMorphTarget("Body Size", 0.75f);
 		}
 	}
 

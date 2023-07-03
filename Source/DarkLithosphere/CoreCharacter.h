@@ -54,12 +54,11 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	FRotator DefaultFootRotator;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sandbox")
-	FRotator LeftFootRotator;
+	UFUNCTION(BlueprintCallable, Category = "Sandbox")
+	FRotator GetLeftFootRotator();
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sandbox")
-	FRotator RightFootRotator;
-
+	UFUNCTION(BlueprintCallable, Category = "Sandbox")
+	FRotator GetRightFootRotator();
 
 	/*
 	void JumpAction(bool bValue);
@@ -93,5 +92,9 @@ public:
 protected:
 
 	virtual bool CanMove();
+
+	FRotator LeftFootRotator;
+
+	FRotator RightFootRotator;
 
 };

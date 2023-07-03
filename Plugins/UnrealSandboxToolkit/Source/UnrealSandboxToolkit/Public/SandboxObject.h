@@ -125,6 +125,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	TMap<FString, float> MorphMap;
 
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	TMap<FString, float> ParentMorphMap;
+
 	int GetSandboxTypeId() const override;
 
 	void GetFootPose(FRotator& LeftFootRotator, FRotator& RightFootRotator);
