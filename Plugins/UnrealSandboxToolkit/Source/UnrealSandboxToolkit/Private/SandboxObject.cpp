@@ -90,7 +90,6 @@ void ASandboxObject::MainInteraction(const APawn* Source) {
 	// do nothing
 }
 
-
 void ASandboxObject::SetProperty(FString Key, FString Value) {
 	PropertyMap.Add(Key, Value);
 }

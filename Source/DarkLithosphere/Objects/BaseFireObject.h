@@ -34,16 +34,29 @@ protected:
 
 	virtual void BeginPlay() override;
 
+	virtual const TArray<FString>& GetFlameComponentsName() const;
+
 private:
 
 	void SetFlameVisibility(bool Visibility);
 
-	void SetFlameScale(float Scale);
+	void SetFlameScale(FString Name, float Scale);
+
+	void SetAllFlameScale(float Scale);
 
 	double Timestamp;
 
 	float InitialIntensity;
 
+	UPROPERTY(Replicated)
 	float Lifetime;
+
+	UPROPERTY(ReplicatedUsing = OnRep_State)
+	int State = 0;
+
+	UFUNCTION()
+	void OnRep_State();
+
+	void SetBurnt();
 
 };

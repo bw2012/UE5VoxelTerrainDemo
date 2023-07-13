@@ -40,14 +40,7 @@ void ACandle::PostLoadProperties() {
 	if (ParamBurnt == "Y") {
 		State = -1;
 		Lifetime = MaxLifetime;
-
-		UParticleSystemComponent* Flame = GetFirstComponentByName<UParticleSystemComponent>(TEXT("Flame"));
-		Flame->SetVisibility(false);
-
-		UPointLightComponent* LightComponent = GetFirstComponentByName<UPointLightComponent>(TEXT("CandleLight"));
-		if (LightComponent) {
-			LightComponent->SetIntensity(0);
-		}
+		SetBurnt();
 	}
 }
 
@@ -66,7 +59,6 @@ void ACandle::OnRep_State() {
 		SetBurnt();
 	}
 }
-
 
 void ACandle::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);

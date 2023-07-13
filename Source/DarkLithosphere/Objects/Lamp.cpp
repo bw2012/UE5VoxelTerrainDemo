@@ -1,5 +1,6 @@
 
 #include "Lamp.h"
+#include "Net/UnrealNetwork.h"
 
 ALamp::ALamp() {
 	PrimaryActorTick.bCanEverTick = true;
@@ -67,9 +68,11 @@ void ALamp::MainInteraction(const APawn* Source) {
 	if (Param == "Y") {
 		SetProperty(TEXT("Enabled"), TEXT("N"));
 		DisableLight();
+		ServerState = 0;
 	} else {
 		SetProperty(TEXT("Enabled"), TEXT("Y"));
-		//EnableLight();
+		EnableLight();
+		ServerState = 1;
 	}
 }
 
@@ -110,4 +113,21 @@ void ALamp::InElectricPower(float InputPower) {
 			bIsWorks = false;
 		}
 	}
+}
+
+void ALamp::OnRep_State() {
+	if (ServerState != LocalState) {
+
+		if (ServerState > 0) {
+			EnableLight();
+		} else {
+			DisableLight();
+		}
+
+		LocalState = ServerState;
+	}
+}
+
+void ALamp::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	DOREPLIFETIME(ALamp, ServerState);
 }

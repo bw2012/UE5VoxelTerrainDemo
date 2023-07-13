@@ -213,7 +213,8 @@ EBTNodeResult::Type UBTTask_SelectZombieWalkTarget::ExecuteTask(UBehaviorTreeCom
 		UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
 		bool bIsSuccess = NavSys->GetRandomReachablePointInRadius(ResultActor->GetActorLocation(), WalkRadius, ResultLocation, nullptr, FSharedConstNavQueryFilter());
 		if (bIsSuccess) {
-			UE_LOG(LogTemp, Warning, TEXT("set blackboard destination -> %s %f %f %f"), *ResultActor->GetName(), ResultLocation.Location.X, ResultLocation.Location.Y, ResultLocation.Location.Z);
+			UE_LOG(LogTemp, Warning, TEXT("set blackboard destination2 -> %s %f %f %f"), *ResultActor->GetName(), ResultLocation.Location.X, ResultLocation.Location.Y, ResultLocation.Location.Z);
+			DrawDebugPoint(GetWorld(), ResultLocation.Location, 10.f, FColor(255, 0, 0, 0), false, 3);
 			OwnerComp.GetBlackboardComponent()->SetValue<UBlackboardKeyType_Vector>(BlackboardKey.GetSelectedKeyID(), ResultLocation.Location);
 		}
 
@@ -224,7 +225,8 @@ EBTNodeResult::Type UBTTask_SelectZombieWalkTarget::ExecuteTask(UBehaviorTreeCom
 		UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
 		bool bIsSuccess = NavSys->GetRandomReachablePointInRadius(OwnerLocation, WalkRadius, ResultLocation, nullptr, FSharedConstNavQueryFilter());
 		if (bIsSuccess) {
-			UE_LOG(LogTemp, Warning, TEXT("set blackboard destination -> %f %f %f"), ResultLocation.Location.X, ResultLocation.Location.Y, ResultLocation.Location.Z);
+			UE_LOG(LogTemp, Warning, TEXT("set blackboard destination2 -> %f %f %f"), ResultLocation.Location.X, ResultLocation.Location.Y, ResultLocation.Location.Z);
+			DrawDebugPoint(GetWorld(), ResultLocation.Location, 10.f, FColor(255, 0, 0, 0), false, 3);
 			OwnerComp.GetBlackboardComponent()->SetValue<UBlackboardKeyType_Vector>(BlackboardKey.GetSelectedKeyID(), ResultLocation.Location);
 		}
 	}

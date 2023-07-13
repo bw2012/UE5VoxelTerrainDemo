@@ -9,12 +9,11 @@
 #include "Door.generated.h"
 
 UCLASS()
-class DARKLITHOSPHERE_API ADoor : public AConstructionObject
-{
+class DARKLITHOSPHERE_API ADoor : public AConstructionObject {
     GENERATED_BODY()
 
 public:
-    // Sets default values for this actor's properties
+
     ADoor();
 
     //Variable to hold Curve asset
@@ -22,7 +21,7 @@ public:
     UCurveFloat* DoorTimelineFloatCurve;
 
 protected:
-    // Called when the game starts or when spawned 
+
     virtual void BeginPlay() override;
 
     /*MeshComponents to represents Door assets*/
@@ -40,8 +39,11 @@ protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sandbox")
     class UBoxComponent* DoorProxVolume;
 
+    //UPROPERTY(EditAnywhere, Category = "Sandbox")
+    //UAudioComponent* MainSound;
+
     UPROPERTY(EditAnywhere, Category = "Sandbox")
-    UAudioComponent* MainSound;
+    int EffectId;
 
     //Float Track Signature to handle our update track event
     FOnTimelineFloat UpdateFunctionFloat;
@@ -58,18 +60,32 @@ protected:
     void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
 public:
-    // Called every frame
+
     virtual void Tick(float DeltaTime) override;
 
     virtual bool IsInteractive(const APawn* Source);
 
     virtual void MainInteraction(const APawn* Source);
 
+    void DoorInteraction(const FVector& PlayerPos);
+
+    UFUNCTION(NetMulticast, Reliable)
+    void MulticastRpcDoorInteraction(const FVector& PlayerPos);
+
     virtual const UStaticMeshComponent* GetMarkerMesh() const;
+
+    int GetSandboxTypeId() const override;
+
+    UFUNCTION()
+    void OnRep_Rotation();
 
 private:
 
     bool bOpenDirection;
 
+    UPROPERTY(Replicated)
     int DoorState = 0;
+
+    UPROPERTY(ReplicatedUsing = OnRep_Rotation)
+    FRotator ReplicatedRotation;
 };

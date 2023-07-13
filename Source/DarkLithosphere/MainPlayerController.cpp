@@ -54,11 +54,11 @@ void AMainPlayerController::BeginPlay() {
 		bClientPosses = true;
 	}
 
-	for (TActorIterator<ASandboxEnvironment> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
-		ASandboxEnvironment* Env = Cast<ASandboxEnvironment>(*ActorItr);
+	for (TActorIterator<AEnvironmentController> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+		AEnvironmentController* Env = Cast<AEnvironmentController>(*ActorItr);
 		if (Env) {
 			UE_LOG(LogTemp, Log, TEXT("Found ASandboxEnvironment -> %s"), *Env->GetName());
-			SandboxEnvironment = Env;
+			Environment = Env;
 			break;
 		}
 	}
@@ -327,14 +327,14 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 		if (Distance > 50) {
 			PrevLocation = Location;
 			// update player position
-			if (SandboxEnvironment) {
-				SandboxEnvironment->UpdatePlayerPosition(Location, this);
+			if (Environment) {
+				Environment->UpdatePlayerPosition(Location, this);
 			}
 
 			if (TerrainController) {
 				int R = TerrainController->CheckPlayerPositionZone(Location);
 
-				if (R < 0) {
+				if (R < -1) {
 					UE_LOG(LogTemp, Warning, TEXT("Incorrect player position detected: %d"), R);
 					SandboxTp(0, 0, 2);
 				}
@@ -343,6 +343,7 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 		}
 	}
 }
+
 void AMainPlayerController::OnStartBackgroundSave() {
 	AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
 	if (MainHud) {
@@ -855,7 +856,7 @@ void AMainPlayerController::OnContainerDropSuccess(int32 SlotId, FName SourceNam
 
 bool AMainPlayerController::OnContainerDropCheck(int32 SlotId, FName ContainerName, const ASandboxObject* Obj) const {
 	if (ContainerName == TEXT("Equipment")) {
-		if (Obj->GetSandboxTypeId() == 500) {
+		if (Obj->GetSandboxTypeId() == SandboxType_Equipment) {
 			return true;
 		} 
 
@@ -1049,13 +1050,30 @@ void AMainPlayerController::SandboxExec(const FString& Cmd, const FString& Param
 		}
 	}
 
+	if (Cmd == "event1") {
+
+	}
+
 }
 
 void AMainPlayerController::ServerRpcSpawnObject_Implementation(uint64 SandboxClassId, const FTransform& Transform, bool bEnablePhysics) {
 	if (LevelController) {
 		ASandboxObject* Obj = LevelController->SpawnSandboxObject(SandboxClassId, Transform);
-		if (Obj && bEnablePhysics) {
-			Obj->SandboxRootMesh->SetSimulatePhysics(true);
+		if (Obj) {
+			Obj->OnPlaceToWorld(); // invoke only if spawn by player. not save/load or other cases
+
+			if (bEnablePhysics) {
+				Obj->SandboxRootMesh->SetSimulatePhysics(true);
+			}
+		}
+	}
+}
+
+void AMainPlayerController::SpawnObjectByPlayer(uint64 SandboxClassId, FTransform Transform) {
+	if (LevelController) {
+		ASandboxObject* Obj = LevelController->SpawnSandboxObject(SandboxClassId, Transform);
+		if (Obj) {
+			Obj->OnPlaceToWorld(); // invoke only if spawn by player. not save/load or other cases
 		}
 	}
 }

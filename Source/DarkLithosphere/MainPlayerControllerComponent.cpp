@@ -4,9 +4,9 @@
 #include "BaseCharacter.h"
 #include "Objects/MiningTool.h"
 #include "Objects/BaseObject.h"
+#include "Objects/Door.h"
 #include "SpawnHelper.h"
 #include "TerrainZoneComponent.h"
-
 
 
 //bool IsCursorPositionValid(const FHitResult& Hit);
@@ -323,12 +323,12 @@ bool UMainPlayerControllerComponent::PlaceCurrentObjectToWorld() {
 						FTransform Transform(Rotation, Location, FVector(1));
 
 						if (GetNetMode() != NM_Client) {
-							InternalSpawnObject(Obj->GetSandboxClassId(), Transform);
+							MainController->SpawnObjectByPlayer(Obj->GetSandboxClassId(), Transform);
 						}
 
 						// TODO переделать
 						if (GetNetMode() == NM_Client) {
-							ServerRpcSpawnObject(Obj->GetSandboxClassId(), Transform);
+							MainController->ServerRpcSpawnObject(Obj->GetSandboxClassId(), Transform, false);
 							ServerRpcDecreaseObjectsInContainer(TEXT("Inventory"), MainController->CurrentInventorySlot);
 						}
 
@@ -359,18 +359,18 @@ void UMainPlayerControllerComponent::ServerRpcDecreaseObjectsInContainer_Impleme
 	}
 }
 
-
-void UMainPlayerControllerComponent::ServerRpcSpawnObject_Implementation(uint64 SandboxClassId, FTransform Transform) {
-	InternalSpawnObject(SandboxClassId, Transform);
-}
-
-void UMainPlayerControllerComponent::InternalSpawnObject(uint64 SandboxClassId, FTransform Transform) {
+void UMainPlayerControllerComponent::ServerRpcObjMainInteraction_Implementation(ASandboxObject* Obj) {
 	AMainPlayerController* MainController = (AMainPlayerController*)GetOwner();
 	if (MainController) {
-		ASandboxObject* Obj = MainController->LevelController->SpawnSandboxObject(SandboxClassId, Transform);
-		if (Obj) {
-			Obj->OnPlaceToWorld(); // invoke only if spawn by player. not save/load or other cases
-		}
+		Obj->MainInteraction(MainController->GetPawn());
+	}
+}
+
+void UMainPlayerControllerComponent::ServerRpcDoorInteraction_Implementation(ASandboxObject* Obj, const FVector& PlayerPos) {
+	ADoor* Door = Cast<ADoor>(Obj);
+	if (Door) {
+		//Door->DoorInteraction(PlayerPos);
+		Door->MulticastRpcDoorInteraction(PlayerPos);
 	}
 }
 
@@ -416,11 +416,11 @@ bool UMainPlayerControllerComponent::PlaceCraftedObjectToWorld() {
 							auto SandboxClassId = CraftRecipeData->SandboxClassId;
 
 							if (GetNetMode() != NM_Client) {
-								InternalSpawnObject(SandboxClassId, Transform);
+								MainController->SpawnObjectByPlayer(SandboxClassId, Transform);
 							}
 
 							if (GetNetMode() == NM_Client) {
-								ServerRpcSpawnObject(SandboxClassId, Transform);
+								MainController->ServerRpcSpawnObject(SandboxClassId, Transform, false);
 							}
 
 							if (CraftRecipeData->bOnlyOne) {
@@ -548,7 +548,18 @@ void UMainPlayerControllerComponent::MainInteraction() {
 			ASandboxObject* Obj = Cast<ASandboxObject>(Hit.GetActor());
 			if (Obj) {
 				if (Obj->IsInteractive()) {
-					Obj->MainInteraction(MainController->GetPawn());
+
+					if (Obj->GetSandboxTypeId() == SandboxType_Door) {
+						ServerRpcDoorInteraction(Obj, MainController->GetPawn()->GetActorLocation());
+						return;
+					}
+
+					if (GetNetMode() == NM_Client) {
+						ServerRpcObjMainInteraction(Obj);
+					} else {
+						Obj->MainInteraction(MainController->GetPawn());
+					}
+
 				} else {
 					ABaseObject* BaseObj = Cast<ABaseObject>(Obj);
 					if (BaseObj) {

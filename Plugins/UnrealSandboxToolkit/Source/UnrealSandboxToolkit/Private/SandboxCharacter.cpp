@@ -488,6 +488,14 @@ void ASandboxCharacter::LiveUp() {
 	}
 }
 
+int ASandboxCharacter::GetSandboxTypeId() {
+	return SandboxTypeId;
+}
+
+FString ASandboxCharacter::GetSandboxPlayerUid() {
+	return "";
+}
+
 void ASandboxCharacter::OnHit(class UPrimitiveComponent* HitComp, class AActor* Actor, class UPrimitiveComponent* Other, FVector Impulse, const FHitResult & HitResult) {
 	/*
 	float HitVelocity = GetCapsuleComponent()->GetComponentVelocity().Size();

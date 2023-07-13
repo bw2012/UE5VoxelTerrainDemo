@@ -60,6 +60,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sandbox")
 	FRotator GetRightFootRotator();
 
+	UFUNCTION(BlueprintCallable, Category = "Sandbox")
+	virtual FVector GetBoneScale(FName BoneName);
+
 	/*
 	void JumpAction(bool bValue);
 

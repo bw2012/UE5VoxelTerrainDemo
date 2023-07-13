@@ -3,6 +3,7 @@
 #include "GameFramework/PlayerController.h"
 #include "SandboxPlayerController.h"
 #include "SandboxEnvironment.h"
+#include "EnvironmentController.h"
 #include "LevelController.h"
 #include "TerrainController.h"
 #include "DummyPawn.h"
@@ -261,11 +262,13 @@ protected:
 		return nullptr;
 	}
 
+	void SpawnObjectByPlayer(uint64 SandboxClassId, FTransform Transform);
+
 private:
 	bool bGuiMode = false;
 
 	UPROPERTY()
-	ASandboxEnvironment* SandboxEnvironment;
+	AEnvironmentController* Environment;
 
 	UPROPERTY()
 	ATerrainController* TerrainController;

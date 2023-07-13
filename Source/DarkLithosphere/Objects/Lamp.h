@@ -52,5 +52,15 @@ public:
 
 private:
 
+	UPROPERTY(ReplicatedUsing = OnRep_State)
+	int ServerState = 0;
+
+	UPROPERTY()
+	int LocalState = 0;
+
 	bool bIsWorks = false;
+
+	UFUNCTION()
+	void OnRep_State();
+
 };

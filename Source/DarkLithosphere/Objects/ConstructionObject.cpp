@@ -308,7 +308,6 @@ void AConstructionObject::OnPlaceToWorld() {
 				break;
 			}
 		}
-
 	}
 
 	if (ConstructionType == EConstructionType::Foundation) {

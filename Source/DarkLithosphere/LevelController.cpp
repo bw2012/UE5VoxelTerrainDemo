@@ -90,36 +90,39 @@ void ALevelController::SaveLevelJsonExt(TSharedRef<TJsonWriter<TCHAR>> JsonWrite
 
 	JsonWriter->WriteArrayStart("CharacterList");
 
-	TArray<AActor*> FoundActors;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABaseCharacter::StaticClass(), FoundActors);
-	for (const auto& Actor : FoundActors) {
-		ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(Actor);
+
+	TArray<AActor*> ActorList;
+	UGameplayStatics::GetAllActorsWithInterface(GetWorld(), USandboxCoreCharacter::StaticClass(), ActorList);
+	for (const auto& Actor : ActorList) {
+		UE_LOG(LogTemp, Warning, TEXT("Actor: %s"), *Actor->GetName());
+
+		ISandboxCoreCharacter* BaseCharacter = Cast<ISandboxCoreCharacter>(Actor);
 		if (BaseCharacter) {
-			if (BaseCharacter->bNoSerialization) {
-				continue;
-			}
+			//if (BaseCharacter->bNoSerialization) {
+			//	continue;
+			//}
 
 			JsonWriter->WriteObjectStart();
 			JsonWriter->WriteObjectStart("Character");
 
-			FString Label = BaseCharacter->GetName();
+			FString Label = Actor->GetName();
 			JsonWriter->WriteValue("ActorLabel",Label);
 
-			int TypeId = BaseCharacter->SandboxTypeId;
+			int TypeId = BaseCharacter->GetSandboxTypeId();
 			JsonWriter->WriteValue("TypeId", TypeId);
 
-			FString PlayerUid = BaseCharacter->SandboxPlayerUid;
+			FString PlayerUid = BaseCharacter->GetSandboxPlayerUid();
 			JsonWriter->WriteValue("PlayerId", PlayerUid);
 
 			JsonWriter->WriteArrayStart("Location");
-			FVector Location = BaseCharacter->GetActorLocation();
+			FVector Location = Actor->GetActorLocation();
 			JsonWriter->WriteValue(Location.X);
 			JsonWriter->WriteValue(Location.Y);
 			JsonWriter->WriteValue(Location.Z);
 			JsonWriter->WriteArrayEnd();
 
 			JsonWriter->WriteArrayStart("Rotation");
-			FRotator Rotation = BaseCharacter->GetActorRotation();
+			FRotator Rotation = Actor->GetActorRotation();
 			JsonWriter->WriteValue(Rotation.Pitch);
 			JsonWriter->WriteValue(Rotation.Yaw);
 			JsonWriter->WriteValue(Rotation.Roll);
@@ -128,7 +131,7 @@ void ALevelController::SaveLevelJsonExt(TSharedRef<TJsonWriter<TCHAR>> JsonWrite
 			JsonWriter->WriteArrayStart("Containers");
 
 			TArray<UContainerComponent*> Components;
-			BaseCharacter->GetComponents<UContainerComponent>(Components);
+			Actor->GetComponents<UContainerComponent>(Components);
 
 			for (UContainerComponent* Container : Components) {
 				ContainerToJson(Container, JsonWriter);
@@ -266,15 +269,11 @@ void ALevelController::LoadCaharacterListJson(FString ListName, TSharedPtr<FJson
 		}
 
 		if (CharacterMap->CharacterTypeMap.Contains(TempCharacterInfo.TypeId)) {
-			TSubclassOf<ABaseCharacter> BaseCharacterSubclass = (TSubclassOf<ABaseCharacter>)CharacterMap->CharacterTypeMap[TempCharacterInfo.TypeId];
-			if (BaseCharacterSubclass) {
-				TempCharacterList.Add(TempCharacterInfo);
-				ConservedCharacterMap.Add(TempCharacterInfo.SandboxPlayerUid, TempCharacterInfo);
-			}
+			TempCharacterList.Add(TempCharacterInfo);
+			ConservedCharacterMap.Add(TempCharacterInfo.SandboxPlayerUid, TempCharacterInfo);
 		}
 	}
 }
-
 
 void ALevelController::LoadLevelJsonExt(TSharedPtr<FJsonObject> JsonParsed) {
 	if (Environment) {
@@ -321,10 +320,11 @@ void ALevelController::LoadLevelJsonExt(TSharedPtr<FJsonObject> JsonParsed) {
 }
 
 ACharacter* ALevelController::SpawnCharacter(const FCharacterLoadInfo& TempCharacterInfo) {
-	TSubclassOf<ABaseCharacter> BaseCharacterSubclass = (TSubclassOf<ABaseCharacter>)CharacterMap->CharacterTypeMap[TempCharacterInfo.TypeId];
+	TSubclassOf<ACharacter> CharacterSubclass = CharacterMap->CharacterTypeMap[TempCharacterInfo.TypeId];
 
 	FVector Pos(TempCharacterInfo.Location.X, TempCharacterInfo.Location.Y, TempCharacterInfo.Location.Z + 100);// ALS spawn issue workaround
-	ABaseCharacter* BaseCharacter = (ABaseCharacter*)GetWorld()->SpawnActor(BaseCharacterSubclass, &Pos, &TempCharacterInfo.Rotation);
+	AActor* NewActor = GetWorld()->SpawnActor(CharacterSubclass, &Pos, &TempCharacterInfo.Rotation);
+	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(NewActor);
 	if (BaseCharacter) {
 		BaseCharacter->SandboxPlayerUid = TempCharacterInfo.SandboxPlayerUid;
 		UContainerComponent* InventoryContainer = BaseCharacter->GetContainer("Inventory");

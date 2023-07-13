@@ -1,20 +1,25 @@
 
+
 #include "BaseFireObject.h"
+#include "Net/UnrealNetwork.h"
+#include "SandboxLevelController.h"
+
 
 ABaseFireObject::ABaseFireObject() {
 	PrimaryActorTick.bCanEverTick = true;
 	MaxLifetime = 60;
 	Lifetime = 0;
+	bReplicates = true;
 }
-
 
 bool ABaseFireObject::CanTake(const AActor* Actor) const {
 	return false;
 }
 
 void ABaseFireObject::OnTerrainChange() {
-	// do nothing
-	// TODO destroy
+	if (ASandboxLevelController::GetInstance()) {
+		ASandboxLevelController::GetInstance()->RemoveSandboxObject(this);
+	}
 }
 
 void ABaseFireObject::BeginPlay() {
@@ -42,31 +47,30 @@ void ABaseFireObject::PostLoadProperties() {
 
 	const auto& ParamBurnt = GetProperty(TEXT("Burnt"));
 	if (ParamBurnt == "Y") {
-		SetFlameVisibility(false);
-
-		UPointLightComponent* LightComponent = GetFirstComponentByName<UPointLightComponent>(TEXT("FireLight"));
-		if (LightComponent) {
-			LightComponent->SetIntensity(0);
-		}
-
-		SandboxRootMesh->SetCastShadow(true);
+		State = -1;
+		Lifetime = MaxLifetime;
+		SetBurnt();
 	}
 }
 
-void ABaseFireObject::SetFlameScale(float Scale) {
-	UParticleSystemComponent* Flame1 = GetFirstComponentByName<UParticleSystemComponent>(TEXT("Flame_01"));
-	if (Flame1) {
-		Flame1->SetRelativeScale3D(FVector(Scale, Scale, Scale));
-	}
+TArray<FString> ComponentNames = { TEXT("Flame_01"), TEXT("Flame_02"), TEXT("Flame_03") };
 
-	UParticleSystemComponent* Flame2 = GetFirstComponentByName<UParticleSystemComponent>(TEXT("Flame_02"));
-	if (Flame2) {
-		Flame2->SetRelativeScale3D(FVector(Scale, Scale, Scale));
-	}
+const TArray<FString>& ABaseFireObject::GetFlameComponentsName() const {
+	return ComponentNames;
+}
 
-	UParticleSystemComponent* Flame3 = GetFirstComponentByName<UParticleSystemComponent>(TEXT("Flame_03"));
-	if (Flame3) {
-		Flame3->SetRelativeScale3D(FVector(Scale, Scale, Scale));
+void ABaseFireObject::SetFlameScale(FString Name, float Scale) {
+	UParticleSystemComponent* Flame = GetFirstComponentByName<UParticleSystemComponent>(Name);
+	if (Flame) {
+		Flame->SetRelativeScale3D(FVector(Scale, Scale, Scale));
+	}
+}
+
+void ABaseFireObject::SetAllFlameScale(float Scale) {
+	const TArray<FString>& List = GetFlameComponentsName();
+
+	for (const auto& Name : List) {
+		SetFlameScale(Name, Scale);
 	}
 }
 
@@ -87,11 +91,36 @@ void ABaseFireObject::SetFlameVisibility(bool Visibility) {
 	}
 }
 
+void ABaseFireObject::OnRep_State() {
+	if (State < 0) {
+		SetBurnt();
+	}
+}
+
+void ABaseFireObject::SetBurnt() {
+	SetFlameVisibility(false);
+
+	UPointLightComponent* LightComponent = GetFirstComponentByName<UPointLightComponent>(TEXT("FireLight"));
+	if (LightComponent) {
+		LightComponent->SetIntensity(0);
+	}
+
+	SandboxRootMesh->SetCastShadow(true);
+}
+
 void ABaseFireObject::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
-	const auto& ParamBurnt = GetProperty(TEXT("Burnt"));
-	if (ParamBurnt == "Y") {
+	if (GetNetMode() != NM_Client) {
+		const auto& ParamBurnt = GetProperty(TEXT("Burnt"));
+		if (ParamBurnt == "Y") {
+			State = -1;
+		}
+	} else {
+		//UE_LOG(LogTemp, Warning, TEXT("Lifetime = %f"), Lifetime);
+	}
+
+	if (State < 0) {
 		return;
 	}
 
@@ -105,24 +134,26 @@ void ABaseFireObject::Tick(float DeltaTime) {
 			Lifetime = MaxLifetime;
 			SetProperty(TEXT("Burnt"), TEXT("Y"));
 			RemoveProperty(TEXT("Lifetime"));
-			SetFlameVisibility(false);
+			SetBurnt();
 			SandboxRootMesh->SetCastShadow(true);
 		} else {
 			SetProperty(TEXT("Lifetime"), FString::SanitizeFloat(Lifetime));
 		}
 
-
 		const float T2 = (MaxLifetime - Lifetime) / MaxLifetime;
 		const float Intensity = InitialIntensity * T2;
 
-		//UE_LOG(LogTemp, Warning, TEXT("T = %f"), T);
-
 		const float FlameScale = (T2 > 0.4) ? T2 : 0.4;
-		SetFlameScale(FlameScale);
+		SetAllFlameScale(FlameScale);
 
 		UPointLightComponent* LightComponent = GetFirstComponentByName<UPointLightComponent>(TEXT("FireLight"));
 		if (LightComponent) {
 			LightComponent->SetIntensity(Intensity);
 		}
 	}
+}
+
+void ABaseFireObject::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	DOREPLIFETIME(ABaseFireObject, Lifetime);
+	DOREPLIFETIME(ABaseFireObject, State);
 }

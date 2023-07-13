@@ -7,8 +7,7 @@
 #include "DarkLithosphereCharacter.generated.h"
 
 UCLASS(config=Game)
-class ADarkLithosphereCharacter : public ACharacter
-{
+class ADarkLithosphereCharacter : public ACharacter {
 	GENERATED_BODY()
 
 	/** Camera boom positioning the camera behind the character */

@@ -9,7 +9,7 @@ ACoreCharacter::ACoreCharacter(const FObjectInitializer& ObjectInitializer) : Su
 
 void ACoreCharacter::BeginPlay() {
 	Super::BeginPlay();
-	SetOverlayState(InitialOverlayState, true);
+	//SetOverlayState(InitialOverlayState, true);
 
 	LeftFootRotator = DefaultFootRotator; // 55, 5, 10 roll, pitch, yaw Pitch(InF), Yaw(InF), Roll(InF)
 	RightFootRotator = FRotator(-DefaultFootRotator.Pitch, -DefaultFootRotator.Yaw, DefaultFootRotator.Roll);
@@ -44,6 +44,10 @@ bool ACoreCharacter::CanMove() {
 
 FRotator ACoreCharacter::GetLeftFootRotator() {
 	return LeftFootRotator;
+}
+
+FVector ACoreCharacter::GetBoneScale(FName BoneName) {
+	return FVector(1, 1.1, 1);
 }
 
 FRotator ACoreCharacter::GetRightFootRotator() {

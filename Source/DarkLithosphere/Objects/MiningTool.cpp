@@ -26,7 +26,7 @@ AMiningTool::AMiningTool() {
 }
 
 int AMiningTool::GetSandboxTypeId() const {
-	return 100;
+	return SandboxType_Tool;
 }
 
 void AMiningTool::ToggleToolMode() {

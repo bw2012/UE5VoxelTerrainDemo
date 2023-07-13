@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "ContainerComponent.h"
 #include "CoreCharacter.h"
+#include "SandboxCharacter.h"
 #include "SandboxObjectMap.h"
 #include "Runtime/Engine/Classes/Engine/DataAsset.h"
 #include "BaseCharacter.generated.h"
@@ -20,13 +21,13 @@ class DARKLITHOSPHERE_API UCharacterMap : public UDataAsset {
 
 public:
 
-	UPROPERTY(EditAnywhere, Category = "DW")
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	TMap<int32, TSubclassOf<ACharacter>> CharacterTypeMap;
 };
 
 
 UCLASS()
-class DARKLITHOSPHERE_API ABaseCharacter : public ACoreCharacter {
+class DARKLITHOSPHERE_API ABaseCharacter : public ACoreCharacter, public ISandboxCoreCharacter {
 	GENERATED_BODY()
 
 public:
@@ -145,6 +146,10 @@ public:
 	void RebuildEquipment();
 
 	void RebuildMorphs();
+
+	int GetSandboxTypeId() override;
+
+	FString GetSandboxPlayerUid() override;
 
 protected:
 

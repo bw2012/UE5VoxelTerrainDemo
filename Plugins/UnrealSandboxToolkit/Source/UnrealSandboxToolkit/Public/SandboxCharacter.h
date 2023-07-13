@@ -18,23 +18,44 @@ enum class PlayerView : uint8 {
 	FIRST_PERSON = 2	UMETA(DisplayName = "First Person")
 };
 
-UCLASS()
-class UNREALSANDBOXTOOLKIT_API ASandboxCharacter : public ACharacter
-{
+
+
+UINTERFACE(MinimalAPI, Blueprintable)
+class USandboxCoreCharacter : public UInterface {
+	GENERATED_BODY()
+};
+
+
+
+class ISandboxCoreCharacter {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
+
+	virtual int GetSandboxTypeId() = 0;
+
+	virtual FString GetSandboxPlayerUid() = 0;
+
+};
+
+
+
+UCLASS()
+class UNREALSANDBOXTOOLKIT_API ASandboxCharacter : public ACharacter, public ISandboxCoreCharacter {
+	GENERATED_BODY()
+
+public:
+
 	ASandboxCharacter();
 
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 	
-	// Called every frame
 	virtual void Tick( float DeltaSeconds ) override;
 
-	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
+
+	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
+	int SandboxTypeId = 0;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
@@ -110,6 +131,10 @@ public:
 	void BoostOn();
 
 	void BoostOff();
+
+	int GetSandboxTypeId() override;
+
+	FString GetSandboxPlayerUid() override;
 
 	/*
 	UFUNCTION(BlueprintImplementableEvent, Category = "DmgSystem")

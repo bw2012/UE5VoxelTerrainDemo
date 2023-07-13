@@ -403,7 +403,7 @@ void ABaseCharacter::RebuildEquipment() {
 			ASandboxObject* Obj = ASandboxLevelController::GetDefaultSandboxObject(ClassId);
 			if (Obj) {
 				const int TypeId = Obj->GetSandboxTypeId();
-				if (TypeId == 500) {
+				if (TypeId == SandboxType_Equipment) {
 					ASandboxSkeletalModule* Clothing = Cast<ASandboxSkeletalModule>(Obj);
 					if (Clothing && Clothing->SkeletalMesh) {
 						FString SkMeshBindName = TEXT("ModularSk") + Clothing->SkMeshBindName.ToString() + TEXT("Mesh");
@@ -489,6 +489,14 @@ void ABaseCharacter::ResetCursorMesh() {
 	CursorMesh->SetVisibility(false, true);
 	CursorMesh->SetStaticMesh(nullptr);
 	CursorMesh->SetRelativeScale3D(FVector(1));
+}
+
+int ABaseCharacter::GetSandboxTypeId() {
+	return SandboxTypeId;
+}
+
+FString ABaseCharacter::GetSandboxPlayerUid() {
+	return SandboxPlayerUid;
 }
 
 //==========================================================================================

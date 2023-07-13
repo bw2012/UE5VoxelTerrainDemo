@@ -664,7 +664,7 @@ void UMainTerrainGeneratorComponent::GenerateStructures() {
 
 			AsyncTask(ENamedThreads::GameThread, [=]() {
 				const FVector Pos0 = GetController()->GetZonePos(TTT);
-				DrawDebugBox(GetController()->GetWorld(), Pos0, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
+				//DrawDebugBox(GetController()->GetWorld(), Pos0, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
 			});
 
 		}
