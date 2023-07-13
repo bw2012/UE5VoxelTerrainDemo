@@ -1,7 +1,7 @@
 // Copyright blackw 2015-2020
 
 #include "VitalSysWidget.h"
-//#include "VitalSystemComponent.h"
+#include "VitalSystemComponent.h"
 #include "SandboxCharacter.h"
 
 
@@ -14,15 +14,12 @@ float USandboxVitalSysWidget::GetMaxHealth() {
 }
 
 UVitalSystemComponent* USandboxVitalSysWidget::GetVitalSystemComponent() {
-	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetOwningPlayer()->GetPawn());
-	if (SandboxCharacter) {
-		/*
+	if (GetOwningPlayer()->GetPawn()) {
 		TArray<UVitalSystemComponent*> Components;
-		SandboxCharacter->GetComponents<UVitalSystemComponent>(Components);
+		GetOwningPlayer()->GetPawn()->GetComponents<UVitalSystemComponent>(Components);
 		for (UVitalSystemComponent* VitalSystemComponent : Components) {
 			return VitalSystemComponent;
 		}
-		*/
 	}
 
 	return nullptr;

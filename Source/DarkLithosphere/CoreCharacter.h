@@ -46,6 +46,8 @@ public:
 
 	void CameraPressedAction();
 
+	void WalkPressedAction();
+
 public:
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")

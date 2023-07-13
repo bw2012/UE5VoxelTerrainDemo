@@ -9,7 +9,7 @@ ACoreCharacter::ACoreCharacter(const FObjectInitializer& ObjectInitializer) : Su
 
 void ACoreCharacter::BeginPlay() {
 	Super::BeginPlay();
-	//SetOverlayState(InitialOverlayState, true);
+	SetOverlayState(InitialOverlayState, true);
 
 	LeftFootRotator = DefaultFootRotator; // 55, 5, 10 roll, pitch, yaw Pitch(InF), Yaw(InF), Roll(InF)
 	RightFootRotator = FRotator(-DefaultFootRotator.Pitch, -DefaultFootRotator.Yaw, DefaultFootRotator.Roll);
@@ -26,7 +26,7 @@ void ACoreCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("JumpAction", IE_Pressed, this, &ACoreCharacter::JumpPressedAction);
 	PlayerInputComponent->BindAction("JumpAction", IE_Released, this, &ACoreCharacter::JumpReleasedAction);
 	//PlayerInputComponent->BindAction("StanceAction", IE_Pressed, this, &AALSBaseCharacter::StancePressedAction);
-	//PlayerInputComponent->BindAction("WalkAction", IE_Pressed, this, &AALSBaseCharacter::WalkPressedAction);
+	PlayerInputComponent->BindAction("WalkAction", IE_Pressed, this, &ACoreCharacter::WalkPressedAction);
 	PlayerInputComponent->BindAction("RagdollAction", IE_Pressed, this, &ACoreCharacter::RagdollPressedAction);
 	//PlayerInputComponent->BindAction("SelectRotationMode_1", IE_Pressed, this, &AALSBaseCharacter::VelocityDirectionPressedAction);
 	//PlayerInputComponent->BindAction("SelectRotationMode_2", IE_Pressed, this,&AALSBaseCharacter::LookingDirectionPressedAction);
@@ -111,4 +111,8 @@ void ACoreCharacter::CameraPressedAction() {
 			SetViewMode(EALSViewMode::FirstPerson);
 		}
 	}
+}
+
+void ACoreCharacter::WalkPressedAction() {
+	WalkAction_Implementation();
 }
