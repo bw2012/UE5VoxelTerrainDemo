@@ -25,8 +25,6 @@ class USandboxCoreCharacter : public UInterface {
 	GENERATED_BODY()
 };
 
-
-
 class ISandboxCoreCharacter {
 	GENERATED_BODY()
 
@@ -35,6 +33,10 @@ public:
 	virtual int GetSandboxTypeId() = 0;
 
 	virtual FString GetSandboxPlayerUid() = 0;
+
+	virtual float GetStaminaTickDelta() { return 0; }
+
+	virtual void OnStaminaExhausted() { }
 
 };
 

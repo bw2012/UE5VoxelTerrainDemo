@@ -27,7 +27,7 @@ UVitalSystemComponent* USandboxVitalSysWidget::GetVitalSystemComponent() {
 
 
 float USandboxVitalSysWidget::GetHealthInPercent() {
-	/*
+
 	UVitalSystemComponent* VitalSystemComponent = GetVitalSystemComponent();
 	if (VitalSystemComponent) {
 		const float Health = VitalSystemComponent->GetHealth();
@@ -36,13 +36,13 @@ float USandboxVitalSysWidget::GetHealthInPercent() {
 		const float Res = Health / AbsoluteMaxHealth;
 		return Res;
 	}
-	*/
+	
 
-	return 0.f;
+	return 1.f;
 }
 
 float USandboxVitalSysWidget::GetStaminaInPercent() {
-	/*
+	
 	UVitalSystemComponent* VitalSystemComponent = GetVitalSystemComponent();
 	if (VitalSystemComponent) {
 		const float Stamina = VitalSystemComponent->GetStamina();
@@ -50,7 +50,6 @@ float USandboxVitalSysWidget::GetStaminaInPercent() {
 		const float Res = Stamina / AbsoluteMaxStamina;
 		return Res;
 	}
-	*/
-
+	
 	return 0.f;
 }

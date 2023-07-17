@@ -151,6 +151,10 @@ public:
 
 	FString GetSandboxPlayerUid() override;
 
+	virtual float GetStaminaTickDelta() override;
+
+	virtual void OnStaminaExhausted() override;
+
 protected:
 
 	bool bIsAttacking = false;

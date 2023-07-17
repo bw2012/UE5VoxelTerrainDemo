@@ -16,12 +16,7 @@ UVitalSystemComponent::UVitalSystemComponent() {
 }
 
 bool UVitalSystemComponent::IsOwnerAdmin() {
-	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetOwner());
-	if (SandboxCharacter) {
-		//return SandboxCharacter->bIsAdmin;
-	}
-
-	return true;
+	return false;
 }
 
 float UVitalSystemComponent::GetHealth() {
@@ -31,7 +26,6 @@ float UVitalSystemComponent::GetHealth() {
 float UVitalSystemComponent::GetMaxHealth() {
 	return MaxHealth;
 }
-
 
 void UVitalSystemComponent::ChangeHealth(float Val){
 	Health += Val;
@@ -60,28 +54,40 @@ float UVitalSystemComponent::GetMaxStamina() {
 }
 
 void UVitalSystemComponent::ChangeStamina(float Val) {
-	if (IsOwnerAdmin() && Val < 0) { return; }
+	if (IsOwnerAdmin() && Val < 0) { 
+		return; 
+	}
+
 	Stamina += Val;
-	if (Stamina <= 0) { Stamina = 0; }
-	if (Stamina > MaxStamina) { Stamina = MaxStamina; }
+
+	if (Stamina <= 0) { 
+		Stamina = 0; 
+	}
+
+	if (Stamina > MaxStamina) { 
+		Stamina = MaxStamina;
+	}
 }
 
 void UVitalSystemComponent::PerformTimer() {
-	ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetOwner());
+	ISandboxCoreCharacter* SandboxCharacter = Cast<ISandboxCoreCharacter>(GetOwner());
 	if (SandboxCharacter) {
-		float Velocity = SandboxCharacter->GetCapsuleComponent()->GetComponentVelocity().Size();
-		if (Velocity > 100) { 
-			ChangeStamina(-Velocity * 0.001f);
+		const float D = -SandboxCharacter->GetStaminaTickDelta();
+		if (D < 0) {
+			const float TickStaminaReduction = D * 0.1;
+			ChangeStamina(TickStaminaReduction);
 		} else {
 			ChangeStamina(1.f);
 		}
 
-		if (GetStamina() == 0) {
-			SandboxCharacter->GetCharacterMovement()->MaxWalkSpeed = SandboxCharacter->WalkSpeed;
-		} else {
-			SandboxCharacter->GetCharacterMovement()->MaxWalkSpeed = SandboxCharacter->RunSpeed;
+		if (Stamina == 0) {
+			SandboxCharacter->OnStaminaExhausted();
 		}
 	}
+}
+
+bool UVitalSystemComponent::CheckStamina(float Val) {
+	return Stamina > Val;
 }
 
 void UVitalSystemComponent::BeginPlay() {
@@ -90,9 +96,8 @@ void UVitalSystemComponent::BeginPlay() {
 }
 
 void UVitalSystemComponent::EndPlay(const EEndPlayReason::Type EndPlayReason) {
-	//GetWorld()->GetTimerManager().ClearTimer(Timer); // why crash?
-}
 
+}
 
 void UVitalSystemComponent::TickComponent( float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction ) {
 	Super::TickComponent( DeltaTime, TickType, ThisTickFunction );

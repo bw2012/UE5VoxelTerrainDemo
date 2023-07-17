@@ -97,10 +97,12 @@ void ALamp::SwitchState(bool bIsEnable) {
 
 void ALamp::OnPlaceToWorld() {
 	SetProperty(TEXT("Enabled"), TEXT("Y"));
-	//EnableLight();
+	EnableLight();
+	ServerState = 1;
 }
 
 void ALamp::InElectricPower(float InputPower) {
+	/*
 	if (InputPower > 0) {
 		const auto& Param = GetProperty(TEXT("Enabled"));
 		if (Param == "Y") {
@@ -113,6 +115,7 @@ void ALamp::InElectricPower(float InputPower) {
 			bIsWorks = false;
 		}
 	}
+	*/
 }
 
 void ALamp::OnRep_State() {

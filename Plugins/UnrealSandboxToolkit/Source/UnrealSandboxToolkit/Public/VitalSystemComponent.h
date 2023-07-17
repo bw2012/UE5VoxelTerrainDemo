@@ -50,6 +50,8 @@ public:
 
 	void ChangeStamina(float Val);
 
+	bool CheckStamina(float Val);
+
 private:
 
 	bool IsOwnerAdmin();

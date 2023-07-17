@@ -7,10 +7,39 @@
 #include "Objects/Door.h"
 #include "SpawnHelper.h"
 #include "TerrainZoneComponent.h"
+#include "VitalSystemComponent.h"
 
 
 //bool IsCursorPositionValid(const FHitResult& Hit);
 void CalculateCursorPosition(ABaseCharacter* Character, const FHitResult& Res, FVector& Location, FRotator& Rotation, ASandboxObject* Obj);
+
+UVitalSystemComponent* GetVitalSystemComponent(ACharacter* Character) {
+	TArray<UVitalSystemComponent*> Components;
+	Character->GetComponents<UVitalSystemComponent>(Components);
+	for (UVitalSystemComponent* VitalSystemComponent : Components) {
+		return VitalSystemComponent;
+	}
+
+	return nullptr;
+}
+
+bool PerformMining(ABaseCharacter* BaseCharacter, AMiningTool* MiningTool, const FHitResult& Hit) {
+	UVitalSystemComponent* VitalSystemComponent = GetVitalSystemComponent(BaseCharacter);
+	if (VitalSystemComponent) {
+		bool bCanUse = VitalSystemComponent->CheckStamina(2.f);
+		if (!bCanUse) {
+			return false;
+		}
+	}
+
+	MiningTool->OnAltAction(Hit, BaseCharacter);
+	if (VitalSystemComponent) {
+		VitalSystemComponent->ChangeStamina(-20.f);
+	}
+
+	return true;
+}
+
 
 UMainPlayerControllerComponent::UMainPlayerControllerComponent() {
 	PrimaryComponentTick.bCanEverTick = true;
@@ -77,7 +106,7 @@ void UMainPlayerControllerComponent::OnPlayerTick() {
 			FHitResult Hit = MainController->TracePlayerActionPoint();
 			if (Hit.bBlockingHit) {
 				if (bRepeatingAction) {
-					MiningTool->OnAltAction(Hit, BaseCharacter);
+					PerformMining(BaseCharacter, MiningTool, Hit);
 				}
 
 				if (MiningTool->OnTracePlayerActionPoint(Hit, BaseCharacter)) {
@@ -190,7 +219,7 @@ void UMainPlayerControllerComponent::PerformAltAction() {
 			FHitResult Hit = MainController->TracePlayerActionPoint();
 			if (Hit.bBlockingHit) {
 				ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(MainController->GetCharacter());
-				MiningTool->OnAltAction(Hit, BaseCharacter);
+				PerformMining(BaseCharacter, MiningTool, Hit);
 			}
 
 			return;

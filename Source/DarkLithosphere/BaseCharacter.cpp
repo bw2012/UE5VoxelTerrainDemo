@@ -499,4 +499,20 @@ FString ABaseCharacter::GetSandboxPlayerUid() {
 	return SandboxPlayerUid;
 }
 
+float ABaseCharacter::GetStaminaTickDelta() {
+	if (GetGait() == EALSGait::Running) {
+		return 2.f;
+	}
+
+	if (GetGait() == EALSGait::Sprinting) {
+		return 10.f;
+	}
+
+	return 0.f;
+}
+
+void ABaseCharacter::OnStaminaExhausted() {
+	SetDesiredGait(EALSGait::Walking);
+}
+
 //==========================================================================================

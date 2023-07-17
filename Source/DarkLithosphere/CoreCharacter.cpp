@@ -80,12 +80,20 @@ void ACoreCharacter::PlayerCameraRightInput(float Value) {
 
 void ACoreCharacter::SprintPressedAction() {
 	if (CanMove()) {
-		SetDesiredGait(EALSGait::Sprinting);
+		if (GetGait() == EALSGait::Running) {
+			SetDesiredGait(EALSGait::Sprinting);
+		}
+
+		if (GetGait() == EALSGait::Walking) {
+			SetDesiredGait(EALSGait::Running);
+		}
 	}
 }
 
 void ACoreCharacter::SprintReleasedAction() {
-	SetDesiredGait(EALSGait::Running);
+	if (GetGait() == EALSGait::Sprinting) {
+		SetDesiredGait(EALSGait::Running);
+	}
 }
 
 void ACoreCharacter::JumpPressedAction() {
