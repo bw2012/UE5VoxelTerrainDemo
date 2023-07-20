@@ -718,6 +718,7 @@ void AMainPlayerController::OpenMainInventoryGui(FName ExtWidget) {
 		if (MainHud) {
 			MainHud->OpenWidget(TEXT("inventory"));
 			MainHud->OpenWidget(Name);
+			MainHud->CloseWidget(TEXT("crosshair"));
 		}
 	}
 }
@@ -728,6 +729,7 @@ void AMainPlayerController::CloseMainInventoryGui() {
 		AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
 		if (MainHud) {
 			MainHud->CloseAllWidgets();
+			MainHud->OpenWidget(TEXT("crosshair"));
 		}
 	}
 }

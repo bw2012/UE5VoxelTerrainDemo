@@ -35,6 +35,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	TMap<FString, FString> PropertyMap;
 
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	bool bCanPlaceSandboxObject;
+
 protected:
 	virtual void BeginPlay() override;
 

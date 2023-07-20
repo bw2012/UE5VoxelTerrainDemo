@@ -11,6 +11,7 @@ ASandboxObject::ASandboxObject() {
 	RootComponent = SandboxRootMesh;
 	bReplicates = true;
 	SandboxNetUid = 0;
+	bCanPlaceSandboxObject = true;
 }
 
 static const FString DefaultSandboxObjectName = FString(TEXT("Sandbox object"));

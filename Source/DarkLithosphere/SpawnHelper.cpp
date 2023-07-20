@@ -13,6 +13,11 @@ bool IsCursorPositionValid(const FHitResult& Hit) {
 			return false;
 		}
 
+		ASandboxObject* Obj = Cast<ASandboxObject>(Hit.GetActor());
+		if (Obj && !Obj->bCanPlaceSandboxObject) {
+			return false;
+		}
+
 		return true;
 	}
 
