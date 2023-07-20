@@ -56,7 +56,7 @@ private:
 	int ServerState = 0;
 
 	UPROPERTY()
-	int LocalState = 0;
+	int LocalState = -999;
 
 	bool bIsWorks = false;
 

@@ -949,11 +949,20 @@ void AMainPlayerController::ServerRpcDigTerrain_Implementation(int32 Type, FVect
 	}
 }
 
-void AMainPlayerController::ServerRpcDestroyTerrainMesh_Implementation(int32 X, int32 Y, int32 Z, uint32 TypeId, uint32 VariantId, int32 Item, FVector Origin) {
+void AMainPlayerController::ServerRpcDestroyTerrainMesh_Implementation(int32 X, int32 Y, int32 Z, uint32 TypeId, uint32 VariantId, int32 Item, int EffectId, FVector EffectOrigin) {
 	if (TerrainController) {
 		TerrainController->RemoveInstanceAtMesh(TVoxelIndex(X, Y, Z), TypeId, VariantId, Item);
 
-		((ALevelController*)LevelController)->SpawnEffect(2, FTransform(Origin));
+		if (EffectId > 0) {
+			((ALevelController*)LevelController)->SpawnEffect(EffectId, FTransform(EffectOrigin));
+		}
+	}
+}
+
+void AMainPlayerController::RemoveTerrainMesh(UTerrainInstancedStaticMesh* TerrainMesh, int32 ItemIndex) {
+	if (TerrainController) {
+		TVoxelIndex Index = TerrainController->GetZoneIndex(TerrainMesh->GetComponentLocation());
+		ServerRpcDestroyTerrainMesh(Index.X, Index.Y, Index.Z, TerrainMesh->MeshTypeId, TerrainMesh->MeshVariantId, ItemIndex, 0, FVector());
 	}
 }
 
@@ -963,6 +972,14 @@ void AMainPlayerController::ServerRpcDestroyActor_Implementation(int32 X, int32 
 		TerrainController->DestroySandboxObjectByName(TVoxelIndex(X, Y, Z), Name);
 
 		((ALevelController*)LevelController)->SpawnEffect(2, FTransform(Origin));
+	}
+}
+
+void AMainPlayerController::ServerRpcRemoveActor_Implementation(ASandboxObject* Obj) {
+	if (LevelController) {
+		((ALevelController*)LevelController)->RemoveSandboxObject(Obj);
+	} else {
+		Obj->Destroy();
 	}
 }
 

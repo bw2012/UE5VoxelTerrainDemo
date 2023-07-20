@@ -182,13 +182,16 @@ public:
 	void ServerRpcRebuildEquipment();
 
 	UFUNCTION(Server, Reliable)
-	void ServerRpcDestroyTerrainMesh(int32 X, int32 Y, int32 Z, uint32 TypeId, uint32 VariantId, int32 Item, FVector Origin);
+	void ServerRpcDestroyTerrainMesh(int32 X, int32 Y, int32 Z, uint32 TypeId, uint32 VariantId, int32 Item, int EffectId, FVector EffectOrigin);
 
 	UFUNCTION(Server, Reliable)
 	void ServerRpcDigTerrain(int32 Type, FVector DigOrigin, FVector Origin, float Size, int32 X, int32 Y, int32 Z, int32 FaceIndex);
 
 	UFUNCTION(Server, Reliable)
 	void ServerRpcDestroyActor(int32 X, int32 Y, int32 Z, const FString& Name, FVector Origin);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRpcRemoveActor(ASandboxObject* Obj);
 
 	UFUNCTION(Server, Reliable)
 	void ServerRpcSpawnObject(uint64 SandboxClassId, const FTransform& Transform, bool bEnablePhysics);
@@ -211,6 +214,8 @@ public:
 	bool OnContainerDropCheck(int32 SlotId, FName ContainerName, const ASandboxObject* Obj) const override;
 
 	void SetCursorMesh(UStaticMesh* Mesh, const FVector& Location, const FRotator& Rotation, const FVector& Scale);
+
+	void RemoveTerrainMesh(UTerrainInstancedStaticMesh* TerrainMesh, int32 ItemIndex);
 
 protected:
 

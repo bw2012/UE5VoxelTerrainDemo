@@ -513,16 +513,8 @@ void UMainPlayerControllerComponent::TakeSelectedObjectToInventory() {
 			FHitResult ActionPoint = MainController->TracePlayerActionPoint();
 			if (ActionPoint.bBlockingHit) {
 				ASandboxObject* Obj = Cast<ASandboxObject>(ActionPoint.GetActor());
-				if (Obj) {
-					if (Obj->CanTake(nullptr)) {
-						if (Inventory->AddObject(Obj)) {
-							if (LevelController) {
-								LevelController->RemoveSandboxObject(Obj);
-							} else {
-								Obj->Destroy();
-							}
-						}
-					}
+				if (Obj && Obj->CanTake(nullptr) && Inventory->AddObject(Obj)) {
+					MainController->ServerRpcRemoveActor(Obj);
 				}
 			}
 		}
@@ -541,12 +533,14 @@ void UMainPlayerControllerComponent::TakeSelectedObjectToInventory() {
 					if (TerrainMesh) {
 						const FTerrainInstancedMeshType* TerrainMeshType = Terrain->GetInstancedMeshType(TerrainMesh->MeshTypeId, TerrainMesh->MeshVariantId);
 						if (TerrainMeshType && TerrainMeshType->SandboxClassId > 0) {
-							Terrain->RemoveInstanceAtMesh(TerrainMesh, ActionPoint.Item);
+							//Terrain->RemoveInstanceAtMesh(TerrainMesh, ActionPoint.Item);
+							MainController->RemoveTerrainMesh(TerrainMesh, ActionPoint.Item);
 							if (LevelController) {
 								TSubclassOf<ASandboxObject> ObjSubclass = LevelController->GetSandboxObjectByClassId(TerrainMeshType->SandboxClassId);
 								ASandboxObject* Obj = (ASandboxObject*)ObjSubclass->GetDefaultObject();
 								if (Obj) {
-									Inventory->AddObject(Obj);
+									MainController->SandboxAddItem(Obj->GetSandboxClassId());
+									//Inventory->AddObject(Obj);
 								}
 							}
 						}

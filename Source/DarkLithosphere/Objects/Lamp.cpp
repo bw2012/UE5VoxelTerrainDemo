@@ -15,6 +15,10 @@ ALamp::ALamp() {
 void ALamp::BeginPlay() {
 	Super::BeginPlay();
 
+	if (GetNetMode() == NM_Client) {
+		return;
+	}
+
 	for (TActorIterator<ATechHelper> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
 		ATechHelper* Helper = Cast<ATechHelper>(*ActorItr);
 		if (Helper) {
@@ -45,7 +49,7 @@ void ALamp::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 void ALamp::PostLoadProperties() {
 	const auto& Param = GetProperty(TEXT("Enabled"));
 	if (Param == "Y") {
-		//EnableLight();
+		EnableLight();
 	} else {
 		DisableLight();
 	}
