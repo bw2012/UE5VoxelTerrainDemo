@@ -42,6 +42,20 @@ void UVitalSystemComponent::ChangeHealth(float Val){
 	}
 }
 
+void UVitalSystemComponent::DamageFromFall(float Velocity) {
+	auto EquipmentList = ASandboxObjectUtils::GetContainerContent(GetOwner(), TEXT("Equipment"));
+	float DamageFallFactor = 1.f;
+	for (auto* Item : EquipmentList) {
+		ASandboxSkeletalModule* Skm = Cast<ASandboxSkeletalModule>(Item);
+		if (Skm) {
+			DamageFallFactor *= Skm->GetInfluenceParam(TEXT("damage_fall_factor"));
+		}
+	}
+
+	const float Dmg = Velocity * 100.f / 2000.f * DamageFallFactor;
+	Damage(Dmg);
+}
+
 void UVitalSystemComponent::Damage(float DamageVal) {
 	if (IsOwnerAdmin()) {
 		return; 
@@ -49,8 +63,9 @@ void UVitalSystemComponent::Damage(float DamageVal) {
 
 	ChangeHealth(-DamageVal);
 	ChangeStamina(-DamageVal);
+
 	if (Health == 0) {
-		ASandboxCharacter* SandboxCharacter = Cast<ASandboxCharacter>(GetOwner());
+		ISandboxCoreCharacter* SandboxCharacter = Cast<ISandboxCoreCharacter>(GetOwner());
 		if (SandboxCharacter) {
 			SandboxCharacter->Kill();
 		}
@@ -87,11 +102,13 @@ void UVitalSystemComponent::PerformTimer() {
 		auto EquipmentList = ASandboxObjectUtils::GetContainerContent(GetOwner(), TEXT("Equipment"));
 
 		float StaminaFactor = 1.f;
+		float RecoverStaminaFactor = 1.f;
 
 		for (auto* Item : EquipmentList) {
 			ASandboxSkeletalModule* Skm = Cast<ASandboxSkeletalModule>(Item);
 			if (Skm) {
 				StaminaFactor *= Skm->GetInfluenceParam(TEXT("stamina_factor"));
+				RecoverStaminaFactor *= Skm->GetInfluenceParam(TEXT("recover_stamina_factor"));
 			}
 		}
 
@@ -100,7 +117,11 @@ void UVitalSystemComponent::PerformTimer() {
 			const float TickStaminaReduction = D * StaminaFactor * STAMINA_CLC_FACTOR;
 			ChangeStamina(TickStaminaReduction);
 		} else {
-			ChangeStamina(1.f);
+			// recover stamina
+			if (!SandboxCharacter->IsDead()) {
+				const float RecoverStamina = 1.f * RecoverStaminaFactor;
+				ChangeStamina(RecoverStamina);
+			}
 		}
 
 		if (Stamina == 0) {

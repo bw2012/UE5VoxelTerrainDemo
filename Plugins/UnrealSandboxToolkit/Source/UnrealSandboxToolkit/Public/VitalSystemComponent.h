@@ -42,6 +42,8 @@ public:
 
 	void ChangeHealth(float Val);
 
+	void DamageFromFall(float Velocity);
+
 	void Damage(float DamageVal);
 
 	float GetStamina();

@@ -42,6 +42,10 @@ bool ACoreCharacter::CanMove() {
 	return true;
 }
 
+bool ACoreCharacter::CanRotateCamera() {
+	return true;
+}
+
 FRotator ACoreCharacter::GetLeftFootRotator() {
 	return LeftFootRotator;
 }
@@ -67,13 +71,13 @@ void ACoreCharacter::PlayerRightMovementInput(float Value) {
 }
 
 void ACoreCharacter::PlayerCameraUpInput(float Value) {
-	if (CanMove()) {
+	if (CanRotateCamera()) {
 		CameraUpAction_Implementation(Value);
 	}
 }
 
 void ACoreCharacter::PlayerCameraRightInput(float Value) {
-	if (CanMove()) {
+	if (CanRotateCamera()) {
 		CameraRightAction_Implementation(Value);
 	}
 }

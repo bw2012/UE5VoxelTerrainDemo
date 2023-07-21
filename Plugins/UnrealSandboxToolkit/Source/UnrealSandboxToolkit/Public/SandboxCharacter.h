@@ -38,6 +38,10 @@ public:
 
 	virtual void OnStaminaExhausted() { }
 
+	virtual void Kill() { }
+
+	virtual bool IsDead() { return false; }
+
 };
 
 

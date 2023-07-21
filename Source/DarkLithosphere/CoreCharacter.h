@@ -98,6 +98,8 @@ protected:
 
 	virtual bool CanMove();
 
+	virtual bool CanRotateCamera();
+
 	FRotator LeftFootRotator;
 
 	FRotator RightFootRotator;

@@ -5,6 +5,7 @@
 #include "MainPlayerController.h"
 #include "TerrainController.h"
 #include "LevelController.h"
+#include "VitalSystemComponent.h"
 
 
 ABaseCharacter::ABaseCharacter(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer) {
@@ -190,7 +191,7 @@ int ABaseCharacter::GetTypeId() {
 }
 
 bool ABaseCharacter::IsDead() {
-	return false;
+	return State < 0;
 }
 
 UContainerComponent* ABaseCharacter::GetContainer(FString Name) {
@@ -272,6 +273,19 @@ void ABaseCharacter::OnFinishPlayMainAttack() {
 	bIsAttacking = false;
 }
 
+bool ABaseCharacter::CanRotateCamera() {
+	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetController());
+	if (MainPlayerController->IsGuiMode()) {
+		return false;
+	}
+
+	if (MainPlayerController->IsGameInputBlocked()) {
+		return false;
+	}
+
+	return true;
+}
+
 bool ABaseCharacter::CanMove() {
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetController());
 	if (MainPlayerController->IsGuiMode()) {
@@ -279,6 +293,10 @@ bool ABaseCharacter::CanMove() {
 	}
 
 	if (MainPlayerController->IsGameInputBlocked()) {
+		return false;
+	}
+
+	if (IsDead()) {
 		return false;
 	}
 
@@ -514,5 +532,37 @@ float ABaseCharacter::GetStaminaTickDelta() {
 void ABaseCharacter::OnStaminaExhausted() {
 	SetDesiredGait(EALSGait::Walking);
 }
+
+void ABaseCharacter::OnFallDamage(float Velocity) {
+
+	if (GetNetMode() == NM_Client) {
+		UE_LOG(LogTemp, Warning, TEXT("OnFallDamage: client: %f"), Velocity);
+	} else {
+		UE_LOG(LogTemp, Warning, TEXT("OnFallDamage: server: %f"), Velocity);
+		UVitalSystemComponent* Vs = GetFirstComponentByName<UVitalSystemComponent>(TEXT("VitalSystem"));
+		if (Vs) {
+			Vs->DamageFromFall(Velocity);
+		}
+	}
+
+}
+
+void ABaseCharacter::SandboxDamage(float Val) {
+	UVitalSystemComponent* Vs = GetFirstComponentByName<UVitalSystemComponent>(TEXT("VitalSystem"));
+	if (Vs) {
+		//RightHandCollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &ABaseCharacter::BeginOverlap);
+	}
+}
+
+void ABaseCharacter::Kill() {
+	if (DeathAnim) {
+		SetViewMode(EALSViewMode::ThirdPerson);
+		Replicated_PlayMontage(DeathAnim, 1.35);
+		State = -1;
+	}
+
+	//ReplicatedRagdollStart();
+}
+
 
 //==========================================================================================

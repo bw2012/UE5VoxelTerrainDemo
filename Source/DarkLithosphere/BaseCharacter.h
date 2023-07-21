@@ -60,7 +60,7 @@ public:
 	UStaticMeshComponent* CursorMesh;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	UAnimationAsset* DeathAnim;
+	UAnimMontage* DeathAnim;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	UAnimationAsset* TestAnim;
@@ -155,6 +155,12 @@ public:
 
 	virtual void OnStaminaExhausted() override;
 
+	virtual void OnFallDamage(float Velocity) override;
+
+	void SandboxDamage(float Val);
+
+	virtual void Kill() override;
+
 protected:
 
 	bool bIsAttacking = false;
@@ -167,6 +173,8 @@ protected:
 
 	virtual bool CanMove() override;
 
+	virtual bool CanRotateCamera() override;
+
 	virtual void OnContainerUpdate(UContainerComponent* Container);
 
 	bool PlaySoundCue(USoundCue* SoundCue);
@@ -176,6 +184,8 @@ protected:
 
 
 private:
+
+	int State = 0;
 
 	//FOnMontageEnded MontageEndedDelegate;
 
