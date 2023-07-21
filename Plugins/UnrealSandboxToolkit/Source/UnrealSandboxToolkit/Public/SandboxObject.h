@@ -131,8 +131,21 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	TMap<FString, float> ParentMorphMap;
 
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	TMap<FString, float> InfluenceParamMap;
+
+	virtual float GetInfluenceParam(const FString& ParamName) const;
+
 	int GetSandboxTypeId() const override;
 
 	void GetFootPose(FRotator& LeftFootRotator, FRotator& RightFootRotator);
 
+};
+
+
+class UNREALSANDBOXTOOLKIT_API ASandboxObjectUtils {
+
+public:
+
+	static TArray<ASandboxObject*> GetContainerContent(AActor* AnyActor, const FString& Name);
 };

@@ -2,7 +2,10 @@
 
 #include "VitalSystemComponent.h"
 #include "SandboxCharacter.h"
+#include "SandboxObject.h"
 #include "Net/UnrealNetwork.h"
+
+#define STAMINA_CLC_FACTOR 0.1
 
 UVitalSystemComponent::UVitalSystemComponent() {
 //	bWantsBeginPlay = true;
@@ -29,12 +32,21 @@ float UVitalSystemComponent::GetMaxHealth() {
 
 void UVitalSystemComponent::ChangeHealth(float Val){
 	Health += Val;
-	if (Health <= 0) { Health = 0; }
-	if (Health > MaxHealth) { Health = MaxHealth; }
+
+	if (Health <= 0) { 
+		Health = 0; 
+	}
+
+	if (Health > MaxHealth) { 
+		Health = MaxHealth; 
+	}
 }
 
 void UVitalSystemComponent::Damage(float DamageVal) {
-	if (IsOwnerAdmin()) { return; }
+	if (IsOwnerAdmin()) {
+		return; 
+	}
+
 	ChangeHealth(-DamageVal);
 	ChangeStamina(-DamageVal);
 	if (Health == 0) {
@@ -72,9 +84,20 @@ void UVitalSystemComponent::ChangeStamina(float Val) {
 void UVitalSystemComponent::PerformTimer() {
 	ISandboxCoreCharacter* SandboxCharacter = Cast<ISandboxCoreCharacter>(GetOwner());
 	if (SandboxCharacter) {
+		auto EquipmentList = ASandboxObjectUtils::GetContainerContent(GetOwner(), TEXT("Equipment"));
+
+		float StaminaFactor = 1.f;
+
+		for (auto* Item : EquipmentList) {
+			ASandboxSkeletalModule* Skm = Cast<ASandboxSkeletalModule>(Item);
+			if (Skm) {
+				StaminaFactor *= Skm->GetInfluenceParam(TEXT("stamina_factor"));
+			}
+		}
+
 		const float D = -SandboxCharacter->GetStaminaTickDelta();
 		if (D < 0) {
-			const float TickStaminaReduction = D * 0.1;
+			const float TickStaminaReduction = D * StaminaFactor * STAMINA_CLC_FACTOR;
 			ChangeStamina(TickStaminaReduction);
 		} else {
 			ChangeStamina(1.f);
@@ -92,7 +115,7 @@ bool UVitalSystemComponent::CheckStamina(float Val) {
 
 void UVitalSystemComponent::BeginPlay() {
 	Super::BeginPlay();
-	GetWorld()->GetTimerManager().SetTimer(Timer, this, &UVitalSystemComponent::PerformTimer, 0.1, true);
+	GetWorld()->GetTimerManager().SetTimer(Timer, this, &UVitalSystemComponent::PerformTimer, STAMINA_CLC_FACTOR, true);
 }
 
 void UVitalSystemComponent::EndPlay(const EEndPlayReason::Type EndPlayReason) {

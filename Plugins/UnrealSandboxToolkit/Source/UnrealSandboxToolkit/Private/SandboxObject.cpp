@@ -1,6 +1,7 @@
 
 
 #include "SandboxObject.h"
+#include "SandboxLevelController.h"
 #include "Net/UnrealNetwork.h"
 
 ASandboxObject::ASandboxObject() {
@@ -138,3 +139,40 @@ void ASandboxSkeletalModule::GetFootPose(FRotator& LeftFootRotator, FRotator& Ri
 }
 
 
+float ASandboxSkeletalModule::GetInfluenceParam(const FString& ParamName) const {
+	if (InfluenceParamMap.Contains(ParamName)) {
+		return InfluenceParamMap[ParamName];
+	}
+
+	return 1;
+}
+
+
+template<class T>
+T* GetFirstComponentByName(AActor* Actor, FString ComponentName) {
+	TArray<T*> Components;
+	Actor->GetComponents<T>(Components);
+	for (T* Component : Components) {
+		if (Component->GetName() == ComponentName)
+			return Component;
+	}
+
+	return nullptr;
+}
+
+TArray<ASandboxObject*> ASandboxObjectUtils::GetContainerContent(AActor* AnyActor, const FString& Name) {
+	TArray<ASandboxObject*> Result;
+
+	UContainerComponent* Container = GetFirstComponentByName<UContainerComponent>(AnyActor, Name);
+	if (Container) {
+		TArray<uint64> ObjList = Container->GetAllObjects();
+		for (uint64 ClassId : ObjList) {
+			ASandboxObject* Obj = ASandboxLevelController::GetDefaultSandboxObject(ClassId);
+			if (Obj) {
+				Result.Add(Obj);
+			}
+		}
+	}
+
+	return Result;
+}

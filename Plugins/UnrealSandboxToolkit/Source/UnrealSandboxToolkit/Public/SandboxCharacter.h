@@ -143,6 +143,18 @@ public:
 	void TakeDamage(float DamageLevel);
 	*/
 
+	template<class T>
+	T* GetFirstComponentByName(FString ComponentName) {
+		TArray<T*> Components;
+		GetComponents<T>(Components);
+		for (T* Component : Components) {
+			if (Component->GetName() == ComponentName)
+				return Component;
+		}
+
+		return nullptr;
+	}
+
 private:
 	PlayerView CurrentPlayerView;
 
