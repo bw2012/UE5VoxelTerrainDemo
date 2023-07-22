@@ -111,6 +111,9 @@ void ALevelController::SaveLevelJsonExt(TSharedRef<TJsonWriter<TCHAR>> JsonWrite
 			int TypeId = BaseCharacter->GetSandboxTypeId();
 			JsonWriter->WriteValue("TypeId", TypeId);
 
+			int State = BaseCharacter->GetState();
+			JsonWriter->WriteValue("State", State);
+
 			FString PlayerUid = BaseCharacter->GetSandboxPlayerUid();
 			JsonWriter->WriteValue("PlayerId", PlayerUid);
 
@@ -360,6 +363,10 @@ const TArray<FCharacterLoadInfo>& ALevelController::GetTempCharacterList() const
 
 const TMap<FString, FCharacterLoadInfo>& ALevelController::GetConservedCharacterMap() const {
 	return ConservedCharacterMap;
+}
+
+void ALevelController::RemoveConservedCharacter(FString SandboxPlayerUid) {
+	ConservedCharacterMap.Remove(SandboxPlayerUid);
 }
 
 ACharacter* ALevelController::SpawnCharacterByTypeId(const int TypeId, const FVector& Location, const FRotator& Rotation) {

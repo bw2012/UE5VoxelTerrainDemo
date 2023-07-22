@@ -50,7 +50,7 @@ void AMainPlayerController::BeginPlay() {
 	TNotificationHelper::AddObserver(TCHAR_TO_UTF8(*GetName()), "finish_background_save", std::bind(&AMainPlayerController::OnFinishBackgroundSave, this));
 
 	//warning C4996 : 'UWorld::IsClient' : Use GetNetMode or IsNetMode instead for more accurate results.Please update your code to the new API before upgrading to the next release, otherwise your project will no longer compile.
-	if (GetNetMode() == NM_Client) {
+	if (IsLocalController()) {
 		bClientPosses = true;
 	}
 
@@ -246,14 +246,14 @@ void AMainPlayerController::PlayerTick(float DeltaTime) {
 	}
 
 	// OnPossess not works on client. workaround
-	if (GetNetMode() == NM_Client) {
+
+	if (IsLocalController()) {
 		ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
-		if (BaseCharacter) {
-			if (bClientPosses) {
-				SetCurrentInventorySlot(-1);
-				ShowInGameHud();
-				bClientPosses = false;
-			}
+		if (BaseCharacter && bClientPosses) {
+			SetCurrentInventorySlot(-1);
+			ShowInGameHud();
+			DisableGuiMode();
+			bClientPosses = false;
 		}
 	}
 
@@ -666,9 +666,15 @@ void AMainPlayerController::ChangeDummyCameraAltitude(float Val) {
 }
 
 void AMainPlayerController::OnDeath() {
-	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
-	if (BaseCharacter) {
-		MainPlayerControllerComponent->OnDeath();
+	if (GetNetMode() != NM_Client) {
+		((ALevelController*)LevelController)->RemoveConservedCharacter(PlayerInfo.PlayerUid);
+	}
+
+	AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
+	if (MainHud) {
+		EnableGuiMode();
+		MainHud->CloseAllWidgets();
+		MainHud->OpenWidget(TEXT("respawn"));
 	}
 }
 
@@ -759,7 +765,6 @@ void AMainPlayerController::SandboxPossess(ACharacter* PlayerCharacter) {
 		BaseCharacter->SandboxPlayerUid = PlayerInfo.PlayerUid;
 		Possess(PlayerCharacter);
 		SetCurrentInventorySlot(-1);
-		ShowInGameHud();
 	}
 }
 
@@ -771,23 +776,12 @@ void AMainPlayerController::OnPossess(APawn* NewPawn) {
 	}
 
 	SetCurrentInventorySlot(-1);
-
-	/*
-	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(NewPawn);
-	if (BaseCharacter) {
-		AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
-		if (MainHud) {
-			MainHud->ShowInGameInventory();
-		}
-	}
-	*/
 }
 
 void AMainPlayerController::OnRep_Pawn() {
 	Super::OnRep_Pawn();
 	SetupCamera();
 }
-
 
 void AMainPlayerController::SetupCamera() {
 	AALSBaseCharacter* ALSBaseCharacter = Cast<AALSBaseCharacter>(GetCharacter());
@@ -903,10 +897,8 @@ void AMainPlayerController::OnWheelDown() {
 
 void AMainPlayerController::SetCursorMesh(UStaticMesh* Mesh, const FVector& Location, const FRotator& Rotation, const FVector& Scale) {
 	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(GetCharacter());
-	if (BaseCharacter) {
-		if (CursorMaterial) {
-			BaseCharacter->SetCursorMesh(Mesh, CursorMaterial, Location, Rotation, Scale);
-		}
+	if (BaseCharacter && CursorMaterial) {
+		BaseCharacter->SetCursorMesh(Mesh, CursorMaterial, Location, Rotation, Scale);
 	}
 }
 
@@ -1095,5 +1087,16 @@ void AMainPlayerController::SpawnObjectByPlayer(uint64 SandboxClassId, FTransfor
 			Obj->OnPlaceToWorld(); // invoke only if spawn by player. not save/load or other cases
 		}
 	}
+}
+
+void AMainPlayerController::Respawn() {
+	AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
+	if (MainHud) {
+		MainHud->CloseAllWidgets();
+	}
+
+	bClientPosses = true;
+
+	ServerRpcFindOrCreateCharacter();
 }
 

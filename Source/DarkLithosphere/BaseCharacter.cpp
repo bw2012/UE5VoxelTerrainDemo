@@ -206,20 +206,12 @@ UContainerComponent* ABaseCharacter::GetContainer(FString Name) {
 	return nullptr;
 }
 
-/*
 void ABaseCharacter::OnDeath() {
-	//GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	GetMovementComponent()->StopMovementImmediately();
-	GetMesh()->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-	GetMesh()->PlayAnimation(DeathAnim, false);
-	GetMesh()->SetPlayRate(1.f);
-
-	//AMainPlayerController* C = Cast<AMainPlayerController>(GetController());
-	//if (C) {
-	//	C->OnDeath();
-	//}
+	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetController());
+	if (MainPlayerController) {
+		MainPlayerController->OnDeath();
+	}
 }
-*/
 
 void ABaseCharacter::PerformMainAttack() {
 	if (MainAttackMontage) {
@@ -555,13 +547,16 @@ void ABaseCharacter::SandboxDamage(float Val) {
 }
 
 void ABaseCharacter::Kill() {
+	SetViewMode(EALSViewMode::ThirdPerson);
+
 	if (DeathAnim) {
-		SetViewMode(EALSViewMode::ThirdPerson);
 		Replicated_PlayMontage(DeathAnim, 1.35);
-		State = -1;
 	}
 
-	//ReplicatedRagdollStart();
+	SandboxPlayerUid = TEXT("");
+
+	State = -1;
+	OnDeath();
 }
 
 

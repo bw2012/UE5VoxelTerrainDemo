@@ -63,6 +63,8 @@ public:
 
 	const TMap<FString, FCharacterLoadInfo>& GetConservedCharacterMap() const;
 
+	void RemoveConservedCharacter(FString SandboxPlayerUid);
+
 	void SpawnTempCharacterList();
 
 	ACharacter* SpawnCharacterByTypeId(const int TypeId, const FVector& Location, const FRotator& Rotation);

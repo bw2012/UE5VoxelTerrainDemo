@@ -40,7 +40,7 @@ protected:
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason);
 
-	//virtual void OnDeath() override;
+	virtual void OnDeath();
 
 public:	
 
@@ -184,8 +184,6 @@ protected:
 
 
 private:
-
-	int State = 0;
 
 	//FOnMontageEnded MontageEndedDelegate;
 

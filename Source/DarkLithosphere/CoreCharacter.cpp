@@ -27,7 +27,7 @@ void ACoreCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompo
 	PlayerInputComponent->BindAction("JumpAction", IE_Released, this, &ACoreCharacter::JumpReleasedAction);
 	//PlayerInputComponent->BindAction("StanceAction", IE_Pressed, this, &AALSBaseCharacter::StancePressedAction);
 	PlayerInputComponent->BindAction("WalkAction", IE_Pressed, this, &ACoreCharacter::WalkPressedAction);
-	PlayerInputComponent->BindAction("RagdollAction", IE_Pressed, this, &ACoreCharacter::RagdollPressedAction);
+	//PlayerInputComponent->BindAction("RagdollAction", IE_Pressed, this, &ACoreCharacter::RagdollPressedAction);
 	//PlayerInputComponent->BindAction("SelectRotationMode_1", IE_Pressed, this, &AALSBaseCharacter::VelocityDirectionPressedAction);
 	//PlayerInputComponent->BindAction("SelectRotationMode_2", IE_Pressed, this,&AALSBaseCharacter::LookingDirectionPressedAction);
 	PlayerInputComponent->BindAction("SprintAction", IE_Pressed, this, &ACoreCharacter::SprintPressedAction);

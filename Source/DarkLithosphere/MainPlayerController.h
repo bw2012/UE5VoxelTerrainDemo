@@ -157,6 +157,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sandbox")
 	virtual void OnWheelDown();
 
+	UFUNCTION(BlueprintCallable, Category = "Sandbox")
+	void Respawn();
+
 	UFUNCTION(Exec, Category = "Sandbox")
 	void SandboxAddItem(int ItemId);
 

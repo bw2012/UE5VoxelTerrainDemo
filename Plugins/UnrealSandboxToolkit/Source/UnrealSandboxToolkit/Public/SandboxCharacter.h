@@ -42,6 +42,12 @@ public:
 
 	virtual bool IsDead() { return false; }
 
+	int GetState() { return State; }
+
+protected:
+
+	int State = 0;
+
 };
 
 
