@@ -701,6 +701,8 @@ void AMainPlayerController::DisableGuiMode() {
 }
 
 void AMainPlayerController::ToggleMainInventory() {
+	CloseObjectWithContainer();
+
 	if (!bGuiMode) {
 		if (!IsGameInputBlocked()) {
 			EnableGuiMode();

@@ -64,11 +64,6 @@ bool UContainerComponent::SetStackDirectly(const FContainerStack& Stack, const i
 		StackPtr->Clear();
 	}
 
-	for (int Idx = 0; Idx < Content.Num(); Idx++) {
-		FContainerStack* Stack2 = &Content[Idx];
-		UE_LOG(LogTemp, Warning, TEXT("SetStackDirectly slot: %d, amount: %d, classId: %d"), Idx, Stack2->Amount, Stack2->SandboxClassId);
-	}
-
 	bUpdated = true;
 	return true;
 }
@@ -349,12 +344,6 @@ bool UContainerComponent::SlotTransfer(int32 SlotSourceId, int32 SlotTargetId, A
 
 void UContainerComponent::OnRep_Content() {
 	UE_LOG(LogTemp, Warning, TEXT("OnRep_Content: %s"), *GetName());
-
-	for (int Idx = 0; Idx < Content.Num(); Idx++) {
-		FContainerStack* Stack = &Content[Idx];
-		UE_LOG(LogTemp, Warning, TEXT("slot: %d, amount: %d, classId: %d"), Idx, Stack->Amount, Stack->SandboxClassId);
-	}
-
 	bUpdated = true;
 }
 
