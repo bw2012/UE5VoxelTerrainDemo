@@ -8,10 +8,11 @@ void AMainHUD::BeginPlay() {
 }
 
 void AMainHUD::ShowInGameInventory() {
-	if (InventoryWidget) {
+	if (InventoryWidget && !MainGameWigdet) {
 		UUserWidget* Wigdet = CreateWidget<UUserWidget>(GetWorld(), InventoryWidget);
 		if (Wigdet) {
 			Wigdet->AddToViewport();
+			MainGameWigdet = Wigdet;
 		}
 	}
 }

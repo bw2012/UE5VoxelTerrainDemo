@@ -48,5 +48,7 @@ public:
 private:
 
 	TMap<FString, FActiveWidgetInfo> ActiveWidgetMap;
+
+	UUserWidget* MainGameWigdet;
 	
 };
