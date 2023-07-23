@@ -27,8 +27,6 @@ void SetSandboxPlayerId(const FString& SandboxPlayerId);
 
 bool CheckSaveDirLocal(FString SaveDir);
 
-extern TAutoConsoleVariable<int32> CVarFullscreen;
-
 AEntryHelper::AEntryHelper() {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -37,20 +35,10 @@ AEntryHelper::AEntryHelper() {
 void AEntryHelper::BeginPlay() {
 	Super::BeginPlay();
 
-	FString Fullscreen = TEXT("r.setRes 1600x1024wf");
-	FString Windowed = TEXT("r.setRes 1600x1024w");
-
-	UE_LOG(LogTemp, Log, TEXT("Override screen settings: CVarFullscreen = %d "), CVarFullscreen.GetValueOnGameThread());
-
-	if (CVarFullscreen.GetValueOnGameThread() == 0) {
-		UKismetSystemLibrary::ExecuteConsoleCommand(GetWorld(), *Windowed);
-	} else if (CVarFullscreen.GetValueOnGameThread() == 1) {
-		UKismetSystemLibrary::ExecuteConsoleCommand(GetWorld(), *Fullscreen);
-	}
-
+	const FString Windowed = TEXT("r.setRes 1600x1024w");
+	UKismetSystemLibrary::ExecuteConsoleCommand(GetWorld(), *Windowed);
 
 	UMainGameInstance* GI = Cast<UMainGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
-
 	if (GI) {
 		GI->Mute();
 		if (GI->IsFatalMessage()) {

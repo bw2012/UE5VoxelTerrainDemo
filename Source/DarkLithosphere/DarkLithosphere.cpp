@@ -5,14 +5,6 @@
 
 IMPLEMENT_PRIMARY_GAME_MODULE( FDarkLithosphereGameModule, DarkLithosphere, "DarkLithosphere" );
 
-TAutoConsoleVariable<int32> CVarFullscreen (
-	TEXT("dl.EntryFullscreen"),
-	1,
-	TEXT("Entry map set up fullscreen\n")
-	TEXT(" 0 = Off \n")
-	TEXT(" 1 = On \n"),
-	ECVF_SetBySystemSettingsIni);
-
 TAutoConsoleVariable<int32> CVarDebugInfo(
 	TEXT("dl.DebugInfo"),
 	0,
