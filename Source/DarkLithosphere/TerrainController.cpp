@@ -9,7 +9,7 @@
 #include "TerrainZoneComponent.h"
 #include "MainGameInstance.h"
 #include "NotificationHelper.h"
-
+#include "SandboxCharacter.h"
 
 
 
@@ -26,6 +26,11 @@ void ATerrainController::OnOverlapActorTerrainEdit(const FOverlapResult& Overlap
 	ASandboxObject* Object = Cast<ASandboxObject>(OverlapResult.GetActor());
 	if (Object) {
 		Object->OnTerrainChange();
+	}
+
+	ISandboxCoreCharacter* SandboxCharacter = Cast<ISandboxCoreCharacter>(OverlapResult.GetActor());
+	if (SandboxCharacter && SandboxCharacter->GetState() < 0) {
+		OverlapResult.GetActor()->Destroy();
 	}
 }
 

@@ -207,10 +207,13 @@ UContainerComponent* ABaseCharacter::GetContainer(FString Name) {
 }
 
 void ABaseCharacter::OnDeath() {
+
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetController());
 	if (MainPlayerController) {
 		MainPlayerController->OnDeath();
 	}
+
+	ResetCursorMesh();
 }
 
 void ABaseCharacter::PerformMainAttack() {
@@ -554,7 +557,6 @@ void ABaseCharacter::Kill() {
 	}
 
 	SandboxPlayerUid = TEXT("");
-
 	State = -1;
 	OnDeath();
 }

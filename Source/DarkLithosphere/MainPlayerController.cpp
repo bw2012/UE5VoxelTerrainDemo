@@ -666,6 +666,8 @@ void AMainPlayerController::ChangeDummyCameraAltitude(float Val) {
 }
 
 void AMainPlayerController::OnDeath() {
+	SetCurrentInventorySlot(-1);
+
 	if (GetNetMode() != NM_Client) {
 		((ALevelController*)LevelController)->RemoveConservedCharacter(PlayerInfo.PlayerUid);
 	}
@@ -824,7 +826,7 @@ FHitResult AMainPlayerController::TracePlayerActionPoint() {
 	TraceParams.AddIgnoredActor(GetCharacter());
 
 	FHitResult Hit(ForceInit);
-	GetWorld()->LineTraceSingleByChannel(Hit, StartTrace, EndTrace, ECC_Visibility, TraceParams);
+	GetWorld()->LineTraceSingleByChannel(Hit, StartTrace, EndTrace, ECC_Visibility, TraceParams); // ECC_Visibility
 
 	return Hit;
 }
@@ -1097,8 +1099,8 @@ void AMainPlayerController::Respawn() {
 		MainHud->CloseAllWidgets();
 	}
 
+	UnPossess();
 	bClientPosses = true;
-
 	ServerRpcFindOrCreateCharacter();
 }
 
