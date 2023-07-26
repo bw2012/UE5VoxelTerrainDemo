@@ -3,15 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "BaseObject.h"
-#include "TechHelper.h"
+#include "ElectricDevice.h"
 #include "Lamp.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class DARKLITHOSPHERE_API ALamp : public ABaseObject, public IElectricityConsumer {
+class DARKLITHOSPHERE_API ALamp : public AElectricDevice {
 	GENERATED_BODY()
 
 public:
@@ -24,43 +23,16 @@ protected:
 
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-public:
+protected:
 
-	UPROPERTY()
-	class USoundBase* SwitchSound;
+	virtual void OnDisable();
 
-	UPROPERTY()
-	ATechHelper* TechHelper;
-
-	virtual void Tick(float DeltaTime) override;
-
-	virtual bool IsInteractive(const APawn* Source) override;
-
-	virtual void MainInteraction(const APawn* Source) override;
-
-	virtual void EnableLight();
-
-	virtual void DisableLight();
-
-	virtual void SwitchState(bool bIsEnable);
-
-	virtual void PostLoadProperties() override;
-
-	virtual void OnPlaceToWorld() override;
-
-	virtual void InElectricPower(float InputPower) override;
+	virtual void OnEnable();
 
 private:
 
-	UPROPERTY(ReplicatedUsing = OnRep_State)
-	int ServerState = 0;
-
-	UPROPERTY()
-	int LocalState = -999;
-
 	bool bIsWorks = false;
 
-	UFUNCTION()
-	void OnRep_State();
+	void SwitchLightState(bool bIsEnable);
 
 };

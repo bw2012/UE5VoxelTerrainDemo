@@ -94,27 +94,18 @@ void ADoor::DoorInteraction(const FVector& PlayerPos) {
 
         DoorState = 1;
         DoorTimelineComp->Play();
-        //MainSound->Play();
 
-        for (TActorIterator<ALevelController> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
-            ALevelController* Lvl = Cast<ALevelController>(*ActorItr);
-            if (Lvl) {
-                Lvl->SpawnEffect(EffectId, GetActorTransform());
-                break;
-            }
+        ASandboxLevelController* LevelController = ASandboxLevelController::GetInstance();
+        if (LevelController) {
+            LevelController->SpawnEffect(EffectId, GetActorTransform());
         }
-
     } else {
         DoorState = 0;
         DoorTimelineComp->Reverse();
-        //MainSound->Play();
 
-        for (TActorIterator<ALevelController> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
-            ALevelController* Lvl = Cast<ALevelController>(*ActorItr);
-            if (Lvl) {
-                Lvl->SpawnEffect(EffectId, GetActorTransform());
-                break;
-            }
+        ASandboxLevelController* LevelController = ASandboxLevelController::GetInstance();
+        if (LevelController) {
+            LevelController->SpawnEffect(EffectId, GetActorTransform());
         }
     }
 }

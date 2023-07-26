@@ -78,6 +78,8 @@ public:
 
 	ASandboxObject* SpawnPreparedObject(const FSandboxObjectDescriptor& ObjDesc);
 
+	void SpawnEffect(const int32 EffectId, const FTransform& Transform);
+
 protected:
 
 	TMap<FString, TSubclassOf<ASandboxObject>> ObjectMapByClassName;

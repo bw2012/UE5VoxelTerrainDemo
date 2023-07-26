@@ -6,93 +6,38 @@ AElectricGenerator::AElectricGenerator() {
 	PrimaryActorTick.bCanEverTick = true;
 	MainSound = CreateDefaultSubobject<UAudioComponent>(TEXT("MainSound"));
 	MainSound->AttachToComponent(SandboxRootMesh, FAttachmentTransformRules::KeepRelativeTransform);
-
-	//TODO
-	auto SoundObj = ConstructorHelpers::FObjectFinder<USoundBase>(TEXT("/Game/Sandbox/Object/Industrial/A_ToggleSwitch"));
-	if (SoundObj.Object != nullptr) {
-		SwitchSound = SoundObj.Object;
-	}
+	MainSound->Stop();
 }
 
 void AElectricGenerator::BeginPlay() {
 	Super::BeginPlay();
-
-	for (TActorIterator<ATechHelper> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
-		ATechHelper* Helper = Cast<ATechHelper>(*ActorItr);
-		if (Helper) {
-			UE_LOG(LogTemp, Log, TEXT("Found ATechHelper -> %s"), *Helper->GetName());
-			TechHelper = Helper;
-			break;
-		}
-	}
-
-	if (TechHelper) {
-		TechHelper->RegisterElectricityProducer(this);
-	}
-
-	const auto& Param = GetProperty(TEXT("Enabled"));
-	if (Param == "Y") {
-		Enable();
-	} else {
-		Disable();
-	}
 }
 
 void AElectricGenerator::EndPlay(const EEndPlayReason::Type EndPlayReason) {
-	if (TechHelper) {
-		TechHelper->UnregisterElectricityProducer(this);
-	}
+	Super::EndPlay(EndPlayReason);
 }
 
 void AElectricGenerator::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
-
 }
 
-bool AElectricGenerator::IsInteractive(const APawn* Source) {
-	return true; 
-}
-
-void AElectricGenerator::MainInteraction(const APawn* Source) {
-	if (SwitchSound) {
-		UGameplayStatics::PlaySoundAtLocation(this, SwitchSound, GetActorLocation());
-	}
-
-	const auto& Param = GetProperty(TEXT("Enabled"));
-	if (Param == "Y") {
-		Disable();
-	} else {
-		Enable();
-	}
-}
-
-void AElectricGenerator::Enable() {
-	SetProperty(TEXT("Enabled"), TEXT("Y"));
-	MainSound->Play();
-}
-
-void AElectricGenerator::Disable() {
-	SetProperty(TEXT("Enabled"), TEXT("N"));
+void AElectricGenerator::OnDisable() {
 	MainSound->Stop();
 }
 
-void AElectricGenerator::PostLoadProperties() {
-	const auto& Param = GetProperty(TEXT("Enabled"));
-	if (Param == "Y") {
-		Enable();
-	} else {
-		Disable();
-	}
-}
-
-void AElectricGenerator::ProduceElectricPower(float& OutputPower) {
-	const auto& Param = GetProperty(TEXT("Enabled"));
-	if (Param == "Y") {
-		OutputPower = 1;
-	}
+void AElectricGenerator::OnEnable() {
+	MainSound->Play();
 }
 
 void AElectricGenerator::OnTerrainChange() {
 	Super::OnTerrainChange();
 	SetProperty(TEXT("Enabled"), TEXT("N"));
+}
+
+bool AElectricGenerator::PlaceToWorldClcPosition(const UWorld* World, const FVector& SourcePos, const FRotator& SourceRotation, const FHitResult& Res, FVector& Location, FRotator& Rotation, bool bFinal) const {
+	Location = Res.Location;
+	Rotation.Pitch = 0;
+	Rotation.Roll = 0;
+	Rotation.Yaw = SourceRotation.Yaw;
+	return true;
 }

@@ -513,15 +513,13 @@ void UMainPlayerControllerComponent::TakeSelectedObjectToInventory() {
 			FHitResult ActionPoint = MainController->TracePlayerActionPoint();
 			if (ActionPoint.bBlockingHit) {
 				ASandboxObject* Obj = Cast<ASandboxObject>(ActionPoint.GetActor());
-				if (Obj && Obj->CanTake(nullptr) && Inventory->AddObject(Obj)) {
+				if (Obj && Obj->CanTake(nullptr)) {
 					uint64 ClassId = Obj->GetSandboxClassId();
 					MainController->ServerRpcRemoveActor(Obj);
 					MainController->SandboxAddItem(ClassId);
 				}
 			}
 		}
-
-		//MainController->TakeObjectToInventory();
 	}
 
 	if (SelectedObject.ObjType == ESelectedObjectType::InstancedMesh) {
