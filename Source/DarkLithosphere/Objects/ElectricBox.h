@@ -13,7 +13,10 @@ class DARKLITHOSPHERE_API AElectricBox : public AElectricDevice {
 public:
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	UMaterialInterface* SatateOnMaterial;
+	UMaterialInterface* SatateActiveMaterial;
+
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	UMaterialInterface* SatateInactiveMaterial;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	UMaterialInterface* SatateOffMaterial;
@@ -32,8 +35,6 @@ public:
 
 protected:
 
-	virtual void OnDisable() override;
-
-	virtual void OnEnable() override;
+	virtual void OnHandleState() override;
 
 };

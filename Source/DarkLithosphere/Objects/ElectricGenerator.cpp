@@ -21,14 +21,6 @@ void AElectricGenerator::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 }
 
-void AElectricGenerator::OnDisable() {
-	MainSound->Stop();
-}
-
-void AElectricGenerator::OnEnable() {
-	MainSound->Play();
-}
-
 void AElectricGenerator::OnTerrainChange() {
 	Super::OnTerrainChange();
 	SetProperty(TEXT("Enabled"), TEXT("N"));
@@ -40,4 +32,14 @@ bool AElectricGenerator::PlaceToWorldClcPosition(const UWorld* World, const FVec
 	Rotation.Roll = 0;
 	Rotation.Yaw = SourceRotation.Yaw;
 	return true;
+}
+
+void AElectricGenerator::OnHandleState() {
+	if (ServerFlagActive == 1) {
+		MainSound->Play();
+	}
+
+	if (ServerFlagActive == 0) {
+		MainSound->Stop();
+	}
 }

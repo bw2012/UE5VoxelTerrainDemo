@@ -6,25 +6,23 @@
 #include "GameFramework/Actor.h"
 #include "TechHelper.generated.h"
 
-class IElectricityProducer {
 
-public:
+#define ED_TYPE_SOURCE		1
+#define ED_TYPE_TRANSMITER	2
+#define ED_TYPE_ENDPOINT	3
+#define ED_TYPE_TARGET		4
 
-	virtual void ProduceElectricPower(float& OutputPower) {
 
-	};
+class AElectricDevice;
 
+
+struct TElectricDeviceProxyItem {
+
+	AElectricDevice* DeviceActor = nullptr;
+
+	int Id = 0;
 };
 
-class IElectricityConsumer {
-
-public:
-
-	virtual void InElectricPower(float InputPower) {
-
-	};
-
-};
 
 
 UCLASS()
@@ -35,22 +33,27 @@ public:
 	ATechHelper();
 
 protected:
+
 	virtual void BeginPlay() override;
+
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:	
 	virtual void Tick(float DeltaTime) override;
 
-	void RegisterElectricityProducer(AActor* Actor);
+	virtual void FinishDestroy() override;
 
-	void UnregisterElectricityProducer(AActor* Actor);
+	void RegisterElectricDevice(AElectricDevice* DeviceActor);
 
-	void RegisterElectricityConsumer(AActor* Actor);
+	void UnregisterElectricDevice(AElectricDevice* DeviceActor);
 
-	void UnregisterElectricityConsumer(AActor* Actor);
+	void SetActiveElectricDevice(FString Name, int FlagActive);
+
+	void RebuildEnergyNet();
+
+	void DrawDebugEnergyNet();
 
 private:
 
-	TMap<FString, TWeakObjectPtr<AActor>> ElectricityProducersMap;
-
-	TMap<FString, TWeakObjectPtr<AActor>> ElectricityConsumersMap;
+	TMap<FString, TElectricDeviceProxyItem> ElectricDeviceMap;
 };

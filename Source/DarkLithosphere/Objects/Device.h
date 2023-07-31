@@ -5,34 +5,22 @@
 #include "BaseObject.h"
 #include "TechHelper.h"
 #include "GameFramework/Actor.h"
-#include "ElectricDevice.generated.h"
+#include "Device.generated.h"
 
-
-UENUM(BlueprintType)
-enum class FElectricDeviceLinkType : uint8 {
-	None = 0		UMETA(DisplayName = "None"),
-	Generator = 1	UMETA(DisplayName = "Generator"),
-	Transmitter = 2	UMETA(DisplayName = "Transmitter"),
-	Endpoint = 3	UMETA(DisplayName = "Endpoint"),
-	Target = 4		UMETA(DisplayName = "Target"),
-};
 
 
 UCLASS()
-class DARKLITHOSPHERE_API AElectricDevice : public ABaseObject {
+class DARKLITHOSPHERE_API ADevice : public ABaseObject {
 	GENERATED_BODY()
 	
 public:	
 
-	AElectricDevice();
+	ADevice();
 
 public:	
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	int EffectId;
-
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	FElectricDeviceLinkType LinkType;
 
 protected:
 
@@ -56,24 +44,10 @@ public:
 
 	virtual bool CanTake(const AActor* Actor = nullptr) const override;
 
-	virtual int GetElectricDeviceType();
-
-	int GetElectricDeviceServerState();
-
-	void SetElectricDeviceServerState(int NewState);
-
 protected:
-
-	void SetFlagActive(int FlagActive);
-
-	UPROPERTY()
-	ATechHelper* TechHelper;
 
 	UPROPERTY(ReplicatedUsing = OnRep_State)
 	int ServerState = 0;
-
-	UPROPERTY(ReplicatedUsing = OnRep_FlagActive)
-	int ServerFlagActive = 0;
 
 	UPROPERTY()
 	int LocalState = -999;
@@ -81,9 +55,8 @@ protected:
 	UFUNCTION()
 	void OnRep_State();
 
-	UFUNCTION()
-	void OnRep_FlagActive();
+	virtual void OnDisable();
 
-	virtual void OnHandleState();
+	virtual void OnEnable();
 
 };

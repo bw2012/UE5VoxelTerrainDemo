@@ -32,6 +32,9 @@
 #include "JsonObjectConverter.h"
 
 
+#include "Objects/TechHelper.h"
+
+
 AMainPlayerController::AMainPlayerController() {
 	MainPlayerControllerComponent = CreateDefaultSubobject<UMainPlayerControllerComponent>(TEXT("MainPlayerController"));
 	LastCursorPosition = FVector(0);
@@ -1102,5 +1105,17 @@ void AMainPlayerController::Respawn() {
 	UnPossess();
 	bClientPosses = true;
 	ServerRpcFindOrCreateCharacter();
+}
+
+void AMainPlayerController::SandboxRebuildEnergyNet() {
+	for (TActorIterator<ATechHelper> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+		ATechHelper* Helper = Cast<ATechHelper>(*ActorItr);
+		if (Helper) {
+			Helper->RebuildEnergyNet();
+			Helper->DrawDebugEnergyNet();
+			break;
+		}
+	}
+
 }
 

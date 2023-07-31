@@ -5,7 +5,7 @@
 
 AElectricDevice::AElectricDevice() {
 	PrimaryActorTick.bCanEverTick = true;
-
+	LinkType = FElectricDeviceLinkType::None;
 }
 
 void AElectricDevice::BeginPlay() {
@@ -15,21 +15,26 @@ void AElectricDevice::BeginPlay() {
 		return;
 	}
 
-	/*
 	for (TActorIterator<ATechHelper> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
 		ATechHelper* Helper = Cast<ATechHelper>(*ActorItr);
 		if (Helper) {
-			UE_LOG(LogTemp, Log, TEXT("Found ATechHelper -> %s"), *Helper->GetName());
 			TechHelper = Helper;
+			TechHelper->RegisterElectricDevice(this);
 			break;
 		}
 	}
+}
+
+void AElectricDevice::EndPlay(const EEndPlayReason::Type EndPlayReason) {
+	Super::EndPlay(EndPlayReason);
+
+	if (GetNetMode() == NM_Client) {
+		return;
+	}
 
 	if (TechHelper) {
-		TechHelper->RegisterElectricityConsumer(this);
+		TechHelper->UnregisterElectricDevice(this);
 	}
-	*/
-
 }
 
 void AElectricDevice::Tick(float DeltaTime) {
@@ -50,36 +55,41 @@ void AElectricDevice::MainInteraction(const APawn* Source) {
 	const auto& Param = GetProperty(TEXT("Enabled"));
 	if (Param == "Y") {
 		SetProperty(TEXT("Enabled"), TEXT("N"));
-		OnDisable();
-		ServerState = 0;
-	}
-	else {
+		SetFlagActive(0);
+	} else {
 		SetProperty(TEXT("Enabled"), TEXT("Y"));
-		OnEnable();
-		ServerState = 1;
+		SetFlagActive(1);
 	}
 }
 
 void AElectricDevice::PostLoadProperties() {
 	const auto& Param = GetProperty(TEXT("Enabled"));
 	if (Param == "Y") {
-		OnEnable();
+		SetFlagActive(1);
 	} else {
-		OnDisable();
+		SetFlagActive(0);
 	}
 }
 
 void AElectricDevice::OnPlaceToWorld() {
 	SetProperty(TEXT("Enabled"), TEXT("N"));
 	ServerState = 0;
-	OnDisable();
+	SetFlagActive(0);
 }
 
-void AElectricDevice::OnDisable() {
+void AElectricDevice::SetFlagActive(int FlagActive) {
+	ServerFlagActive = FlagActive;
 
+	if (TechHelper) {
+		TechHelper->SetActiveElectricDevice(GetName(), ServerFlagActive);
+	}
+
+	if (GetNetMode() != NM_Client) {
+		OnHandleState();
+	}
 }
 
-void AElectricDevice::OnEnable() {
+void AElectricDevice::OnHandleState() {
 
 }
 
@@ -95,25 +105,42 @@ bool AElectricDevice::PlaceToWorldClcPosition(const UWorld* World, const FVector
 bool AElectricDevice::CanTake(const AActor* Actor) const {
 	const auto& Param = GetProperty(TEXT("Enabled"));
 	if (Param == "Y") {
-		return false;
+		//return false;
 	}
 
 	return true;
 }
 
+int AElectricDevice::GetElectricDeviceType() {
+	return (int)LinkType;
+}
+
+void AElectricDevice::SetElectricDeviceServerState(int NewState) {
+	if (GetNetMode() == NM_Client) {
+		return;
+	}
+
+	ServerState = NewState; 
+	OnHandleState();
+}
+
 void AElectricDevice::OnRep_State() {
 	if (ServerState != LocalState) {
-
-		if (ServerState > 0) {
-			OnEnable();
-		} else {
-			OnDisable();
-		}
-
+		OnHandleState();
 		LocalState = ServerState;
 	}
 }
 
+void AElectricDevice::OnRep_FlagActive() {
+	UE_LOG(LogTemp, Log, TEXT("OnRep_FlagActive -> %d"), ServerFlagActive);
+	OnHandleState();
+}
+
+int AElectricDevice::GetElectricDeviceServerState() {
+	return ServerState;
+}
+
 void AElectricDevice::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
 	DOREPLIFETIME(AElectricDevice, ServerState);
+	DOREPLIFETIME(AElectricDevice, ServerFlagActive);
 }

@@ -25,9 +25,7 @@ protected:
 
 protected:
 
-	virtual void OnDisable();
-
-	virtual void OnEnable();
+	virtual void OnHandleState() override;
 
 private:
 

@@ -8,39 +8,10 @@ ALamp::ALamp() {
 
 void ALamp::BeginPlay() {
 	Super::BeginPlay();
-
-	/*
-	if (GetNetMode() == NM_Client) {
-		return;
-	}
-
-	for (TActorIterator<ATechHelper> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
-		ATechHelper* Helper = Cast<ATechHelper>(*ActorItr);
-		if (Helper) {
-			UE_LOG(LogTemp, Log, TEXT("Found ATechHelper -> %s"), *Helper->GetName());
-			TechHelper = Helper;
-			break;
-		}
-	}
-
-	if (TechHelper) {
-		TechHelper->RegisterElectricityConsumer(this);
-	}
-
-	const auto& Param = GetProperty(TEXT("Enabled"));
-	if (Param == "Y") {
-		//EnableLight();
-	} else {
-		DisableLight();
-	}
-	*/
 }
 
 void ALamp::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 	Super::EndPlay(EndPlayReason);
-	//if (TechHelper) {
-	//	TechHelper->UnregisterElectricityConsumer(this);
-	//}
 }
 
 void ALamp::SwitchLightState(bool bIsEnable) {
@@ -54,10 +25,18 @@ void ALamp::SwitchLightState(bool bIsEnable) {
 	}
 }
 
-void ALamp::OnDisable() {
-	SwitchLightState(false);
+void ALamp::OnHandleState() {
+	if (ServerState > 0) {
+		if (ServerFlagActive == 1) {
+			SwitchLightState(true);
+		}
+
+		if (ServerFlagActive == 0) {
+			SwitchLightState(false);
+		}
+
+	} else {
+		SwitchLightState(false);
+	}
 }
 
-void ALamp::OnEnable() {
-	SwitchLightState(true);
-}

@@ -34,7 +34,5 @@ public:
 
 protected:
 
-	virtual void OnDisable() override;
-
-	virtual void OnEnable() override;
+	virtual void OnHandleState() override;
 };
