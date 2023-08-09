@@ -6,6 +6,7 @@
 AElectricDevice::AElectricDevice() {
 	PrimaryActorTick.bCanEverTick = true;
 	LinkType = FElectricDeviceLinkType::None;
+	ElectricLinkDistance = 500.f;
 }
 
 void AElectricDevice::BeginPlay() {

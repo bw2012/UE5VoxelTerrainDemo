@@ -34,6 +34,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	FElectricDeviceLinkType LinkType;
 
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	float ElectricLinkDistance;
+
 protected:
 
 	virtual void BeginPlay() override;

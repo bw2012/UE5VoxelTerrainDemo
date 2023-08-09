@@ -14,6 +14,7 @@ struct TEnergyNetNodeParam {
 
 	int type = 0;
 
+	float max_distance;
 };
 
 
@@ -149,7 +150,7 @@ public:
 
 			if (connect) {
 				double len = FVector::Dist(source_node_v, FVector(n.param.x, n.param.y, n.param.z));
-				if (len < min_len) {
+				if (len < min_len && len < source_node.param.max_distance) {
 					min_len = len;
 					target_id = n.id;
 				}
@@ -270,7 +271,7 @@ void ATechHelper::RegisterElectricDevice(AElectricDevice* DeviceActor) {
 		UE_LOG(LogTemp, Log, TEXT("RegisterElectricDevice -> %s -> %d"), *Name, DevId);
 
 		const FVector Pos = DeviceActor->GetActorLocation();
-		EnergyNet->set_node_param(DevId, { Pos.X, Pos.Y, Pos.Z, DeviceActor->GetElectricDeviceType() });
+		EnergyNet->set_node_param(DevId, { Pos.X, Pos.Y, Pos.Z, DeviceActor->GetElectricDeviceType(),  DeviceActor->ElectricLinkDistance });
 
 		int p = EnergyNet->find_nearest_node(DevId);
 		UE_LOG(LogTemp, Log, TEXT("find_nearest_node -> %d"), p);
@@ -342,7 +343,7 @@ void ATechHelper::RebuildEnergyNet() {
 	double Time = (End - Start) * 1000;
 	UE_LOG(LogTemp, Log, TEXT("RebuildEnergyNet --> %f ms"), Time);
 
-	DrawDebugEnergyNet();
+	//DrawDebugEnergyNet();
 }
 
 void ATechHelper::DrawDebugEnergyNet() {
