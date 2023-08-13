@@ -305,7 +305,7 @@ void ASandboxLevelController::LoadLevelJson() {
 					TSharedPtr<FJsonObject> ContainerJsonObject = ContainerJsonValue->AsObject()->GetObjectField(TEXT("Container"));
 					FString ContainerName = ContainerJsonObject->GetStringField("Name");
 					TArray<TSharedPtr<FJsonValue>> ContentArray = ContainerJsonObject->GetArrayField("Content");
-					UE_LOG(LogTemp, Warning, TEXT("ContainerName %s"), *ContainerName);
+					//UE_LOG(LogTemp, Warning, TEXT("ContainerName %s"), *ContainerName);
 
 					for (TSharedPtr<FJsonValue> ContentJsonValue : ContentArray) {
 						int SlotId = ContentJsonValue->AsObject()->GetIntegerField("SlotId");
