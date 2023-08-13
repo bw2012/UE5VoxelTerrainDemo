@@ -1116,6 +1116,18 @@ void AMainPlayerController::SandboxRebuildEnergyNet() {
 			break;
 		}
 	}
-
 }
 
+void AMainPlayerController::SandboxForceSave() {
+	ServerRpcForceSave();
+}
+
+void AMainPlayerController::ServerRpcForceSave_Implementation() {
+	if (GetLevelController()) {
+		GetLevelController()->SaveMap();
+	}
+
+	if (TerrainController) {
+		TerrainController->SaveMapAsync();
+	}
+}
