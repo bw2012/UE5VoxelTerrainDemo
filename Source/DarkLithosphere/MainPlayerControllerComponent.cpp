@@ -613,15 +613,12 @@ bool UMainPlayerControllerComponent::ToggleCraftMode(int ReceiptId) {
 		if (CraftRecipeData->bToInventory) {
 			UContainerComponent* Inventory = MainController->GetInventory();
 			if (Inventory != nullptr) {
-				TSubclassOf<ASandboxObject> ObjSubclass = MainController->LevelController->GetSandboxObjectByClassId(CraftRecipeData->SandboxClassId);
-				if (ObjSubclass) {
-					auto* Obj = Cast<ASandboxObject>(ObjSubclass->GetDefaultObject());
-					for (int Idx = 0; Idx < 10; Idx++) {
-						Inventory->AddObject(Obj);
-					}
-
-					return false;
+				for (int Idx = 0; Idx < 10; Idx++) {
+					//Inventory->AddObject(Obj);
+					MainController->SandboxAddItem(CraftRecipeData->SandboxClassId);
 				}
+
+				return false;
 			}
 		} else {
 			ResetState();
