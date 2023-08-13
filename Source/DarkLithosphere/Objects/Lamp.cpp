@@ -4,12 +4,12 @@
 
 ALamp::ALamp() {
 	PrimaryActorTick.bCanEverTick = true;
+
+	SwitchLightState(false);
 }
 
 void ALamp::BeginPlay() {
 	Super::BeginPlay();
-
-	SwitchLightState(false);
 }
 
 void ALamp::EndPlay(const EEndPlayReason::Type EndPlayReason) {
@@ -30,14 +30,17 @@ void ALamp::SwitchLightState(bool bIsEnable) {
 void ALamp::OnHandleState() {
 	if (ServerState > 0) {
 		if (ServerFlagActive == 1) {
+			UE_LOG(LogTemp, Log, TEXT("OnHandleState -> light on"));
 			SwitchLightState(true);
 		}
 
 		if (ServerFlagActive == 0) {
+			UE_LOG(LogTemp, Log, TEXT("OnHandleState -> light off"));
 			SwitchLightState(false);
 		}
 
 	} else {
+		UE_LOG(LogTemp, Log, TEXT("OnHandleState -> light off"));
 		SwitchLightState(false);
 	}
 }

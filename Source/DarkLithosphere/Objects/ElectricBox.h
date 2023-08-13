@@ -33,6 +33,8 @@ public:
 
 	virtual void Tick(float DeltaTime) override;
 
+	virtual void PostLoad();
+
 protected:
 
 	virtual void OnHandleState() override;
