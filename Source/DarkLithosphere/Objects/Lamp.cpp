@@ -8,6 +8,8 @@ ALamp::ALamp() {
 
 void ALamp::BeginPlay() {
 	Super::BeginPlay();
+
+	SwitchLightState(false);
 }
 
 void ALamp::EndPlay(const EEndPlayReason::Type EndPlayReason) {
