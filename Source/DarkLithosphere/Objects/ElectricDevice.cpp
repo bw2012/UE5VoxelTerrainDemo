@@ -126,7 +126,7 @@ void AElectricDevice::SetElectricDeviceServerState(int NewState) {
 }
 
 void AElectricDevice::OnRep_State() {
-	UE_LOG(LogTemp, Log, TEXT("OnRep_State -> %d %d"), ServerState, LocalState);
+	//UE_LOG(LogTemp, Log, TEXT("OnRep_State -> %d %d"), ServerState, LocalState);
 	if (ServerState != LocalState) {
 		OnHandleState();
 		LocalState = ServerState;
@@ -134,7 +134,7 @@ void AElectricDevice::OnRep_State() {
 }
 
 void AElectricDevice::OnRep_FlagActive() {
-	UE_LOG(LogTemp, Log, TEXT("OnRep_FlagActive -> %d"), ServerFlagActive);
+	//UE_LOG(LogTemp, Log, TEXT("OnRep_FlagActive -> %d"), ServerFlagActive);
 	OnHandleState();
 }
 
