@@ -9,6 +9,10 @@ AElectricBox::AElectricBox() {
 
 void AElectricBox::BeginPlay() {
 	Super::BeginPlay();
+
+	if (SatateOffMaterial) {
+		SandboxRootMesh->SetMaterial(0, SatateOffMaterial);
+	}
 }
 
 void AElectricBox::Tick(float DeltaTime) {
