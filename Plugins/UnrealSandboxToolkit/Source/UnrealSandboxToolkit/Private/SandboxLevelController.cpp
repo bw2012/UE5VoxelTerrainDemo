@@ -417,7 +417,9 @@ ASandboxObject* ASandboxLevelController::GetSandboxObject(uint64 ClassId) {
 bool ASandboxLevelController::RemoveSandboxObject(ASandboxObject* Obj) {
 	if (GetNetMode() != NM_Client) {
 		if (Obj) {
+			uint64 NetUid = Obj->GetSandboxNetUid();
 			Obj->Destroy();
+			GlobalObjectMap.Remove(NetUid);
 			return true;
 		}
 	}

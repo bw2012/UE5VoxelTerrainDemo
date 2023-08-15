@@ -143,6 +143,7 @@ int AElectricDevice::GetElectricDeviceServerState() {
 }
 
 void AElectricDevice::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AElectricDevice, ServerState);
 	DOREPLIFETIME(AElectricDevice, ServerFlagActive);
 }

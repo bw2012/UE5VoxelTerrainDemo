@@ -154,6 +154,7 @@ void ABaseFireObject::Tick(float DeltaTime) {
 }
 
 void ABaseFireObject::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(ABaseFireObject, Lifetime);
 	DOREPLIFETIME(ABaseFireObject, State);
 }

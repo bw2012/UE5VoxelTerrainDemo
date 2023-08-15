@@ -428,9 +428,9 @@ void ASandboxPlayerController::TransferContainerStack_Implementation(uint64 Obje
 					Container->SetStackDirectly(Stack, SlotId);
 				}
 			}
-		}
 
-		Obj->ForceNetUpdate();
+			Obj->ForceNetUpdate();
+		}
 	}
 }
 

@@ -144,6 +144,7 @@ void ACandle::OnTerrainChange() {
 }
 
 void ACandle::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(ACandle, Lifetime);
 	DOREPLIFETIME(ACandle, State);
 }
