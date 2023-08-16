@@ -2,16 +2,19 @@
 Unreal Engine 5 procedural voxel terrian example (partially based on Transvoxel™ Algorithm by Eric Lengyel http://transvoxel.org/)
 This project provides tools to generate, visualize and in-game change volume terrain using voxels.
 
+**Master branch tested with Unreal Engine 5.2.1 [Windows 10] [Ubuntu 20.04] [Ubuntu 22.04]**
+
+**Work in progress. Contains some unfinished code and unoptimized parts**
+
 ![Voxel terrain](https://github.com/bw2012/UE5VoxelTerrainDemo/blob/master/demo.gif?raw=true)
 
 ![Voxel cave](https://github.com/bw2012/UE5VoxelTerrainDemo/blob/master/cave_demo.gif?raw=true)
 
-**Master branch tested with Unreal Engine 5.1.1 [Windows 10]**
-
-**Work in progress. Contains some unfinished code and unoptimized parts**
 
 # Download playable demo
-UE5 version: [UE5VoxelTerrain-0.0.38.zip](https://cutt.ly/z2yhLnA) 
+[UE5-Windows](https://cutt.ly/z2yhLnA) 
+
+[UE5-Linux](https://drive.google.com/file/d/1VnsI3jswhqTNYM_dQ2qHLa78wgQDE0g8/view?usp=sharing) 
 
 
 # Features
