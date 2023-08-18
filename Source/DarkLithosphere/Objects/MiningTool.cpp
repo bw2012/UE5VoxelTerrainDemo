@@ -41,6 +41,8 @@ void AMiningTool::OnAltAction(const FHitResult& Hit, ABaseCharacter* PlayerChara
 	AMainPlayerController* MainController = Cast<AMainPlayerController>(PlayerCharacter->GetController());
 	if (MainController) {
 		LevelController = MainController->GetLevelController();
+	} else {
+		return;
 	}
 
 	AConstructionObject* Construction = Cast<AConstructionObject>(Hit.GetActor());
@@ -77,29 +79,39 @@ void AMiningTool::OnAltAction(const FHitResult& Hit, ABaseCharacter* PlayerChara
 
 		UTerrainInstancedStaticMesh* TerrainInstMesh = Cast<UTerrainInstancedStaticMesh>(Hit.Component.Get());
 		if (TerrainInstMesh) {
-			// FIXME remove hardcoded tree ids
-			if (TerrainInstMesh->MeshTypeId == 100 || TerrainInstMesh->MeshTypeId == 101) {
 
-				FTransform InstanceTransform;
-				TerrainInstMesh->GetInstanceTransform(Hit.Item, InstanceTransform, true);
-
-				FRotator Rotation(0, 0, 90);
-				FVector Pos = InstanceTransform.GetLocation();
-				Pos.Z += 250;
-				FTransform NewTransform(Rotation, Pos, FVector(1));
-
-				//MainController->ServerRpcSpawnObject(150, NewTransform, true);
-			}
+			FTransform InstanceTransform;
+			TerrainInstMesh->GetInstanceTransform(Hit.Item, InstanceTransform, true);
 
 			if (TerrainInstMesh->IsFoliage()) {
 				FVector Location = Hit.Normal * 25 + Hit.Location;
 
-				FTransform InstanceTransform;
-				TerrainInstMesh->GetInstanceTransform(Hit.Item, InstanceTransform, true);
-
 				TVoxelIndex Index = Terrain->GetZoneIndex(TerrainInstMesh->GetComponentLocation());
 				MainController->ServerRpcDestroyTerrainMesh(Index.X, Index.Y, Index.Z, TerrainInstMesh->MeshTypeId, TerrainInstMesh->MeshVariantId, Hit.Item, 2, Hit.Location);
 			}
+
+			SpawnItems(MainController, TerrainInstMesh->MeshTypeId, InstanceTransform);
+		}
+	}
+}
+
+void AMiningTool::SpawnItems(APlayerController* Controller, uint32 MeshTypeId, const FTransform& InstanceTransform) {
+
+	AMainPlayerController* MainController = (AMainPlayerController*)Controller;
+
+	if (MeshTypeId == 100 || MeshTypeId == 101) {
+
+		FRotator Rotation(0, 0, 90);
+		FVector Pos = InstanceTransform.GetLocation();
+		Pos.Z += 250;
+		FTransform NewTransform(Rotation, Pos, FVector(1));
+
+		MainController->ServerRpcSpawnObject(150, NewTransform, true);
+
+		const auto Num = FMath::RandRange(1, 3);
+		for (int I = 1; I < Num; I++) {
+			Pos.Z += 201;
+			MainController->ServerRpcSpawnObject(12, FTransform(Rotation, Pos, FVector(1)), true);
 		}
 	}
 }

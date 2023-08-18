@@ -49,5 +49,7 @@ private:
 
 	int DiggingToolSize = 0;
 
-	void PlaySound(const FSandboxTerrainMaterial& MatInfo, const FVector& Location, UWorld* World);
+	void SpawnItems(APlayerController* Controller, uint32 MeshTypeId, const FTransform& InstanceTransform);
+
+
 };
