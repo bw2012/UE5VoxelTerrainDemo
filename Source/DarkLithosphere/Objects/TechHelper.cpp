@@ -245,9 +245,7 @@ void ATechHelper::FinishDestroy() {
 
 void ATechHelper::BeginPlay() {
 	Super::BeginPlay();
-
 }
-
 
 void ATechHelper::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 	Super::EndPlay(EndPlayReason);
@@ -280,7 +278,6 @@ void ATechHelper::RegisterElectricDevice(AElectricDevice* DeviceActor) {
 		// TODO handle error
 	}
 	
-	RebuildEnergyNet();
 }
 
 void ATechHelper::SetActiveElectricDevice(FString Name, int FlagActive) {
