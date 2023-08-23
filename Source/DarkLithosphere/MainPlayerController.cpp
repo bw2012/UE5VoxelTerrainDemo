@@ -1108,6 +1108,10 @@ void AMainPlayerController::Respawn() {
 }
 
 void AMainPlayerController::SandboxRebuildEnergyNet() {
+	ServerRebuildEnergyNet();
+}
+
+void AMainPlayerController::ServerRebuildEnergyNet_Implementation() {
 	for (TActorIterator<ATechHelper> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
 		ATechHelper* Helper = Cast<ATechHelper>(*ActorItr);
 		if (Helper) {

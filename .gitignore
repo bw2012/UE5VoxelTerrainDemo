@@ -30,3 +30,6 @@ Saved
 DarkLithosphere.code-workspace
 Makefile
 
+*.txt
+*.workspace
+

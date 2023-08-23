@@ -355,7 +355,7 @@ bool UMainPlayerControllerComponent::PlaceCurrentObjectToWorld() {
 							MainController->SpawnObjectByPlayer(Obj->GetSandboxClassId(), Transform);
 						}
 
-						// TODO ïåðåäåëàòü
+						// TODO Ã¯Ã¥Ã°Ã¥Ã¤Ã¥Ã«Ã Ã²Ã¼
 						if (GetNetMode() == NM_Client) {
 							MainController->ServerRpcSpawnObject(Obj->GetSandboxClassId(), Transform, false);
 							ServerRpcDecreaseObjectsInContainer(TEXT("Inventory"), MainController->CurrentInventorySlot);

@@ -279,6 +279,8 @@ void ATechHelper::RegisterElectricDevice(AElectricDevice* DeviceActor) {
 	} else {
 		// TODO handle error
 	}
+	
+	RebuildEnergyNet();
 }
 
 void ATechHelper::SetActiveElectricDevice(FString Name, int FlagActive) {

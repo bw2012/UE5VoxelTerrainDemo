@@ -176,6 +176,9 @@ public:
 	void SandboxForceSave();
 
 	UFUNCTION(Server, Reliable)
+	void ServerRebuildEnergyNet();
+
+	UFUNCTION(Server, Reliable)
 	void ServerRpcForceSave();
 
 	UFUNCTION(Server, Reliable)
