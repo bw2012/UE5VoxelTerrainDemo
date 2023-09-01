@@ -35,8 +35,8 @@ AEntryHelper::AEntryHelper() {
 void AEntryHelper::BeginPlay() {
 	Super::BeginPlay();
 
-	const FString Windowed = TEXT("r.setRes 1600x1024w");
-	UKismetSystemLibrary::ExecuteConsoleCommand(GetWorld(), *Windowed);
+	//const FString Windowed = TEXT("r.setRes 1600x1024w");
+	//UKismetSystemLibrary::ExecuteConsoleCommand(GetWorld(), *Windowed);
 
 	UMainGameInstance* GI = Cast<UMainGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
 	if (GI) {

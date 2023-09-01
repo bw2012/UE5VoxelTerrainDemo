@@ -15,6 +15,14 @@ void AElectricBox::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 }
 
+void AElectricBox::PostLoad() {
+	Super::PostLoad();
+
+	if (SatateOffMaterial) {
+		SandboxRootMesh->SetMaterial(0, SatateOffMaterial);
+	}
+}
+
 void AElectricBox::OnHandleState() {
 	if (ServerState > 0) {
 		if (ServerFlagActive == 1) {

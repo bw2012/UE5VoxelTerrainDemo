@@ -9,9 +9,9 @@
 
 struct FFurnaceReceipe {
 
-	int RawMatClass = 0;
+	uint64 RawMatClass = 0;
 
-	int ProductClass = 0;
+	uint64 ProductClass = 0;
 
 	float ProcessingTime = 0;
 
@@ -41,6 +41,19 @@ public:
 
 private:
 
+	UPROPERTY(ReplicatedUsing = OnRep_State)
+	int ServerState = 0;
+
+	UPROPERTY()
+	int LocalState = -999;
+
+	UFUNCTION()
+	void OnRep_State();
+
+	virtual void SetInactive();
+
+	virtual void SetActive();
+
 	TMap<int, FFurnaceReceipe> FurnaceReceipMap;
 
 	void SetFlameVisibility(bool Visibility);
@@ -56,5 +69,7 @@ private:
 	int CurrentReceipeId;
 
 	float ProcessTime;
+
+	void ServerPerform();
 
 };

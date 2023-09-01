@@ -1,9 +1,12 @@
 
 #include "Furnace.h"
 #include "../LevelController.h"
+#include "Net/UnrealNetwork.h"
+
 
 AFurnace::AFurnace() {
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates = true;
 	Lifetime = 0;
 	bIsActive = false;
 	ProcessTime = 0;
@@ -84,6 +87,56 @@ const ASandboxObject* GetStackObject(UContainerComponent* Container, int SlotId)
 void AFurnace::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
+	if (GetNetMode() == NM_Client) {
+		return;
+	}
+
+	ServerPerform();
+}
+
+void AFurnace::OnRep_State() {
+	if (ServerState != LocalState) {
+
+		if (ServerState > 0) {
+			SetActive();
+		} else {
+			SetInactive();
+		}
+
+		LocalState = ServerState;
+	}
+}
+
+void AFurnace::SetInactive() {
+	auto* Mesh = GetFirstComponentByName<UStaticMeshComponent>(TEXT("RockMesh"));
+	if (Mesh) {
+		Mesh->SetVisibility(false, true);
+	}
+
+	auto* Audio = GetFirstComponentByName<UAudioComponent>(TEXT("Audio"));
+	if (Audio) {
+		Audio->SetVolumeMultiplier(0);
+	}
+}
+
+void AFurnace::SetActive() {
+	auto* Mesh = GetFirstComponentByName<UStaticMeshComponent>(TEXT("RockMesh"));
+	if (Mesh) {
+		Mesh->SetVisibility(true, true);
+	}
+
+	auto* Audio = GetFirstComponentByName<UAudioComponent>(TEXT("Audio"));
+	if (Audio) {
+		Audio->SetVolumeMultiplier(1);
+	}
+}
+
+void AFurnace::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AFurnace, ServerState);
+}
+
+void AFurnace::ServerPerform() {
 	static const int FuelSlot = 0;
 	static const int RawMaterialSlot = 1;
 	static const int ProductSlot1 = 2;
@@ -93,7 +146,7 @@ void AFurnace::Tick(float DeltaTime) {
 	if (Delta > 1) {
 		Timestamp = T;
 		if (Lifetime > 0) {
-			Lifetime -= Delta; 
+			Lifetime -= Delta;
 		}
 
 		//UE_LOG(LogTemp, Warning, TEXT("Lifetime: %f"), Lifetime);
@@ -110,40 +163,23 @@ void AFurnace::Tick(float DeltaTime) {
 						uint64 ClassId = Obj->GetSandboxClassId();
 						if (ClassId == 12 || ClassId == 18) {
 							Container->DecreaseObjectsInContainer(FuelSlot, 1);
-							Lifetime += 10;
+							Lifetime += 20;
 
 							if (!bIsActive) {
-								auto* Mesh = GetFirstComponentByName<UStaticMeshComponent>(TEXT("RockMesh"));
-								if (Mesh) {
-									Mesh->SetVisibility(true, true);
-								}
-
-								auto* Audio = GetFirstComponentByName<UAudioComponent>(TEXT("Audio"));
-								if (Audio) {
-									Audio->SetVolumeMultiplier(1);
-								}
-
+								SetActive();
+								ServerState = 1;
 								bIsActive = true;
 							}
 
 							bHasFuel = true;
-
 						}
 					}
-				} 
+				}
 
-				if(!bHasFuel){
+				if (!bHasFuel) {
 					if (bIsActive) {
-						auto* Mesh = GetFirstComponentByName<UStaticMeshComponent>(TEXT("RockMesh"));
-						if (Mesh) {
-							Mesh->SetVisibility(false, true);
-						}
-
-						auto* Audio = GetFirstComponentByName<UAudioComponent>(TEXT("Audio"));
-						if (Audio) {
-							Audio->SetVolumeMultiplier(0);
-						}
-
+						SetInactive();
+						ServerState = 0;
 						bIsActive = false;
 					}
 				}
@@ -181,16 +217,11 @@ void AFurnace::Tick(float DeltaTime) {
 						if (!bSuccess) {
 							auto* ProductStack1 = Container->GetSlot(ProductSlot1);
 							if (!ProductStack1 || ProductStack1->Amount == 0) {
-								ALevelController* Controller = GetLevelController(GetWorld());
-								if (Controller) {
-									TSubclassOf<ASandboxObject> NewObjS = Controller->GetSandboxObjectByClassId(Receipe.ProductClass); 
-									if (NewObjS) {
-										FContainerStack NewStack;
-										NewStack.Amount = 1;
-										Container->SetStackDirectly(NewStack, ProductSlot1);
-										bSuccess = true;
-									}
-								}
+								FContainerStack NewStack;
+								NewStack.Amount = 1;
+								NewStack.SandboxClassId = Receipe.ProductClass;
+								Container->SetStackDirectly(NewStack, ProductSlot1);
+								bSuccess = true;
 							}
 						}
 

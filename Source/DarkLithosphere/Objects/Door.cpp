@@ -129,6 +129,7 @@ const UStaticMeshComponent* ADoor::GetMarkerMesh() const {
 }
 
 void ADoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+    Super::GetLifetimeReplicatedProps(OutLifetimeProps);
     DOREPLIFETIME(ADoor, DoorState);
     DOREPLIFETIME(ADoor, ReplicatedRotation);
 }

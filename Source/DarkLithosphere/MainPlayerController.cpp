@@ -1108,6 +1108,10 @@ void AMainPlayerController::Respawn() {
 }
 
 void AMainPlayerController::SandboxRebuildEnergyNet() {
+	ServerRebuildEnergyNet();
+}
+
+void AMainPlayerController::ServerRebuildEnergyNet_Implementation() {
 	for (TActorIterator<ATechHelper> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
 		ATechHelper* Helper = Cast<ATechHelper>(*ActorItr);
 		if (Helper) {
@@ -1116,6 +1120,18 @@ void AMainPlayerController::SandboxRebuildEnergyNet() {
 			break;
 		}
 	}
-
 }
 
+void AMainPlayerController::SandboxForceSave() {
+	ServerRpcForceSave();
+}
+
+void AMainPlayerController::ServerRpcForceSave_Implementation() {
+	if (GetLevelController()) {
+		GetLevelController()->SaveMap();
+	}
+
+	if (TerrainController) {
+		TerrainController->SaveMapAsync();
+	}
+}

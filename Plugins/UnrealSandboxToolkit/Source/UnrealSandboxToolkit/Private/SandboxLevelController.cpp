@@ -305,7 +305,7 @@ void ASandboxLevelController::LoadLevelJson() {
 					TSharedPtr<FJsonObject> ContainerJsonObject = ContainerJsonValue->AsObject()->GetObjectField(TEXT("Container"));
 					FString ContainerName = ContainerJsonObject->GetStringField("Name");
 					TArray<TSharedPtr<FJsonValue>> ContentArray = ContainerJsonObject->GetArrayField("Content");
-					UE_LOG(LogTemp, Warning, TEXT("ContainerName %s"), *ContainerName);
+					//UE_LOG(LogTemp, Warning, TEXT("ContainerName %s"), *ContainerName);
 
 					for (TSharedPtr<FJsonValue> ContentJsonValue : ContentArray) {
 						int SlotId = ContentJsonValue->AsObject()->GetIntegerField("SlotId");
@@ -417,7 +417,9 @@ ASandboxObject* ASandboxLevelController::GetSandboxObject(uint64 ClassId) {
 bool ASandboxLevelController::RemoveSandboxObject(ASandboxObject* Obj) {
 	if (GetNetMode() != NM_Client) {
 		if (Obj) {
+			uint64 NetUid = Obj->GetSandboxNetUid();
 			Obj->Destroy();
+			GlobalObjectMap.Remove(NetUid);
 			return true;
 		}
 	}

@@ -106,5 +106,6 @@ void ADevice::OnRep_State() {
 }
 
 void ADevice::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const {
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(ADevice, ServerState);
 }

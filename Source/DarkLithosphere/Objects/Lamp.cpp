@@ -4,6 +4,8 @@
 
 ALamp::ALamp() {
 	PrimaryActorTick.bCanEverTick = true;
+
+	SwitchLightState(false);
 }
 
 void ALamp::BeginPlay() {

@@ -172,6 +172,15 @@ public:
 	UFUNCTION(Exec, Category = "Sandbox")
 	void SandboxRebuildEnergyNet();
 
+	UFUNCTION(Exec, Category = "Sandbox")
+	void SandboxForceSave();
+
+	UFUNCTION(Server, Reliable)
+	void ServerRebuildEnergyNet();
+
+	UFUNCTION(Server, Reliable)
+	void ServerRpcForceSave();
+
 	UFUNCTION(Server, Reliable)
 	void ServerRpcAddItem(int ItemId);
 
