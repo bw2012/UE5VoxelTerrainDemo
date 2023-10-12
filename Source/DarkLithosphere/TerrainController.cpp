@@ -113,7 +113,7 @@ void ATerrainController::ShutdownAndSaveMap() {
 
 	UE_LOG(LogTemp, Log, TEXT("Start save terrain manual"));
 	auto SaveFunction = [&]() {
-		std::function<void(uint32, uint32)> OnProgress = [=](uint32 Processed, uint32 Total) {
+		std::function<void(uint32, uint32)> OnProgress = [=, this](uint32 Processed, uint32 Total) {
 			if (Processed == Total) {
 				UMainGameInstance* GI = Cast<UMainGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
 				if (GI) {
@@ -131,14 +131,14 @@ void ATerrainController::ShutdownAndSaveMap() {
 			}
 		};
 
-		std::function<void(uint32)> OnFinish = [=](uint32 Processed) {
+		std::function<void(uint32)> OnFinish = [=, this](uint32 Processed) {
 			UMainGameInstance* GI = Cast<UMainGameInstance>(UGameplayStatics::GetGameInstance(GetWorld()));
 			if (GI) {
 				GI->SetProgressString(TEXT("100%"));
 				GI->SetProgress(1.f);
 			}
 
-			AsyncTask(ENamedThreads::GameThread, [=]() { OnFinishSaveTerrain(); });
+			AsyncTask(ENamedThreads::GameThread, [=, this]() { OnFinishSaveTerrain(); });
 		};
 
 		Save(OnProgress, OnFinish);
@@ -150,7 +150,7 @@ void ATerrainController::ShutdownAndSaveMap() {
 void ATerrainController::OnStartBackgroundSaveTerrain() {
 	TNotificationHelper::SendNotification("start_background_save");
 
-	AsyncTask(ENamedThreads::GameThread, [=]() { 
+	AsyncTask(ENamedThreads::GameThread, [=, this]() {
 		EventStartBackgroundSave();
 	});
 }
@@ -163,7 +163,7 @@ void ATerrainController::OnFinishBackgroundSaveTerrain() {
 
 	TNotificationHelper::SendNotification("finish_background_save");
 
-	AsyncTask(ENamedThreads::GameThread, [=]() {
+	AsyncTask(ENamedThreads::GameThread, [=, this]() {
 		EventFinishBackgroundSave();
 	});
 }
@@ -174,7 +174,7 @@ void ATerrainController::OnProgressBackgroundSaveTerrain(float Progress) {
 		GI->SetBkgProgressString(FString::Printf(TEXT("%.0f%%"), Progress * 100));
 	}
 
-	AsyncTask(ENamedThreads::GameThread, [=]() {
+	AsyncTask(ENamedThreads::GameThread, [=, this]() {
 		EventProgressBackgroundSave(Progress);
 	});
 }

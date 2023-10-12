@@ -662,7 +662,7 @@ void UMainTerrainGeneratorComponent::GenerateStructures() {
 			TVoxelIndex TTT(TestIndex.X + X1, TestIndex.Y + Y1, 0);
 			SetChunkTag(TTT, "no_tree", "Y");
 
-			AsyncTask(ENamedThreads::GameThread, [=]() {
+			AsyncTask(ENamedThreads::GameThread, [=, this]() {
 				const FVector Pos0 = GetController()->GetZonePos(TTT);
 				//DrawDebugBox(GetController()->GetWorld(), Pos0, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
 			});

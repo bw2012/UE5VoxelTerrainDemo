@@ -33,3 +33,5 @@ Makefile
 *.txt
 *.workspace
 
+UpgradeLog.htm
+
