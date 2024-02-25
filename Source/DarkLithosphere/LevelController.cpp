@@ -448,5 +448,15 @@ void ALevelController::BeginPlay() {
 		}
 	
 	}
+}
 
+TArray<ACharacter*> ALevelController::GetNpcList() {
+	TArray<ACharacter*> Result;
+
+	for (TActorIterator<ACharacter> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
+		ACharacter* C = *ActorItr;
+		Result.Add(C);
+	}
+
+	return Result;
 }

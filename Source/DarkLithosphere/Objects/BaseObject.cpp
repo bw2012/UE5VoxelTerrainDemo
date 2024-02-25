@@ -14,3 +14,7 @@ bool ABaseObject::IsContainer() {
 FName ABaseObject::GetContainerWidgetName() {
 	return TEXT("container");
 }
+
+bool ABaseObject::IsZoneAnchor() {
+	return false;
+}

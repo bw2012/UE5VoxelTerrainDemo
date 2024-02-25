@@ -10,6 +10,9 @@
 #include "MainGameInstance.h"
 #include "NotificationHelper.h"
 #include "SandboxCharacter.h"
+#include "Objects/BaseObject.h"
+
+#include "AIController.h"
 
 
 
@@ -262,6 +265,12 @@ void ATerrainController::RegisterSandboxObject(ASandboxObject* SandboxObject) {
 		}
 
 		ZoneObjects.WorldObjectMap.Add(ObjectName, SandboxObject);
+
+		ABaseObject* BObj = Cast<ABaseObject>(SandboxObject);
+		if (BObj && BObj->IsZoneAnchor()) {
+			ZoneAnchorsMap.Add(ObjectName, BObj);
+
+		}
 	}
 }
 
@@ -288,6 +297,12 @@ void ATerrainController::UnRegisterSandboxObject(ASandboxObject* SandboxObject) 
 		auto& ZoneObjects = ObjectsByZoneMap.FindOrAdd(ZoneIndex);
 		FString ObjectName = SandboxObject->GetName();
 		ZoneObjects.WorldObjectMap.Remove(ObjectName);
+
+		ABaseObject* BObj = Cast<ABaseObject>(SandboxObject);
+		if (BObj) {
+			ZoneAnchorsMap.Remove(ObjectName);
+
+		}
 	}
 }
 
@@ -363,5 +378,24 @@ void ATerrainController::OnDestroyInstanceMesh(UTerrainInstancedStaticMesh* Inst
 void ATerrainController::OnFinishRegisterPlayer() {
 	if (GetNetMode() == NM_Client) {
 		ClientStart();
+	}
+}
+
+void ATerrainController::GetAnchorObjectsLocation(TArray<FVector>& List) const {
+	UE_LOG(LogTemp, Log, TEXT("GetAnchorObjectsLocation:"));
+	for (const auto& Itm : ZoneAnchorsMap) {
+		List.Add(Itm.Value->GetActorLocation());
+		UE_LOG(LogTemp, Log, TEXT("ZoneAnchor: %s"), *Itm.Key);
+	}
+
+	if (LevelController) {
+		TArray<ACharacter*> NpcList = LevelController->GetNpcList();
+
+		for (const auto& Itm : NpcList) {
+			if (Cast<AAIController>(Itm->GetController())) {
+				List.Add(Itm->GetActorLocation());
+				UE_LOG(LogTemp, Log, TEXT("ZoneAnchor: %s"), *Itm->GetName());
+			}
+		}
 	}
 }

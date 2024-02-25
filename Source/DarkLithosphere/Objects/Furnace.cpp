@@ -236,3 +236,7 @@ void AFurnace::ServerPerform() {
 		}
 	}
 }
+
+bool AFurnace::IsZoneAnchor() {
+	return true;
+}

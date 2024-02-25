@@ -77,6 +77,8 @@ public:
 
 	virtual bool RemoveSandboxObject(ASandboxObject* Obj) override;
 
+	TArray<ACharacter*> GetNpcList();
+
 protected:
 
 	virtual void BeginPlay() override;

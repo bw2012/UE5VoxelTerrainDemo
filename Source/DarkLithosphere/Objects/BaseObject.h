@@ -26,4 +26,6 @@ public:
 
 	virtual FName GetContainerWidgetName();
 
+	virtual bool IsZoneAnchor();
+
 };

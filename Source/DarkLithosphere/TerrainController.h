@@ -6,6 +6,7 @@
 #include "LevelController.h"
 #include "TerrainController.generated.h"
 
+class ABaseObject;
 
 struct TVdGenBlock;
 class UTerrainInstancedStaticMesh;
@@ -123,8 +124,12 @@ protected:
 
 	virtual void OnFinishRegisterPlayer();
 
+	virtual void GetAnchorObjectsLocation(TArray<FVector>& List) const override;
+
 private:
 
 	TMap<TVoxelIndex, FSandboxObjectsByZone> ObjectsByZoneMap;
+
+	TMap<FString, ABaseObject*> ZoneAnchorsMap;
 
 };

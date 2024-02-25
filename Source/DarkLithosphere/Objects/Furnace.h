@@ -39,6 +39,8 @@ public:
 
 	virtual void PostLoadProperties() override;
 
+	virtual bool IsZoneAnchor() override;
+
 private:
 
 	UPROPERTY(ReplicatedUsing = OnRep_State)
