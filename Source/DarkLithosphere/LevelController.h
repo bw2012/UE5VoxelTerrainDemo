@@ -6,7 +6,8 @@
 #include "SandboxLevelController.h"
 #include "Marker.h"
 #include "EnvironmentController.h"
-#include "BaseCharacter.h" // TODO
+#include "BaseCharacter.h" 
+#include "VoxelIndex.h"
 #include "LevelController.generated.h"
 
 class ATerrainController;
@@ -66,6 +67,8 @@ public:
 	void RemoveConservedCharacter(FString SandboxPlayerUid);
 
 	void SpawnTempCharacterList();
+
+	void SpawnSavedZoneNPC(const TVoxelIndex& ZoneIndex);
 
 	ACharacter* SpawnCharacterByTypeId(const int TypeId, const FVector& Location, const FRotator& Rotation);
 

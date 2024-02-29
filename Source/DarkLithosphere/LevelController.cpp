@@ -273,7 +273,9 @@ void ALevelController::LoadCaharacterListJson(FString ListName, TSharedPtr<FJson
 
 		if (CharacterMap->CharacterTypeMap.Contains(TempCharacterInfo.TypeId)) {
 			TempCharacterList.Add(TempCharacterInfo);
-			ConservedCharacterMap.Add(TempCharacterInfo.SandboxPlayerUid, TempCharacterInfo);
+			if (TempCharacterInfo.SandboxPlayerUid != "") { // not npc
+				ConservedCharacterMap.Add(TempCharacterInfo.SandboxPlayerUid, TempCharacterInfo);
+			}
 		}
 	}
 }
@@ -354,6 +356,18 @@ ACharacter* ALevelController::SpawnCharacter(const FCharacterLoadInfo& TempChara
 void ALevelController::SpawnTempCharacterList() {
 	for (const FCharacterLoadInfo& TempCharacterInfo : TempCharacterList) {
 		SpawnCharacter(TempCharacterInfo);
+	}
+}
+
+void ALevelController::SpawnSavedZoneNPC(const TVoxelIndex& ZoneIndex) {
+	for (const FCharacterLoadInfo& TempCharacterInfo : TempCharacterList) {
+		if (TerrainController) {
+			auto Index = TerrainController->GetZoneIndex(TempCharacterInfo.Location);
+			if (Index == ZoneIndex && TempCharacterInfo.SandboxPlayerUid == "") {
+				UE_LOG(LogTemp, Warning, TEXT("SpawnSavedZoneNPC: %d %d %d - %d"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z, TempCharacterInfo.TypeId);
+				SpawnCharacter(TempCharacterInfo);
+			}
+		}
 	}
 }
 

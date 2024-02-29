@@ -350,6 +350,10 @@ void ATerrainController::OnRestoreZoneSoftUnload(const TVoxelIndex& ZoneIndex) {
 
 void ATerrainController::OnFinishLoadZone(const TVoxelIndex& Index) {
 	SpawnFromStash(Index);
+
+	if (LevelController) {
+		LevelController->SpawnSavedZoneNPC(Index);
+	}
 }
 
 void ATerrainController::OnFinishInitialLoad() {

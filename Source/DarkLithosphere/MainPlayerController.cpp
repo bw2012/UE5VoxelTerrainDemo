@@ -1072,6 +1072,17 @@ void AMainPlayerController::SandboxExec(const FString& Cmd, const FString& Param
 
 	}
 
+	if (Cmd == "spawn_npc") {
+		FHitResult H = TracePlayerActionPoint();
+		if (H.bBlockingHit && GetLevelController()) {
+			FCharacterLoadInfo Info;
+			Info.TypeId = 3;
+			Info.Location = H.Location;
+			Info.Rotation = FRotator(0);
+			GetLevelController()->SpawnCharacter(Info);
+		}
+	}
+
 }
 
 void AMainPlayerController::ServerRpcSpawnObject_Implementation(uint64 SandboxClassId, const FTransform& Transform, bool bEnablePhysics) {

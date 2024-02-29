@@ -643,6 +643,22 @@ void UMainTerrainGeneratorComponent::GenerateZoneSandboxObject(const TVoxelIndex
 		FRotator Rotation(0);
 		//LevelController->SpawnBaseCharacter(3, Location, Rotation);
 	}
+
+	// landscape only
+	if (CheckZoneTag(ZoneIndex, "zombies", "Y")) { 
+		const FVector ZoneOrigin = TerrainController->GetZonePos(ZoneIndex);
+		const float Z = GroundLevelFunction(ZoneIndex, ZoneOrigin);
+		const FVector Location(ZoneOrigin.X, ZoneOrigin.Y, Z + 80);
+
+		FCharacterLoadInfo Info;
+		Info.TypeId = 3;
+		Info.Location = Location;
+		Info.Rotation = FRotator(0);
+		LevelController->SpawnCharacter(Info);
+
+		//AsyncTask(ENamedThreads::GameThread, [&]() { DrawDebugBox(GetWorld(), ZoneOrigin, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true); });
+	}
+
 }
 
 
@@ -719,13 +735,24 @@ void UMainTerrainGeneratorComponent::ExtVdGenerationData(TGenerateVdTempItm& VdG
 
 	if (ZoneGenerationType == TZoneGenerationType::Landscape) {
 		TBiome Biome = ClcBiome(ZonePos);
+		int32 Hash = ZoneHash(ZoneIndex);
+		FRandomStream Rnd = FRandomStream();
+		Rnd.Initialize(Hash);
+		Rnd.Reset();
+
+		FRandomStream RndNpc = FRandomStream();
+		RndNpc.Initialize(Hash);
+		RndNpc.Reset();
+
+		float Zp = RndNpc.FRandRange(0.f, 1.f);
+		static const float Zc = 0.0125 / 3; // zombie spawn chance per zone
+		if (Zp < Zc) {
+			if (!IsSpawnArea(ZonePos)) {
+				SetZoneTag(ZoneIndex, "zombies", "Y");
+			}
+		}
 
 		if (Biome.IsForest()) {
-			int32 Hash = ZoneHash(ZoneIndex);
-			FRandomStream Rnd = FRandomStream();
-			Rnd.Initialize(Hash);
-			Rnd.Reset();
-
 			float Probability = Rnd.FRandRange(0.f, 1.f);
 			if (Probability < 0.025) {
 				SetZoneTag(ZoneIndex, "wood_logs", "Y");
