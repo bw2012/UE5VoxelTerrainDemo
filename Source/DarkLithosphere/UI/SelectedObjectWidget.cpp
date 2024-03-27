@@ -17,19 +17,23 @@ FString USelectedObjectWidget::GetSandboxSelectedObjectText() {
 	if (MainPlayerController && MainPlayerController->MainPlayerControllerComponent) {
 		FSelectedObject SelectedObject = MainPlayerController->MainPlayerControllerComponent->SelectedObject;
 
-		if (SelectedObject.ObjType == ESelectedObjectType::InstancedMesh) {
-			return SelectedObject.Name;
+		if (SelectedObject.SandboxObj || SelectedObject.TerrainMesh) {
+			FString Res = SelectedObject.Name;
+
+			if (SelectedObject.ExtText1 != "") {
+				Res += TEXT(" (");
+				Res += SelectedObject.ExtText1;
+				Res += TEXT(")");
+			}
+
+			return Res;
 		}
-
-		if (SelectedObject.ObjType == ESelectedObjectType::SandboxObject) {
-			return SelectedObject.Name;
-		}
-
-
 	}
 
 	return TEXT("");
 }
+
+// TODO переделать тут все с использованием массива
 
 FString USelectedObjectWidget::GetSandboxKeyText() {
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
@@ -40,32 +44,60 @@ FString USelectedObjectWidget::GetSandboxKeyText() {
 	if (MainPlayerController && MainPlayerController->MainPlayerControllerComponent) {
 		FSelectedObject SelectedObject = MainPlayerController->MainPlayerControllerComponent->SelectedObject;
 
-		if (SelectedObject.ObjType == ESelectedObjectType::InstancedMesh) {
+		if (SelectedObject.ObjType == ESelectedObjectType::InstancedMesh && SelectedObject.bCanTake) {
 			return TEXT("R");
 		}
 
 		if (SelectedObject.ObjType == ESelectedObjectType::SandboxObject) {
-			FString Res(TEXT(""));
-
 			if (SelectedObject.SandboxObj) {
 				if (SelectedObject.SandboxObj->IsInteractive()) {
-					Res += TEXT("E");
-				} else {
-					ABaseObject* BaseObj = Cast<ABaseObject>(SelectedObject.SandboxObj);
-					if (BaseObj) {
-						if (BaseObj->IsContainer()) {
-							Res += TEXT("E");
-						}
-					}
+					return TEXT("E");
+				} 
+
+				ABaseObject* BaseObj = Cast<ABaseObject>(SelectedObject.SandboxObj);
+				if (BaseObj && BaseObj->IsContainer()) {
+					return TEXT("E");
 				}
 
 				if (SelectedObject.SandboxObj->CanTake(nullptr)) {
-					Res += TEXT(" R");
+					return TEXT("R");
 				}
 
 			}
+		}
+	}
 
-			return Res;
+	return TEXT("");
+}
+
+
+FString USelectedObjectWidget::GetSandboxKeyText2() {
+	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
+	if (MainPlayerController->HasOpenContainer()) {
+		return TEXT("");
+	}
+
+	if (MainPlayerController && MainPlayerController->MainPlayerControllerComponent) {
+		FSelectedObject SelectedObject = MainPlayerController->MainPlayerControllerComponent->SelectedObject;
+
+		if (SelectedObject.ObjType == ESelectedObjectType::SandboxObject) {
+			if (SelectedObject.SandboxObj) {
+				bool bShow = false;
+
+				if (SelectedObject.SandboxObj->IsInteractive()) {
+					bShow = true;
+				}
+
+				ABaseObject* BaseObj = Cast<ABaseObject>(SelectedObject.SandboxObj);
+				if (BaseObj && BaseObj->IsContainer()) {
+					bShow = true;
+				}
+
+				if (bShow && SelectedObject.SandboxObj->CanTake(nullptr)) {
+					return TEXT("R");
+				}
+
+			}
 		}
 	}
 

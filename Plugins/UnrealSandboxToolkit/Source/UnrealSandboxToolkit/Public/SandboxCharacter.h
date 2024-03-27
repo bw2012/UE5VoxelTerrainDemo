@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "Runtime/UMG/Public/UMG.h"
 #include "SlateBasics.h"
+#include "Perception/AIPerceptionComponent.h"
 #include "SandboxCharacter.generated.h"
 
 

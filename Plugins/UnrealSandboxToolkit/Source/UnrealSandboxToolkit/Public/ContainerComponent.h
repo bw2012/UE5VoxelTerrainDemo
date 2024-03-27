@@ -29,7 +29,7 @@ struct FContainerStack {
 		SandboxClassId = 0;
 	}
 
-	bool IsEmpty() {
+	bool IsEmpty() const {
 		return Amount == 0;
 	}
 
@@ -43,6 +43,10 @@ class UNREALSANDBOXTOOLKIT_API UContainerComponent : public UActorComponent {
 
 
 public:
+
+	UPROPERTY(ReplicatedUsing = OnRep_Content, EditAnywhere, Category = "Sandbox")
+	int32 MaxCapacity = 13;
+
 	UPROPERTY(ReplicatedUsing = OnRep_Content, EditAnywhere, Category = "Sandbox")
 	TArray<FContainerStack> Content;
 
@@ -55,26 +59,28 @@ public:
 
 	UFUNCTION()
 	void OnRep_Content();
+
+	const TArray<FContainerStack>& GetContent();
     
 	bool SetStackDirectly(const FContainerStack& Stack, const int SlotId);
 
 	bool AddObject(ASandboxObject* Obj);
     
 	FContainerStack* GetSlot(const int Slot);
+
+	const FContainerStack* GetSlot(const int Slot) const;
     
 	void ChangeAmount(int Slot, int Num);
 
     bool DecreaseObjectsInContainer(int slot, int num);
-    
-    ASandboxObject* GetSandboxObject(int SlotId);
 
-	bool IsEmpty();
+	bool IsEmpty() const;
 
-	bool IsSlotEmpty(int SlotId);
+	bool IsSlotEmpty(int SlotId) const;
 
 	void CopyTo(UContainerComponent* Target);
 
-	TArray<uint64> GetAllObjects();
+	TArray<uint64> GetAllObjects() const;
 
 	bool SlotTransfer(int32 SlotDropId, int32 SlotTargetId, AActor* SourceActor, UContainerComponent* SourceContainer, bool bOnlyOne = false);
 
@@ -82,7 +88,13 @@ public:
 
 	void ResetUpdatedFlag();
 
+	const TMap<uint64, uint32>& GetStats() const;
+
 private:
+
+	TMap<uint64, uint32> InventoryStats;
+
+	void MakeStats();
 
 	bool bUpdated = false;
 

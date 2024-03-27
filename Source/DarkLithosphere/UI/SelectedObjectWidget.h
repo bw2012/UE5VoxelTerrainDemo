@@ -28,6 +28,9 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Sandbox widget")
 	FString GetSandboxKeyText();
 
+	UFUNCTION(BlueprintCallable, Category = "Sandbox widget")
+	FString GetSandboxKeyText2();
+
 
 private:
 

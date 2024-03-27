@@ -42,15 +42,11 @@ protected:
 
 	virtual void PostGenerateNewInstanceObjects(const TVoxelIndex& ZoneIndex, const TZoneGenerationType ZoneType, const TVoxelData* Vd, TInstanceMeshTypeMap& ZoneInstanceMeshMap) const override;
 
-	FRandomStream MakeNewRandomStream(const FVector& ZonePos) const;
-
 	TBiome ClcBiome(const FVector& WorldPos) const;
 
 	virtual TMaterialId MaterialFuncionExt(const TGenerateVdTempItm* GenItm, const TMaterialId MatId, const FVector& WorldPos) const override;
 
 	virtual void ExtVdGenerationData(TGenerateVdTempItm& VdGenerationData) override;
-
-	void GenerateRandomInstMesh(TInstanceMeshTypeMap& ZoneInstanceMeshMap, uint32 MeshTypeId, FRandomStream& Rnd, const TVoxelIndex& ZoneIndex, const TVoxelData* Vd, int Min = 1, int Max = 1) const;
 
 	void RegionGenerateStructures(int RegionX, int RegionY);
 

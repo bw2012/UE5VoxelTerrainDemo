@@ -36,7 +36,7 @@ bool UContainerComponent::IsOwnerAdmin() {
 }
 */
 
-bool UContainerComponent::IsEmpty() {
+bool UContainerComponent::IsEmpty() const {
 	if (Content.Num() == 0) {
 		return true;
 	}
@@ -64,6 +64,7 @@ bool UContainerComponent::SetStackDirectly(const FContainerStack& Stack, const i
 		StackPtr->Clear();
 	}
 
+	MakeStats();
 	bUpdated = true;
 	return true;
 }
@@ -103,18 +104,32 @@ bool UContainerComponent::AddObject(ASandboxObject* Obj) {
 			Stack->Amount = 1;
 			Stack->SandboxClassId = Obj->GetSandboxClassId();
 		} else {
-			FContainerStack NewStack;
-			NewStack.Amount = 1;
-			NewStack.SandboxClassId = Obj->GetSandboxClassId();
-			Content.Add(NewStack);
+			//UE_LOG(LogTemp, Warning, TEXT("AddObject -> Content.Num() -> MaxCapacity: %d %d"), Content.Num(), MaxCapacity);
+			if (Content.Num() < MaxCapacity) {
+				FContainerStack NewStack;
+				NewStack.Amount = 1;
+				NewStack.SandboxClassId = Obj->GetSandboxClassId();
+				Content.Add(NewStack);
+			} else {
+				return false;
+			}
 		}
 	}
 	
+	MakeStats();
 	bUpdated = true;
 	return true;
 }
 
 FContainerStack* UContainerComponent::GetSlot(const int Slot) {
+	if (!Content.IsValidIndex(Slot)) {
+		return nullptr;
+	}
+
+	return &Content[Slot];
+}
+
+const FContainerStack* UContainerComponent::GetSlot(const int Slot) const {
 	if (!Content.IsValidIndex(Slot)) {
 		return nullptr;
 	}
@@ -154,6 +169,7 @@ bool UContainerComponent::DecreaseObjectsInContainer(int Slot, int Num) {
 		}
 	}
 
+	MakeStats();
 	bUpdated = true;
 	return Stack->Amount > 0;
 }
@@ -169,22 +185,19 @@ void UContainerComponent::ChangeAmount(int Slot, int Num) {
 				Stack->Clear();
 			}
 
+			MakeStats();
 			bUpdated = true;
 		}
 	}
 }
 
-bool UContainerComponent::IsSlotEmpty(int SlotId) {
-	FContainerStack* Stack = GetSlot(SlotId);
+bool UContainerComponent::IsSlotEmpty(int SlotId) const {
+	const FContainerStack* Stack = GetSlot(SlotId);
 	if (Stack) {
 		return Stack->IsEmpty();
 	}
 
 	return true;
-}
-
-ASandboxObject* UContainerComponent::GetSandboxObject(int SlotId) {
-	return NULL;
 }
 
 void UContainerComponent::GetLifetimeReplicatedProps(TArray< FLifetimeProperty > & OutLifetimeProps) const {
@@ -195,12 +208,13 @@ void UContainerComponent::GetLifetimeReplicatedProps(TArray< FLifetimeProperty >
 void UContainerComponent::CopyTo(UContainerComponent* Target) {
 	Target->Content = this->Content;
 	bUpdated = true;
+	MakeStats();
 }
 
-TArray<uint64> UContainerComponent::GetAllObjects() {
+TArray<uint64> UContainerComponent::GetAllObjects() const {
 	TArray<uint64> Result;
 	for (int Idx = 0; Idx < Content.Num(); Idx++) {
-		FContainerStack* Stack = &Content[Idx];
+		const FContainerStack* Stack = &Content[Idx];
 		if (Stack) {
 			const ASandboxObject* Obj = Stack->GetObject();
 			if (Obj) {
@@ -338,13 +352,14 @@ bool UContainerComponent::SlotTransfer(int32 SlotSourceId, int32 SlotTargetId, A
 		}
 
 		bUpdated = bResult;
+		MakeStats();
 		return bResult;
-
 }
 
 void UContainerComponent::OnRep_Content() {
 	UE_LOG(LogTemp, Warning, TEXT("OnRep_Content: %s"), *GetName());
 	bUpdated = true;
+	MakeStats();
 }
 
 bool UContainerComponent::IsUpdated() {
@@ -353,4 +368,24 @@ bool UContainerComponent::IsUpdated() {
 
 void UContainerComponent::ResetUpdatedFlag() {
 	bUpdated = false;
+}
+
+void UContainerComponent::MakeStats() {
+	InventoryStats.Empty();
+
+	for (const auto& Stack : Content) {
+		if (Stack.Amount > 0 && Stack.SandboxClassId > 0) {
+			auto T = InventoryStats.FindOrAdd(Stack.SandboxClassId) + Stack.Amount;
+			InventoryStats[Stack.SandboxClassId] = T;
+		}
+	}
+}
+
+const TMap<uint64, uint32>& UContainerComponent::GetStats() const {
+	return InventoryStats;
+}
+
+
+const TArray<FContainerStack>& UContainerComponent::GetContent() {
+	return Content;
 }

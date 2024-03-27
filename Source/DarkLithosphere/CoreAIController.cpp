@@ -57,7 +57,51 @@ AActor* FindNearestInterestingActor(UWorld* World, FVector Origin, const float R
 	return nullptr;
 }
 
+
+
+
+
+UBTService_SetMovementSpeed::UBTService_SetMovementSpeed(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer) {
+	NodeName = "Set MovementSpeed";
+	bNotifyBecomeRelevant = true;
+}
+
+void UBTService_SetMovementSpeed::OnBecomeRelevant(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) {
+	Super::OnBecomeRelevant(OwnerComp, NodeMemory);
+
+	ACharacter* Npc = OwnerComp.GetAIOwner()->GetCharacter();
+	if (Npc) {
+		Npc->GetCharacterMovement()->MaxWalkSpeed = 400;
+	}
+}
+
+FString UBTService_SetMovementSpeed::GetStaticDescription() const {
+	return "Set pawn movement speed";
+}
+
+
+
 //=========================================================================================================================================
+
+
+UBTTask_SetFocusToPoint::UBTTask_SetFocusToPoint(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer) {
+	NodeName = "Set Focus to Point";
+}
+
+EBTNodeResult::Type UBTTask_SetFocusToPoint::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) {
+
+	FVector Pos = OwnerComp.GetBlackboardComponent()->GetValueAsVector(BlackboardKey.SelectedKeyName);
+	OwnerComp.GetAIOwner()->SetFocalPoint(Pos);
+	return EBTNodeResult::Succeeded;
+}
+
+FString UBTTask_SetFocusToPoint::GetStaticDescription() const {
+	return "Set Focus to point";
+}
+
+//=========================================================================================================================================
+
+
 
 UBTTask_SelectWalkTarget::UBTTask_SelectWalkTarget(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer) {
 	NodeName = "Select Walk Target";
@@ -201,9 +245,9 @@ EBTNodeResult::Type UBTTask_SelectZombieWalkTarget::ExecuteTask(UBehaviorTreeCom
 	
 	if (bIsNight) {
 		UE_LOG(LogTemp, Warning, TEXT("bIsNight"));
-		ResultActor = FindNearestLightSource(GetWorld(), OwnerLocation, DayWalkTargetRadius);
+		ResultActor = FindNearestLightSource(GetWorld(), OwnerLocation, LightFindingRadius);
 	} else {
-		ResultActor = FindNearestInterestingActor(GetWorld(), OwnerLocation, LightFindingRadius);
+		ResultActor = FindNearestInterestingActor(GetWorld(), OwnerLocation, DayWalkTargetRadius);
 	}
 
 	if (ResultActor) {
@@ -213,7 +257,7 @@ EBTNodeResult::Type UBTTask_SelectZombieWalkTarget::ExecuteTask(UBehaviorTreeCom
 		UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
 		bool bIsSuccess = NavSys->GetRandomReachablePointInRadius(ResultActor->GetActorLocation(), WalkRadius, ResultLocation, nullptr, FSharedConstNavQueryFilter());
 		if (bIsSuccess) {
-			UE_LOG(LogTemp, Warning, TEXT("set blackboard destination2 -> %s %f %f %f"), *ResultActor->GetName(), ResultLocation.Location.X, ResultLocation.Location.Y, ResultLocation.Location.Z);
+			UE_LOG(LogTemp, Warning, TEXT("zombie destination -> %s %f %f %f"), *ResultActor->GetName(), ResultLocation.Location.X, ResultLocation.Location.Y, ResultLocation.Location.Z);
 			//DrawDebugPoint(GetWorld(), ResultLocation.Location, 10.f, FColor(255, 0, 0, 0), false, 3);
 			OwnerComp.GetBlackboardComponent()->SetValue<UBlackboardKeyType_Vector>(BlackboardKey.GetSelectedKeyID(), ResultLocation.Location);
 		}
@@ -225,19 +269,10 @@ EBTNodeResult::Type UBTTask_SelectZombieWalkTarget::ExecuteTask(UBehaviorTreeCom
 		UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
 		bool bIsSuccess = NavSys->GetRandomReachablePointInRadius(OwnerLocation, WalkRadius, ResultLocation, nullptr, FSharedConstNavQueryFilter());
 		if (bIsSuccess) {
-			UE_LOG(LogTemp, Warning, TEXT("set blackboard destination2 -> %f %f %f"), ResultLocation.Location.X, ResultLocation.Location.Y, ResultLocation.Location.Z);
+			UE_LOG(LogTemp, Warning, TEXT("zombie destination -> %f %f %f"), ResultLocation.Location.X, ResultLocation.Location.Y, ResultLocation.Location.Z);
 			//DrawDebugPoint(GetWorld(), ResultLocation.Location, 10.f, FColor(255, 0, 0, 0), false, 3);
 			OwnerComp.GetBlackboardComponent()->SetValue<UBlackboardKeyType_Vector>(BlackboardKey.GetSelectedKeyID(), ResultLocation.Location);
 		}
-	}
-
-	const float WalkRadius = (bIsNight) ? NightWalkingRadius : DayWalkTargetRadius;
-	FNavLocation ResultLocation;
-	UNavigationSystemV1* NavSys = UNavigationSystemV1::GetCurrent(GetWorld());
-	UE_LOG(LogTemp, Warning, TEXT("WalkRadius: %f"), WalkRadius);
-	bool bIsSuccess = NavSys->GetRandomReachablePointInRadius(OwnerLocation, WalkRadius, ResultLocation, nullptr, FSharedConstNavQueryFilter());
-	if (bIsSuccess) {
-		OwnerComp.GetBlackboardComponent()->SetValue<UBlackboardKeyType_Vector>(BlackboardKey.GetSelectedKeyID(), ResultLocation.Location);
 	}
 
 	return NodeResult;
@@ -291,6 +326,16 @@ EBTNodeResult::Type UBTTask_SelectGhostTarget::ExecuteTask(UBehaviorTreeComponen
 void ACoreAIController::BeginPlay() {
 	Super::BeginPlay();
 
+	//GetDefault<UAISystem>()->bForgetStaleActors = true;
+
+	UAIPerceptionComponent* AIPerceptionComponent = GetFirstComponentByName<UAIPerceptionComponent>(TEXT("AIPerception"));
+	if (AIPerceptionComponent) {
+		AIPerceptionComponent->OnPerceptionUpdated.AddDynamic(this, &ACoreAIController::OnPerceptionUpdated);
+		AIPerceptionComponent->OnTargetPerceptionForgotten.AddDynamic(this, &ACoreAIController::OnTargetPerceptionForgotten);
+		AIPerceptionComponent->OnTargetPerceptionUpdated.AddDynamic(this, &ACoreAIController::OnTargetPerceptionUpdated);
+		AIPerceptionComponent->OnTargetPerceptionInfoUpdated.AddDynamic(this, &ACoreAIController::OnTargetPerceptionInfoUpdated);
+	}
+
 	// find first level controller
 	for (TActorIterator<ASandboxEnvironment> ActorItr(GetWorld()); ActorItr; ++ActorItr) {
 		Environment = *ActorItr;
@@ -309,6 +354,56 @@ void ACoreAIController::BeginPlay() {
 		UE_LOG(LogTemp, Warning, TEXT("Use MainBehaviourTree"));
 		RunBehaviorTree(MainBehaviourTree);
 	}
+}
+
+void ACoreAIController::OnPerceptionUpdated(const TArray<AActor*>& UpdatedActors) {
+	UE_LOG(LogTemp, Warning, TEXT("OnPerceptionUpdated"));
+
+	for (const auto Actor : UpdatedActors) {
+		//UE_LOG(LogTemp, Warning, TEXT("UpdatedActor: %s"), *Actor->GetName());
+	}
+}
+
+void ACoreAIController::OnTargetPerceptionForgotten(AActor* Actor) {
+	UE_LOG(LogTemp, Warning, TEXT("OnTargetPerceptionForgotten: %s"), *Actor->GetName());
+	TargetActor = nullptr;
+}
+
+void ACoreAIController::OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus) {
+	UE_LOG(LogTemp, Warning, TEXT("OnTargetPerceptionUpdated: %s"), *Actor->GetName());
+
+	bTargetActive = Stimulus.IsActive();
+	StimulusLocation = Stimulus.StimulusLocation;
+
+	if (TargetActor == nullptr) {
+		TargetActor = Actor;
+	}
+}
+
+void ACoreAIController::OnTargetPerceptionInfoUpdated(const FActorPerceptionUpdateInfo& UpdateInfo) {
+	UE_LOG(LogTemp, Warning, TEXT("OnTargetPerceptionInfoUpdated"));
+}
+
+void ACoreAIController::Tick(float DeltaTime) {
+	Super::Tick(DeltaTime);
+
+	GetBlackboardComponent()->SetValueAsObject(TEXT("Target"), TargetActor);
+
+
+	if (TargetActor) {
+		FVector Pos = bTargetActive ? TargetActor->GetActorLocation() : StimulusLocation;
+
+		FVector NpcPos = GetCharacter()->GetActorLocation();
+		double Distance = FVector::Distance(NpcPos, TargetActor->GetActorLocation());
+
+		if (Distance < 300.f) {
+			Pos = TargetActor->GetActorLocation();
+		}
+
+		//DrawDebugPoint(GetWorld(), Pos, 5.f, bTargetActive ? FColor::White : FColor::Red, false, 1.f);
+		GetBlackboardComponent()->SetValueAsVector(TEXT("Destination"), Pos);
+	}
+
 }
 
 void ACoreAIController::StopBehaviorTree() {

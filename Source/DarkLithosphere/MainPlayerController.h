@@ -8,31 +8,35 @@
 #include "TerrainController.h"
 #include "DummyPawn.h"
 #include "MainPlayerControllerComponent.h"
+#include "Engine/DataTable.h"
 #include <memory>
 #include "MainPlayerController.generated.h"
 
 
-USTRUCT()
-struct FCraftPartData {
+USTRUCT(BlueprintType)
+struct DARKLITHOSPHERE_API FCraftRecipePart {
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere)
-	uint32 SandboxClassId;
+	FString Name;
 
 	UPROPERTY(EditAnywhere)
-	uint32 Amount;
+	uint32 Amount = 0;
+
+	UPROPERTY(EditAnywhere)
+	TArray<uint64> SandboxIdList;
 };
 
 
-USTRUCT()
-struct FCraftRecipeData {
+USTRUCT(BlueprintType)
+struct DARKLITHOSPHERE_API FCraftRecipe : public FTableRowBase {
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere)
 	UTexture2D* IconTexture;
 
 	UPROPERTY(EditAnywhere)
-	uint32 SandboxClassId;
+	uint64 SandboxClassId;
 
 	UPROPERTY(EditAnywhere)
 	FString Name;
@@ -44,8 +48,9 @@ struct FCraftRecipeData {
 	bool bToInventory = false;
 
 	UPROPERTY(EditAnywhere)
-	TArray<FCraftPartData> Parts;
+	TArray<FCraftRecipePart> Parts;
 };
+
 
 class FDummyPawnHelper; // linux
 
@@ -73,13 +78,15 @@ public:
 	UMainPlayerControllerComponent* MainPlayerControllerComponent;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	TMap<int32, FCraftRecipeData> CraftRecipeMap;
+	class UDataTable* CraftRecipeTable;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	int32 NewCharacterId;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	bool bSpawnSandboxCharacter;
+
+	FObjectInfo UiHoverObject;
 
 public:
 
@@ -121,9 +128,17 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Sandbox")
 	void CloseMainInventoryGui();
 
-	FCraftRecipeData* GetCraftRecipeData(int32 RecipeId);
+	FCraftRecipe* GetCraftRecipeData(int32 RecipeId);
+
+	bool ValidateCraftItems(int32 RecipeId);
+
+	bool ValidateCraftItemPart(int32 RecipeId, int Part);
+
+	bool SpentCraftRecipeItems(int32 RecipeId);
 
 	virtual	void SetCurrentInventorySlot(int32 Slot) override;
+
+	virtual bool OnContainerSlotHover(int32 SlotId, FName ContainerName) override;
 
 	void OnDeath();
 
@@ -183,6 +198,9 @@ public:
 
 	UFUNCTION(Server, Reliable)
 	void ServerRpcAddItem(int ItemId);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRpcAddItemOrSpawnObject(int ItemId, FTransform Transform);
 
 	UFUNCTION(Server, Reliable)
 	void ServerRpcTp(int X, int Y, int Z);

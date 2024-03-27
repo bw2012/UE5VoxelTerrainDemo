@@ -4,6 +4,7 @@
 
 #include "SandboxTerrainController.h"
 #include "LevelController.h"
+#include "ObjectInfo.h"
 #include "TerrainController.generated.h"
 
 class ABaseObject;
@@ -43,10 +44,8 @@ public:
 	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
 	ALevelController* LevelController;
 
-	// TODO remove
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
-	TSubclassOf<AActor> TestActor;
-	// test
+ 	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Static Data")
+	class UDataTable* ObjectStaticData;
 
 	UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On Progress Save Voxel Terrain"))
 	void OnProgressSaveTerrain(float Progress);
@@ -93,6 +92,8 @@ public:
 	void SpawnFromStash(const TVoxelIndex& ZoneIndex);
 
 	TArray<FVector> Test(FVector PlayerLocation, float Radius);
+
+	const FTerrainObjectInfo* GetInstanceObjStaticInfo(const uint32 InstanceMeshTypeId) const;
 
 protected:
 

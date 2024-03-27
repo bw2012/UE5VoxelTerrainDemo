@@ -2,7 +2,6 @@
 #include "MiningTool.h"
 #include "VoxelMeshComponent.h"
 #include "TerrainZoneComponent.h"
-#include "../MainPlayerController.h"
 #include "ConstructionObject.h"
 
 #define Max_Size 3
@@ -34,6 +33,69 @@ void AMiningTool::ToggleToolMode() {
 	DiggingToolMode = DiggingToolMode % 2;
 };
 
+void AMiningTool::Dig(const FHitResult& Hit, ATerrainController* Terrain, AMainPlayerController* MainController) {
+	TVoxelIndex ZoneIndex = Terrain->GetZoneIndex(Hit.ImpactPoint);
+
+	if (DiggingToolMode == 0) {
+		const float Radius = ToolSizeArray[DiggingToolSize];
+		const float F = 0;
+		const FVector P = Hit.Normal * Radius * F + Hit.Location;
+		const FVector EffectLocation = Hit.Normal * 50 + Hit.Location;
+
+		MainController->ServerRpcDigTerrain(DiggingToolMode, P, EffectLocation, Radius, ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z, Hit.FaceIndex);
+	}
+
+	if (DiggingToolMode == 1) {
+		FVector P = SnapToGrid(Hit.Location, Dig_Snap_To_Grid);
+		FVector EffectLocation = Hit.Normal * 50 + P;
+		MainController->ServerRpcDigTerrain(DiggingToolMode, P, EffectLocation, Dig_Cube_Size, ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z, Hit.FaceIndex);
+	}
+}
+
+void SpawnWoods(AMainPlayerController* MainController, const FVector& Location) {
+	FRotator Rotation(0, 0, 90);
+
+	FVector Pos = Location;
+	Pos.Z += 250;
+	FTransform Transform(Rotation, Pos, FVector(1));
+
+	MainController->ServerRpcSpawnObject(150, Transform, true);
+
+	const auto Num = FMath::RandRange(1, 3);
+	for (int I = 1; I < Num; I++) {
+		Pos.Z += 201;
+		MainController->ServerRpcSpawnObject(12, FTransform(Rotation, Pos, FVector(1)), true);
+	}
+}
+
+void SpawnStones(AMainPlayerController* MainController, const FVector& Location, uint16 MatId) {
+	FVector Pos = Location;
+
+	UE_LOG(LogTemp, Warning, TEXT("MatId: %d"), MatId);
+
+	if (MatId == 1 || MatId == 2 || MatId == 0) { // hardcoded dirt
+		const auto Chance = FMath::RandRange(0.f, 1.f);
+		if (Chance < 0.4f) {
+			const static int ObjectIds[2] = { 9, 8 };
+			const auto Angle = FMath::RandRange(0.f, 359.f);
+			const auto ObjectId = FMath::RandRange(0, 1);
+			FRotator Rotation(0, Angle, 0);
+			MainController->ServerRpcSpawnObject(ObjectIds[ObjectId], FTransform(Rotation, Pos, FVector(1)), true);
+		}
+	}
+
+	if (MatId == 4) { // hardcoded stone (basalt)
+		const auto Chance = FMath::RandRange(0.f, 1.f);
+		if (Chance < 0.4f) {
+			const auto Angle = FMath::RandRange(0.f, 359.f);
+			const auto ObjectId = 25;
+			FRotator Rotation(0, Angle, 0);
+			MainController->ServerRpcSpawnObject(ObjectId, FTransform(Rotation, Pos, FVector(1)), true);
+		}
+	}
+
+}
+
 void AMiningTool::OnAltAction(const FHitResult& Hit, ABaseCharacter* PlayerCharacter) {
 	UWorld* World = PlayerCharacter->GetWorld();
 	ALevelController* LevelController = nullptr;
@@ -54,27 +116,16 @@ void AMiningTool::OnAltAction(const FHitResult& Hit, ABaseCharacter* PlayerChara
 		}
 	}
 
-	ASandboxTerrainController* Terrain = Cast<ASandboxTerrainController>(Hit.GetActor());
+	ATerrainController* Terrain = Cast<ATerrainController>(Hit.GetActor());
 	if (Terrain) {
 		TVoxelIndex ZoneIndex = Terrain->GetZoneIndex(Hit.ImpactPoint);
 		FVector ZoneIndexTmp(ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z);
 		UVoxelMeshComponent* ZoneMesh = Cast<UVoxelMeshComponent>(Hit.Component.Get());
 		if (ZoneMesh) {
+			Dig(Hit, Terrain, MainController);
 
-			if (DiggingToolMode == 0) {
-				const float Radius = ToolSizeArray[DiggingToolSize];
-				const float F = 0;
-				const FVector P = Hit.Normal * Radius * F + Hit.Location;
-				const FVector EffectLocation = Hit.Normal * 50 + Hit.Location;
-
-				MainController->ServerRpcDigTerrain(DiggingToolMode, P, EffectLocation, Radius, ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z, Hit.FaceIndex);
-			}
-
-			if (DiggingToolMode == 1) {
-				FVector P = SnapToGrid(Hit.Location, Dig_Snap_To_Grid);
-				FVector EffectLocation = Hit.Normal * 50 + P;
-				MainController->ServerRpcDigTerrain(DiggingToolMode, P, EffectLocation, Dig_Cube_Size, ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z, Hit.FaceIndex);
-			}
+			uint16 MatId = ZoneMesh->GetMaterialIdFromCollisionFaceIndex(Hit.FaceIndex);
+			SpawnStones(MainController, Hit.Location, MatId);
 		}
 
 		UTerrainInstancedStaticMesh* TerrainInstMesh = Cast<UTerrainInstancedStaticMesh>(Hit.Component.Get());
@@ -84,21 +135,45 @@ void AMiningTool::OnAltAction(const FHitResult& Hit, ABaseCharacter* PlayerChara
 			TerrainInstMesh->GetInstanceTransform(Hit.Item, InstanceTransform, true);
 
 			if (TerrainInstMesh->IsFoliage()) {
-				FVector Location = Hit.Normal * 25 + Hit.Location;
 
+				//TODO refactor. create ServerRpcDestroyTerrainMeshAndSpawnObject
 				TVoxelIndex Index = Terrain->GetZoneIndex(TerrainInstMesh->GetComponentLocation());
 				MainController->ServerRpcDestroyTerrainMesh(Index.X, Index.Y, Index.Z, TerrainInstMesh->MeshTypeId, TerrainInstMesh->MeshVariantId, Hit.Item, 2, Hit.Location);
+
+				auto FoliageType = Terrain->GetFoliageById(TerrainInstMesh->MeshTypeId);
+				if (FoliageType.Type == ESandboxFoliageType::Tree) {
+					SpawnWoods(MainController, InstanceTransform.GetLocation());
+				}
+
+				return;
 			}
 
-			SpawnItems(MainController, TerrainInstMesh->MeshTypeId, InstanceTransform);
+			const auto* ObjInfo = Terrain->GetInstanceObjStaticInfo(TerrainInstMesh->MeshTypeId);
+			if (ObjInfo && ObjInfo->bMiningDestroy) {
+
+				Dig(Hit, Terrain, MainController);
+
+				//TODO refactor. create ServerRpcDestroyTerrainMeshAndSpawnObject
+				TVoxelIndex Index = Terrain->GetZoneIndex(TerrainInstMesh->GetComponentLocation());
+				MainController->ServerRpcDestroyTerrainMesh(Index.X, Index.Y, Index.Z, TerrainInstMesh->MeshTypeId, TerrainInstMesh->MeshVariantId, Hit.Item, ObjInfo->MiningCrashEffectId, Hit.Location);
+
+				FTransform NewTransform(FRotator(0, 0, 33), Hit.Location, FVector(1));
+				SpawnItems(MainController, ObjInfo, NewTransform);
+			}
 		}
 	}
 }
 
-void AMiningTool::SpawnItems(APlayerController* Controller, uint32 MeshTypeId, const FTransform& InstanceTransform) {
+void AMiningTool::SpawnItems(AMainPlayerController* MainController, const FTerrainObjectInfo* ObjInfo, const FTransform& InstanceTransform) {
+	if (ObjInfo->MiningMode == FTerrainObjectMiningMode::Inventory && ObjInfo->SandboxObjectId > 0) {
+		FRotator Rotation(0, 0, 90);
+		FVector Pos = InstanceTransform.GetLocation();
+		Pos.Z += 250;
+		FTransform NewTransform(Rotation, Pos, FVector(1));
+		MainController->ServerRpcAddItemOrSpawnObject(ObjInfo->SandboxObjectId, NewTransform);
+	}
 
-	AMainPlayerController* MainController = (AMainPlayerController*)Controller;
-
+	/*
 	if (MeshTypeId == 100 || MeshTypeId == 101) {
 
 		FRotator Rotation(0, 0, 90);
@@ -114,6 +189,7 @@ void AMiningTool::SpawnItems(APlayerController* Controller, uint32 MeshTypeId, c
 			MainController->ServerRpcSpawnObject(12, FTransform(Rotation, Pos, FVector(1)), true);
 		}
 	}
+	*/
 }
 
 void SetDecalParams(ABaseCharacter* PlayerCharacter, const FHitResult& Res, float Radius) {
@@ -134,7 +210,7 @@ bool AMiningTool::OnTracePlayerActionPoint(const FHitResult& Res, ABaseCharacter
 		FString ComponentName = Component->GetClass()->GetName();
 
 		if (ComponentName == "VoxelMeshComponent") {
-			PlayerCharacter->CursorToWorld->SetVisibility(false);
+			PlayerCharacter->CursorToWorld->SetVisibility(true);
 
 			if (DiggingToolMode == 0) {
 				const float Radius = ToolSizeArray[DiggingToolSize];
@@ -156,8 +232,7 @@ bool AMiningTool::OnTracePlayerActionPoint(const FHitResult& Res, ABaseCharacter
 		}
 
 		if (ComponentName == "TerrainInstancedStaticMesh") {
-			SetDecalParams(PlayerCharacter, Res, ToolSizeArray[DiggingToolSize]);
-			return true;
+			return false;
 		}
 	}
 

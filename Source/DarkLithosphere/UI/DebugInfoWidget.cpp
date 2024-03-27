@@ -29,7 +29,7 @@ FString UDebugInfoWidget::SandboxDebugInfo1Text() {
 	if (TerrainController) {
 		FTerrainDebugInfo Memstat = TerrainController->GetMemstat();
 
-		FString Res = FString::Printf(TEXT("vd: %d md: %d cd: %d"), Memstat.CountVd, Memstat.CountMd, Memstat.CountCd);
+		FString Res = FString::Printf(TEXT("vd: %d md: %d cd: %d zones: %d"), Memstat.CountVd, Memstat.CountMd, Memstat.CountCd, Memstat.CountZones);
 		return Res;
 	}
 

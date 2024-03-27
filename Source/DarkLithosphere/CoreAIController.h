@@ -5,8 +5,37 @@
 #include "CoreMinimal.h"
 #include "AIController.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
+#include "BehaviorTree/BTService.h"
 #include "SandboxEnvironment.h"
 #include "CoreAIController.generated.h"
+
+
+
+UCLASS(config = Game)
+class DARKLITHOSPHERE_API UBTService_SetMovementSpeed : public UBTService {
+	GENERATED_UCLASS_BODY()
+
+public:
+
+	virtual void OnBecomeRelevant(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+
+	virtual FString GetStaticDescription() const override;
+};
+
+
+
+UCLASS(config = Game)
+class DARKLITHOSPHERE_API UBTTask_SetFocusToPoint : public UBTTask_BlackboardBase {
+	GENERATED_UCLASS_BODY()
+
+public:
+
+	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+
+	virtual FString GetStaticDescription() const override;
+};
+
+
 
 UCLASS(config = Game)
 class DARKLITHOSPHERE_API UBTTask_SelectWalkTarget : public UBTTask_BlackboardBase {
@@ -94,8 +123,42 @@ public:
 
 	bool IsNight() const;
 
+	UFUNCTION()
+	void OnPerceptionUpdated(const TArray<AActor*>& UpdatedActors);
+
+	UFUNCTION()
+	void OnTargetPerceptionForgotten(AActor* Actor);
+
+	UFUNCTION()
+	void OnTargetPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus);
+
+	UFUNCTION()
+	void OnTargetPerceptionInfoUpdated(const FActorPerceptionUpdateInfo& UpdateInfo);
+
+	template<class T>
+	T* GetFirstComponentByName(FString ComponentName) {
+		TArray<T*> Components;
+		GetComponents<T>(Components);
+		for (T* Component : Components) {
+			if (Component->GetName() == ComponentName)
+				return Component;
+		}
+
+		return nullptr;
+	}
+
 protected:
 
 	virtual void BeginPlay() override;
+
+	virtual void Tick(float DeltaTime) override;
+
+
+	bool bTargetActive = false;
+
+	UPROPERTY()
+	AActor* TargetActor = nullptr;
+
+	FVector StimulusLocation;
 	
 };

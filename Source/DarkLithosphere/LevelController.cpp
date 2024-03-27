@@ -327,7 +327,7 @@ void ALevelController::LoadLevelJsonExt(TSharedPtr<FJsonObject> JsonParsed) {
 ACharacter* ALevelController::SpawnCharacter(const FCharacterLoadInfo& TempCharacterInfo) {
 	TSubclassOf<ACharacter> CharacterSubclass = CharacterMap->CharacterTypeMap[TempCharacterInfo.TypeId];
 
-	FVector Pos(TempCharacterInfo.Location.X, TempCharacterInfo.Location.Y, TempCharacterInfo.Location.Z + 100);// ALS spawn issue workaround
+	FVector Pos(TempCharacterInfo.Location.X, TempCharacterInfo.Location.Y, TempCharacterInfo.Location.Z + 50);// ALS spawn issue workaround
 	AActor* NewActor = GetWorld()->SpawnActor(CharacterSubclass, &Pos, &TempCharacterInfo.Rotation);
 	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(NewActor);
 	if (BaseCharacter) {
@@ -448,7 +448,6 @@ void ALevelController::CharacterConservation(const FCharacterLoadInfo& TempChara
 void ALevelController::BeginPlay() {
 	Super::BeginPlay();
 
-
 	if(TerrainController){
 		TVoxelIndex RegionIndex(-1, 0, 0);
 		TVoxelIndex RegionOrigin = TerrainController->ClcRegionOrigin(RegionIndex);
@@ -473,4 +472,13 @@ TArray<ACharacter*> ALevelController::GetNpcList() {
 	}
 
 	return Result;
+}
+
+
+const FObjectInfo* ALevelController::GetSandboxObjectStaticData(uint64 SandboxObjectId) const {
+	if (ObjectStaticData) {
+		return ObjectStaticData->FindRow<FObjectInfo>(*FString::FromInt(SandboxObjectId), "", false);
+	}
+
+	return nullptr;
 }

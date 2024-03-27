@@ -28,6 +28,15 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Sandbox")
 	void SetPlayerControllerExtMode(int Index);
 
+	UFUNCTION(BlueprintCallable, Category = "Sandbox")
+	FString GetCraftReceipePart(int ReceipeIndex, int Part);
+
+	UFUNCTION(BlueprintCallable, Category = "Sandbox")
+	FLinearColor GetCraftReceipeColor(int ReceipeIndex);
+
+	UFUNCTION(BlueprintCallable, Category = "Sandbox")
+	FLinearColor GetCraftReceipePartColor(int ReceipeIndex, int PartId);
+
 private:
 
 	

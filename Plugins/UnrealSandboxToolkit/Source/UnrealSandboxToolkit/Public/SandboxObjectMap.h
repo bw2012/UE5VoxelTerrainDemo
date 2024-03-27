@@ -22,15 +22,12 @@ class UNREALSANDBOXTOOLKIT_API USandboxObjectMap : public UDataAsset {
 	GENERATED_BODY()
 	
 public:	
-	
-	//UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
-	//TMap<int32, TSubclassOf<ASandboxObject>> ObjectMap;
 
 	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
 	TArray<TSubclassOf<ASandboxObject>> ObjectList;
 
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
-	TMap<uint64, FSandboxStaticData> StaticData;
+	//UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
+	//TMap<uint64, FSandboxStaticData> StaticData;
 
 	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Toolkit")
 	TMap<int32, TSubclassOf<ASandboxEffect>> Effects;

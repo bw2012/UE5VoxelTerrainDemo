@@ -59,7 +59,6 @@ void ABaseCharacter::BeginPlay() {
 	UAnimInstance* AnimInstance = MeshComponent->GetAnimInstance();
 	AnimInstance->OnPlayMontageNotifyBegin.AddDynamic(this, &ABaseCharacter::OnNotifyBeginReceived);
 	AnimInstance->OnPlayMontageNotifyEnd.AddDynamic(this, &ABaseCharacter::OnNotifyEndReceived);
-
 }
 
 void ConservateContainer(const UContainerComponent* Container, TArray<FTempContainerStack>& ConservedContainer) {
@@ -126,7 +125,7 @@ void ABaseCharacter::Tick(float DeltaTime) {
 	Super::Tick(DeltaTime);
 
 	// OnPossess not works on client. workaround
-	if (GetNetMode() == NM_Client) {
+	if (GetNetMode() == NM_Client || GetNetMode() == NM_Standalone) {
 		if (bFirstRun) {
 			RebuildEquipment();
 			bFirstRun = false;
@@ -217,7 +216,27 @@ void ABaseCharacter::OnDeath() {
 }
 
 void ABaseCharacter::PerformMainAttack() {
+
+	UE_LOG(LogTemp, Warning, TEXT("PerformMainAttack"));
+
 	if (MainAttackMontage) {
+
+		if (MovementState == EALSMovementState::Grounded){
+			if (GetMovementAction() == EALSMovementAction::None) {
+				bBlockMove = true;
+				//SetMovementAction(EALSMovementAction::Attack, false);
+				//GetCharacterMovement()->SetMovementMode(MOVE_None);
+				Replicated_PlayMontage(MainAttackMontage, 1.1);
+			}
+		}
+
+		//FOnMontageEnded MontageEndedDelegate;
+		//MontageEndedDelegate.BindUObject(this, &ABaseCharacter::OnMontageEnded);
+		//GetMesh()->GetAnimInstance()->Montage_SetEndDelegate(MontageEndedDelegate, MainAttackMontage);
+
+		
+
+		/*
 		if (!bIsAttacking) {
 			UAnimMontage* AttackMontage = MainAttackMontage;
 			if (!bIsEmptyHand) {
@@ -244,6 +263,7 @@ void ABaseCharacter::PerformMainAttack() {
 				}
 			}
 		}
+		*/
 	}
 }
 
@@ -261,11 +281,8 @@ void ABaseCharacter::OnNotifyEndReceived(FName NotifyName, const FBranchingPoint
 }
 
 void ABaseCharacter::OnMontageEnded(UAnimMontage* Montage, bool bInterrupted) {
-	bIsAttacking = false;
-}
+	UE_LOG(LogTemp, Warning, TEXT("OnMontageEnded"));
 
-void ABaseCharacter::OnFinishPlayMainAttack() {
-	bIsAttacking = false;
 }
 
 bool ABaseCharacter::CanRotateCamera() {
@@ -298,6 +315,10 @@ bool ABaseCharacter::CanMove() {
 	//if (bIsAttacking) {
 	//	return false;
 	//}
+
+	if (bBlockMove) {
+		return false;
+	}
 
 	//return Super::CanMove();
 

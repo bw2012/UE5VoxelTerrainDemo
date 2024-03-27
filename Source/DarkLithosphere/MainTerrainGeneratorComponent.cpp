@@ -31,8 +31,9 @@ bool UMainTerrainGeneratorComponent::IsForcedComplexZone(const TVoxelIndex& Zone
 		return true;
 	}
 	
-	if (ZoneIndex.X == 0 && ZoneIndex.Y == 0 && ZoneIndex.Z == -1) {
-		//return true;
+	//test cavern
+	if (ZoneIndex.X == 0 && ZoneIndex.Y == 0 && ZoneIndex.Z == -2) {
+		return true;
 	}
 
 	return Super::IsForcedComplexZone(ZoneIndex);
@@ -286,7 +287,8 @@ float UMainTerrainGeneratorComponent::FunctionMakeCaveLayer(float Density, const
 
 float UMainTerrainGeneratorComponent::DensityFunctionExt(float Density, const TVoxelIndex& ZoneIndex, const FVector& WorldPos, const FVector& LocalPos) const {
 
-	if (ZoneIndex.X == 0 && ZoneIndex.Y == 0 && ZoneIndex.Z == -1) {
+	// test cavern
+	if (ZoneIndex.X == 0 && ZoneIndex.Y == 0 && ZoneIndex.Z == -2) {
 		float Result = Density;
 
 		FVector P = LocalPos;
@@ -297,7 +299,7 @@ float UMainTerrainGeneratorComponent::DensityFunctionExt(float Density, const TV
 		//float D = 1 / (1 + exp((r - MaxR) / 10));
 		Result *= t;
 
-		//return Result;
+		return Result;
 	}
 
 	if (IsCaveLayerZone(ZoneIndex.Z)) {
@@ -426,52 +428,11 @@ FSandboxFoliage UMainTerrainGeneratorComponent::FoliageExt(const int32 FoliageTy
 	return Foliage;
 }
 
-FRandomStream UMainTerrainGeneratorComponent::MakeNewRandomStream(const FVector& ZonePos) const {
-	int32 Hash = ZoneHash(ZonePos);
-	FRandomStream Rnd = FRandomStream();
-	Rnd.Initialize(Hash);
-	Rnd.Reset();
-	return Rnd;
-}
-
 FRotator SelectRotation() {
 	const auto DirIndex = FMath::RandRange(0, 3);
 	static const FRotator Direction[4] = { FRotator(0), FRotator(0, 0, 90), FRotator(0, 0, -90), FRotator(0, 0, 180) };
 	const FRotator Rotation = Direction[DirIndex];
 	return Rotation;
-}
-
-
-void UMainTerrainGeneratorComponent::GenerateRandomInstMesh(TInstanceMeshTypeMap& ZoneInstanceMeshMap, uint32 MeshTypeId, FRandomStream& Rnd, const TVoxelIndex& ZoneIndex, const TVoxelData* Vd, int Min, int Max) const {
-	FVector WorldPos(0);
-	FVector Normal(0);
-
-	FVector ZonePos = Vd->getOrigin();
-
-	int Num = (Min != Max) ? Rnd.RandRange(Min, Max) : 1;
-
-	for (int I = 0; I < Num; I++) {
-		if (SelectRandomSpawnPoint(Rnd, ZoneIndex, Vd, WorldPos, Normal)) {
-			const FVector LocalPos = WorldPos - ZonePos;
-			const FVector Scale = FVector(1, 1, 1);
-			FRotator Rotation = Normal.Rotation();
-			Rotation.Pitch -= 90;
-
-			const FQuat DeltaRotation = FQuat(Normal, Rnd.FRandRange(0.f, 360.f));
-
-			FTransform NewTransform(Rotation, LocalPos, Scale);
-
-			NewTransform.TransformRotation(DeltaRotation);
-
-			const FTerrainInstancedMeshType* MeshType = GetController()->GetInstancedMeshType(MeshTypeId, 0);
-			if (MeshType) {
-				auto& InstanceMeshContainer = ZoneInstanceMeshMap.FindOrAdd(MeshType->GetMeshTypeCode());
-				InstanceMeshContainer.MeshType = *MeshType;
-				InstanceMeshContainer.TransformArray.Add(NewTransform);
-			}
-
-		}
-	}
 }
 
 void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxelIndex& ZoneIndex, const TZoneGenerationType ZoneType, const TVoxelData* Vd, TInstanceMeshTypeMap& ZoneInstanceMeshMap) const {
@@ -487,7 +448,6 @@ void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxel
 	}
 
 	FVector ZonePos = Vd->getOrigin();
-
 	FRandomStream Rnd = MakeNewRandomStream(ZonePos);
 
 	// rocks
@@ -500,8 +460,20 @@ void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxel
 		}
 
 		if (ZoneIndex.X == 0 && ZoneIndex.Y == 0) {
-			GenerateRandomInstMesh(ZoneInstanceMeshMap, 900, Rnd, ZoneIndex, Vd);
+			GenerateRandomInstMesh(ZoneInstanceMeshMap, 900, Rnd, ZoneIndex, Vd, 2, 3);
 		}
+	} else if (ZoneType == TZoneGenerationType::Other) {
+		if (ZoneIndex.Z < -2) {
+			float Chance = Rnd.GetFraction();
+
+			if (Chance < 0.8f) {
+				static const int RockTypeV[] = { 900, 905, 906, 907, 908, 912, 913 };
+				int I = Rnd.RandRange(0, 6);
+				GenerateRandomInstMesh(ZoneInstanceMeshMap, RockTypeV[I], Rnd, ZoneIndex, Vd, 1, 5);
+			}
+
+		}
+	
 	}
 
 
@@ -655,8 +627,6 @@ void UMainTerrainGeneratorComponent::GenerateZoneSandboxObject(const TVoxelIndex
 		Info.Location = Location;
 		Info.Rotation = FRotator(0);
 		LevelController->SpawnCharacter(Info);
-
-		//AsyncTask(ENamedThreads::GameThread, [&]() { DrawDebugBox(GetWorld(), ZoneOrigin, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true); });
 	}
 
 }
@@ -693,8 +663,8 @@ void UMainTerrainGeneratorComponent::ExtVdGenerationData(TGenerateVdTempItm& VdG
 	const auto& ZoneGenerationType = VdGenerationData.Type;
 	const FVector ZonePos = GetController()->GetZonePos(ZoneIndex);
 
-	if (ZoneGenerationType != TZoneGenerationType::Landscape && ZoneGenerationType != TZoneGenerationType::AirOnly) {
-		std::shared_ptr<TZoneOreData> ZoneOreData = nullptr;
+	if (ZoneGenerationType == TZoneGenerationType::Other) {
+		TZoneOreDataPtr ZoneOreData = nullptr;
 
 		if (ZoneIndex.Z < -2) {
 			int32 Hash = ZoneHash(ZoneIndex);
@@ -708,21 +678,22 @@ void UMainTerrainGeneratorComponent::ExtVdGenerationData(TGenerateVdTempItm& VdG
 			float PerlinOreFactor = PerlinNoise(Pos, NoisePositionScale, NoiseValueScale);
 
 			if (PerlinOreFactor > 0.2) {
-				float Probability = Rnd.FRandRange(0.f, 1.f);
-				if (Probability < 0.1) {
-					ZoneOreData = std::make_shared<TZoneOreData>();
-					ZoneOreData->ZoneIndex = ZoneIndex;
-					ZoneOreData->Origin = GetController()->GetZonePos(ZoneIndex);
-					ZoneOreData->MatId = 6;
-				}
+				//AsyncTask(ENamedThreads::GameThread, [=, this]() { DrawDebugBox(GetWorld(), ZonePos, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true); });
+
+				ZoneOreData = std::make_shared<TZoneOreData>();
+				ZoneOreData->ZoneIndex = ZoneIndex;
+				ZoneOreData->Origin = GetController()->GetZonePos(ZoneIndex);
+				//ZoneOreData->MatId = 6;
+				ZoneOreData->MeshTypeId = 910;
 			}
 		}
 
+		//test cavern
 		if (ZoneIndex.X == 0 && ZoneIndex.Y == 0 && ZoneIndex.Z == -2) {
 			ZoneOreData = std::make_shared<TZoneOreData>();
 			ZoneOreData->ZoneIndex = ZoneIndex;
 			ZoneOreData->Origin = GetController()->GetZonePos(ZoneIndex);
-			ZoneOreData->MatId = 6;
+			ZoneOreData->MeshTypeId = 910;
 
 			//TZoneGenerationType::Other or FullSolidOneMaterial to FullSolidMultipleMaterials
 			//return FullSolidMultipleMaterials;
@@ -744,10 +715,10 @@ void UMainTerrainGeneratorComponent::ExtVdGenerationData(TGenerateVdTempItm& VdG
 		RndNpc.Initialize(Hash);
 		RndNpc.Reset();
 
-		float Zp = RndNpc.FRandRange(0.f, 1.f);
-		static const float Zc = 0.0125 / 3; // zombie spawn chance per zone
-		if (Zp < Zc) {
-			if (!IsSpawnArea(ZonePos)) {
+		if (!IsSpawnArea(ZonePos)) {
+			float Zp = RndNpc.FRandRange(0.f, 1.f);
+			const float Zc = 0.0125 * (Biome.IsForest() ? 1 : 0.333f); // zombie spawn chance per zone
+			if (Zp < Zc) {
 				SetZoneTag(ZoneIndex, "zombies", "Y");
 			}
 		}
@@ -778,13 +749,16 @@ void UMainTerrainGeneratorComponent::ExtVdGenerationData(TGenerateVdTempItm& VdG
 
 TMaterialId UMainTerrainGeneratorComponent::MaterialFuncionExt(const TGenerateVdTempItm* GenItm, const TMaterialId MatId, const FVector& WorldPos) const {
 	auto ZoneIndex = GenItm->ZoneIndex;
-
 	if (GenItm->OreData != nullptr) {
 		const TZoneOreData* ZoneOreData = GenItm->OreData.get();
-		FVector Tmp = WorldPos - ZoneOreData->Origin;
-		float R = std::sqrt(Tmp.X * Tmp.X + Tmp.Y * Tmp.Y + Tmp.Z * Tmp.Z);
-		if (R < 250) {
-			return ZoneOreData->MatId;
+		if (ZoneOreData->MatId > 0) {
+
+			// TODO: customize
+			//FVector Tmp = WorldPos - ZoneOreData->Origin;
+			//float R = std::sqrt(Tmp.X * Tmp.X + Tmp.Y * Tmp.Y + Tmp.Z * Tmp.Z);
+			//if (R < 250) {
+			//	return ZoneOreData->MatId;
+			//}
 		}
 	}
 	

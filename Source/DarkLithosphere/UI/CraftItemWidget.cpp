@@ -3,7 +3,6 @@
 #include "../MainPlayerController.h"
 
 
-
 void UCraftRecipeItemWidget::SetPlayerControllerExtMode(int Index) {
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
 	if (MainPlayerController) {
@@ -23,7 +22,6 @@ UTexture2D* UCraftRecipeItemWidget::GetCraftReceipeIcon(int ReceipeIndex) {
 	return nullptr;
 }
 
-
 FString UCraftRecipeItemWidget::GetCraftReceipeName(int ReceipeIndex) {
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
 	if (MainPlayerController) {
@@ -35,5 +33,51 @@ FString UCraftRecipeItemWidget::GetCraftReceipeName(int ReceipeIndex) {
 
 	return TEXT("");
 }
+
+FString UCraftRecipeItemWidget::GetCraftReceipePart(int ReceipeIndex, int PartId) {
+	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
+	if (MainPlayerController) {
+		const auto* CraftRecipeData = MainPlayerController->GetCraftRecipeData(ReceipeIndex);
+		if (CraftRecipeData) {
+			if (CraftRecipeData->Parts.Num() > PartId) {
+				const auto Part = CraftRecipeData->Parts[PartId];
+				if (Part.Amount > 0) {
+					return FString::Printf(TEXT("x%d %s"), Part.Amount, *Part.Name);
+				}
+			}
+		}
+	}
+
+	return TEXT("");
+}
+
+FLinearColor UCraftRecipeItemWidget::GetCraftReceipeColor(int ReceipeIndex) {
+	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
+	if (MainPlayerController) {
+
+		bool bEnable = MainPlayerController->ValidateCraftItems(ReceipeIndex);
+
+		if (bEnable) {
+			return FLinearColor(255, 255, 255, 255);
+		}
+	}
+
+	return FLinearColor(255, 0, 0, 255);
+}
+
+FLinearColor UCraftRecipeItemWidget::GetCraftReceipePartColor(int ReceipeIndex, int PartId) {
+	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
+	if (MainPlayerController) {
+
+		bool bEnable = MainPlayerController->ValidateCraftItemPart(ReceipeIndex, PartId);
+
+		if (bEnable) {
+			return FLinearColor(255, 255, 255, 255);
+		}
+	}
+
+	return FLinearColor(255, 0, 0, 255);
+}
+
 
 

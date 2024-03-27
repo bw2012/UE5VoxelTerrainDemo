@@ -450,3 +450,7 @@ void ASandboxPlayerController::TransferInventoryStack_Implementation(const FStri
 ASandboxLevelController* ASandboxPlayerController::GetLevelController() {
 	return LevelController;
 }
+
+bool ASandboxPlayerController::OnContainerSlotHover(int32 SlotId, FName ContainerName) {
+	return false;
+}

@@ -91,6 +91,25 @@ void USandboxObjectContainerCellWidget::SelectSlot(int32 SlotId) {
 	UE_LOG(LogTemp, Log, TEXT("SelectSlot: %d"), SlotId);
 }
 
+void USandboxObjectContainerCellWidget::HoverSlot(int32 SlotId) {
+
+	ASandboxPlayerController* LocalController = Cast<ASandboxPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(), 0));
+	if (LocalController) {
+		int32 Sid = -1;
+
+		UContainerComponent* Container = GetContainer();
+		if (Container != nullptr) {
+			const FContainerStack* Stack = Container->GetSlot(SlotId);
+			if (Stack != nullptr && Stack->Amount > 0) {
+				Sid = SlotId;
+			}
+		}
+
+		LocalController->OnContainerSlotHover(Sid, *Container->GetName());
+	} 
+
+}
+
 bool USandboxObjectContainerCellWidget::SlotDrop(int32 SlotDropId, int32 SlotTargetId, AActor* SourceActor, UContainerComponent* SourceContainer, bool bOnlyOne) {
 	bool bResult = SlotDropInternal(SlotDropId, SlotTargetId, SourceActor, SourceContainer, bOnlyOne);
 	if (bResult) {

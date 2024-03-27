@@ -87,16 +87,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UDecalComponent* CursorToWorld;
 
-	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
 	void PerformMainAttack();
-
-	//UFUNCTION(BlueprintImplementableEvent, meta = (DisplayName = "On Play Main Attack"))
-	//void OnPlayMainAttack();
-
-	UFUNCTION(BlueprintCallable, Category = "Sandbox")
-	void OnFinishPlayMainAttack();
 
 	UFUNCTION()
 	void OnNotifyBeginReceived(FName NotifyName, const FBranchingPointNotifyPayload& BranchingPointNotifyPayload);
@@ -162,8 +155,6 @@ public:
 	virtual void Kill() override;
 
 protected:
-
-	bool bIsAttacking = false;
 
 	bool bIsPlaySound = false;
 

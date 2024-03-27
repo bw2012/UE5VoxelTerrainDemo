@@ -5,6 +5,8 @@
 #include "CoreMinimal.h"
 #include "BaseObject.h"
 #include "../BaseCharacter.h"
+#include "../ObjectInfo.h"
+#include "../MainPlayerController.h"
 #include "SandboxTerrainController.h"
 #include "MiningTool.generated.h"
 
@@ -49,7 +51,9 @@ private:
 
 	int DiggingToolSize = 0;
 
-	void SpawnItems(APlayerController* Controller, uint32 MeshTypeId, const FTransform& InstanceTransform);
+	void SpawnItems(AMainPlayerController* MainController, const FTerrainObjectInfo* ObjInfo, const FTransform& InstanceTransform);
+
+	void Dig(const FHitResult& Hit, ATerrainController* Terrain, AMainPlayerController* MainController);
 
 
 };

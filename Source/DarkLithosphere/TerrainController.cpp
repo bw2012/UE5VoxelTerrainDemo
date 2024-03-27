@@ -367,15 +367,12 @@ void ATerrainController::OnFinishInitialLoad() {
 
 void ATerrainController::OnDestroyInstanceMesh(UTerrainInstancedStaticMesh* InstancedMeshComp, int32 ItemIndex) {
 	//UE_LOG(LogTemp, Log, TEXT("OnDestroyInstanceMesh --> %d"), InstancedMeshComp->MeshTypeId);
+	const auto* ObjInfo = GetInstanceObjStaticInfo(InstancedMeshComp->MeshTypeId);
 
-	auto MeshTypeId = InstancedMeshComp->MeshTypeId;
-	if (MeshTypeId == 909) {
-		if (TestActor) {
-			FTransform Transform;
-			InstancedMeshComp->GetInstanceTransform(ItemIndex, Transform, true);
-
-			GetWorld()->SpawnActor(TestActor->ClassDefaultObject->GetClass(), &Transform);
-		}
+	if (ObjInfo && ObjInfo->bMiningDestroy && ObjInfo->SandboxObjectId) {
+		FTransform Transform;
+		InstancedMeshComp->GetInstanceTransform(ItemIndex, Transform, true);
+		//LevelController->SpawnSandboxObject(ObjInfo->SandboxObjectId, Transform);
 	}
 }
 
@@ -398,8 +395,16 @@ void ATerrainController::GetAnchorObjectsLocation(TArray<FVector>& List) const {
 		for (const auto& Itm : NpcList) {
 			if (Cast<AAIController>(Itm->GetController())) {
 				List.Add(Itm->GetActorLocation());
-				UE_LOG(LogTemp, Log, TEXT("ZoneAnchor: %s"), *Itm->GetName());
+				UE_LOG(LogTemp, Log, TEXT("NPC: %s"), *Itm->GetName());
 			}
 		}
 	}
+}
+
+const FTerrainObjectInfo* ATerrainController::GetInstanceObjStaticInfo(const uint32 InstanceMeshTypeId) const {
+	if (ObjectStaticData) {
+		return ObjectStaticData->FindRow<FTerrainObjectInfo>(*FString::FromInt(InstanceMeshTypeId), "", false);
+	}
+
+	return nullptr;
 }

@@ -45,6 +45,8 @@ public:
 
 	void ShowInGameInventory();
 
+	bool IsWidgedOpened(FString Name);
+
 private:
 
 	TMap<FString, FActiveWidgetInfo> ActiveWidgetMap;

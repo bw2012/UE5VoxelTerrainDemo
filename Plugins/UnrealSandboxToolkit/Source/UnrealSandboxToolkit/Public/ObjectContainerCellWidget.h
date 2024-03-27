@@ -45,6 +45,9 @@ public:
 	void SelectSlot(int32 SlotId);
 
 	UFUNCTION(BlueprintCallable, Category = "SandboxInventory")
+	void HoverSlot(int32 SlotId);
+
+	UFUNCTION(BlueprintCallable, Category = "SandboxInventory")
 	UTexture2D* GetSlotTexture(int32 SlotId);
 
 	UFUNCTION(BlueprintCallable, Category = "SandboxInventory")

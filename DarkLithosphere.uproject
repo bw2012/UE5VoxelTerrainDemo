@@ -11,7 +11,8 @@
 			"AdditionalDependencies": [
 				"Engine",
 				"ALSV4_CPP",
-				"UnrealSandboxToolkit"
+				"UnrealSandboxToolkit",
+				"CoreUObject"
 			]
 		}
 	],

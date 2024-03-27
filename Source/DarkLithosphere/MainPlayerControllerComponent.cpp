@@ -99,6 +99,8 @@ void UMainPlayerControllerComponent::OnPlayerTick() {
 		}
 	}
 
+	bool bShowMeshCursor = false;
+
 	ASandboxObject* Obj = MainController->GetCurrentInventoryObject();
 	if (Obj) {
 		AMiningTool* MiningTool = Cast<AMiningTool>(Obj);
@@ -109,12 +111,8 @@ void UMainPlayerControllerComponent::OnPlayerTick() {
 					PerformMining(BaseCharacter, MiningTool, Hit);
 				}
 
-				if (MiningTool->OnTracePlayerActionPoint(Hit, BaseCharacter)) {
-					if (SelectedObject.ObjType == ESelectedObjectType::SandboxObject) {
-						ResetSelectedObject();
-					}
-					return;
-				}
+				bShowMeshCursor = MiningTool->OnTracePlayerActionPoint(Hit, BaseCharacter);
+
 			}
 		}
 	}
@@ -122,6 +120,18 @@ void UMainPlayerControllerComponent::OnPlayerTick() {
 	BaseCharacter->CursorToWorld->SetVisibility(false);
 
 	FHitResult Res = MainController->TracePlayerActionPoint();
+
+	/*
+	if (Res.bBlockingHit) {
+		if (Cast<ATerrainController>(Res.GetActor())) {
+			UTerrainInstancedStaticMesh* TerrainInstMesh = Cast<UTerrainInstancedStaticMesh>(Res.GetComponent());
+			if (TerrainInstMesh) {
+				//UE_LOG(LogTemp, Warning, TEXT("TerrainInstMesh %d"), TerrainInstMesh->MeshTypeId);
+			}
+		}
+	}
+	*/
+
 	bool bPlaceToWorld = CurrentActionType == ECurrentActionType::PlaceObjectToWorld || CurrentActionType == ECurrentActionType::PlaceCraftToWorld;
 	bool bIsValid = false;
 
@@ -135,7 +145,7 @@ void UMainPlayerControllerComponent::OnPlayerTick() {
 		}
 
 		if (CurrentActionType == ECurrentActionType::PlaceCraftToWorld) {
-			FCraftRecipeData* CraftRecipeData = MainController->GetCraftRecipeData(CraftReceiptId);
+			FCraftRecipe* CraftRecipeData = MainController->GetCraftRecipeData(CraftReceiptId);
 			if (CraftRecipeData) {
 				TSubclassOf<ASandboxObject> ObjSubclass = MainController->LevelController->GetSandboxObjectByClassId(CraftRecipeData->SandboxClassId);
 				if (ObjSubclass) {
@@ -175,7 +185,9 @@ void UMainPlayerControllerComponent::OnPlayerTick() {
 	if (bIsValid) {
 		// TODO something
 	} else {
-		ResetCursorMesh(BaseCharacter);
+		if (!bShowMeshCursor) {
+			ResetCursorMesh(BaseCharacter);
+		}
 	}
 	
 	// empty hand or not useful object in hand
@@ -183,6 +195,7 @@ void UMainPlayerControllerComponent::OnPlayerTick() {
 }
 
 void UMainPlayerControllerComponent::PerformMainAction() {
+
 	AMainPlayerController* MainController = (AMainPlayerController*)GetOwner();
 	ABaseCharacter* BaseCharacter = Cast<ABaseCharacter>(MainController->GetCharacter());
 	if (BaseCharacter) {
@@ -249,26 +262,39 @@ void UMainPlayerControllerComponent::SelectActionObject() {
 			UTerrainInstancedStaticMesh* TerrainMesh = Cast<UTerrainInstancedStaticMesh>(Hit.GetComponent());
 			if (TerrainMesh) {
 				const FTerrainInstancedMeshType* TerrainMeshType = Terrain->GetInstancedMeshType(TerrainMesh->MeshTypeId, TerrainMesh->MeshVariantId);
-				if (TerrainMeshType && TerrainMeshType->SandboxClassId > 0) {
-					FSelectedObject NewSelectedObject;
-					NewSelectedObject.TerrainMesh = TerrainMesh;
-					NewSelectedObject.ObjType = ESelectedObjectType::InstancedMesh;
-					TSubclassOf<ASandboxObject> ObjSubclass = LevelController->GetSandboxObjectByClassId(TerrainMeshType->SandboxClassId);
-					ASandboxObject* Obj = (ASandboxObject*)ObjSubclass->GetDefaultObject();
+				if (TerrainMeshType) {
+					const FTerrainObjectInfo* ObjInfo = Terrain->GetInstanceObjStaticInfo(TerrainMeshType->MeshTypeId);
 
-					if (LevelController->ObjectMap) {
-						FSandboxStaticData* StaticData = LevelController->ObjectMap->StaticData.Find(Obj->GetSandboxClassId());
-						if (StaticData) {
-							NewSelectedObject.Name = StaticData->ObjectName;
+					if (ObjInfo) {
+						//UE_LOG(LogTemp, Warning, TEXT("ObjInfo1 %s"), *ObjInfo->GetName());
+						//UE_LOG(LogTemp, Warning, TEXT("ObjInfo2 %s"), *ObjInfo->CommonName);
+
+						FSelectedObject NewSelectedObject;
+						NewSelectedObject.TerrainMesh = TerrainMesh;
+						NewSelectedObject.ObjType = ESelectedObjectType::InstancedMesh;
+						NewSelectedObject.Name = ObjInfo->CommonName;
+						NewSelectedObject.ExtText1 = ObjInfo->ChemicalFormula;
+						NewSelectedObject.bCanTake = ObjInfo->bCanTake;
+
+
+						/*
+						TSubclassOf<ASandboxObject> ObjSubclass = LevelController->GetSandboxObjectByClassId(TerrainMeshType->SandboxClassId);
+						ASandboxObject* Obj = (ASandboxObject*)ObjSubclass->GetDefaultObject();
+						if (LevelController->ObjectMap) {
+							FSandboxStaticData* StaticData = LevelController->ObjectMap->StaticData.Find(Obj->GetSandboxClassId());
+							if (StaticData) {
+								NewSelectedObject.Name = StaticData->ObjectName;
+							}
 						}
-					}
+						*/
 
-					if (SelectedObject.SandboxObj) {
-						SetRenderCustomDepth(SelectedObject.SandboxObj, false);
-					}
+						if (SelectedObject.SandboxObj) {
+							SetRenderCustomDepth(SelectedObject.SandboxObj, false);
+						}
 
-					SelectedObject = NewSelectedObject;
-					NotSelected = false;
+						SelectedObject = NewSelectedObject;
+						NotSelected = false;
+					}
 				}
 			}
 		}
@@ -287,9 +313,10 @@ void UMainPlayerControllerComponent::SelectActionObject() {
 				NewSelectedObject.ObjType = ESelectedObjectType::SandboxObject;
 
 				if (LevelController->ObjectMap) {
-					FSandboxStaticData* StaticData = LevelController->ObjectMap->StaticData.Find(Obj->GetSandboxClassId());
-					if (StaticData) {
-						NewSelectedObject.Name = StaticData->ObjectName;
+					const FObjectInfo* ObjectInfo = LevelController->GetSandboxObjectStaticData(Obj->GetSandboxClassId());
+					if (ObjectInfo) {
+						NewSelectedObject.Name = ObjectInfo->CommonName;
+						NewSelectedObject.ExtText1 = ObjectInfo->ChemicalFormula;
 					}
 				}
 
@@ -423,12 +450,13 @@ bool UMainPlayerControllerComponent::PlaceCraftedObjectToWorld() {
 		UE_LOG(LogTemp, Warning, TEXT("PlaceCraftedObjectToWorld -> %f %f %f"), Hit.ImpactPoint.X, Hit.ImpactPoint.Y, Hit.ImpactPoint.Z);
 
 		if (CurrentActionType == ECurrentActionType::PlaceCraftToWorld) {
-			FCraftRecipeData* CraftRecipeData = MainController->GetCraftRecipeData(CraftReceiptId);
+			FCraftRecipe* CraftRecipeData = MainController->GetCraftRecipeData(CraftReceiptId);
 			if (CraftRecipeData) {
 				TSubclassOf<ASandboxObject> ObjSubclass = MainController->LevelController->GetSandboxObjectByClassId(CraftRecipeData->SandboxClassId);
 				if (ObjSubclass) {
 					ABaseObject* BaseObj = Cast<ABaseObject>(ObjSubclass->GetDefaultObject());
-					if (IsCursorPositionValid(Hit) && BaseObj) {
+					if (IsCursorPositionValid(Hit) && BaseObj && MainController->SpentCraftRecipeItems(CraftReceiptId)) {
+
 						FVector Location(0);
 						FRotator Rotation(0);
 
@@ -533,14 +561,12 @@ void UMainPlayerControllerComponent::TakeSelectedObjectToInventory() {
 					if (TerrainMesh) {
 						const FTerrainInstancedMeshType* TerrainMeshType = Terrain->GetInstancedMeshType(TerrainMesh->MeshTypeId, TerrainMesh->MeshVariantId);
 						if (TerrainMeshType && TerrainMeshType->SandboxClassId > 0) {
-							//Terrain->RemoveInstanceAtMesh(TerrainMesh, ActionPoint.Item);
 							MainController->RemoveTerrainMesh(TerrainMesh, ActionPoint.Item);
 							if (LevelController) {
 								TSubclassOf<ASandboxObject> ObjSubclass = LevelController->GetSandboxObjectByClassId(TerrainMeshType->SandboxClassId);
 								ASandboxObject* Obj = (ASandboxObject*)ObjSubclass->GetDefaultObject();
 								if (Obj) {
 									MainController->SandboxAddItem(Obj->GetSandboxClassId());
-									//Inventory->AddObject(Obj);
 								}
 							}
 						}
@@ -608,13 +634,17 @@ void UMainPlayerControllerComponent::OnDeath() {
 
 bool UMainPlayerControllerComponent::ToggleCraftMode(int ReceiptId) {
 	AMainPlayerController* MainController = (AMainPlayerController*)GetOwner();
-	FCraftRecipeData* CraftRecipeData = MainController->GetCraftRecipeData(ReceiptId);
+
+	if (!MainController->ValidateCraftItems(ReceiptId)) {
+		return false;
+	}
+
+	FCraftRecipe* CraftRecipeData = MainController->GetCraftRecipeData(ReceiptId);
 	if (CraftRecipeData) {
 		if (CraftRecipeData->bToInventory) {
 			UContainerComponent* Inventory = MainController->GetInventory();
 			if (Inventory != nullptr) {
 				for (int Idx = 0; Idx < 10; Idx++) {
-					//Inventory->AddObject(Obj);
 					MainController->SandboxAddItem(CraftRecipeData->SandboxClassId);
 				}
 

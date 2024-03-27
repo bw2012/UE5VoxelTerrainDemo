@@ -40,6 +40,23 @@ struct FSelectedObject {
 
 	UPROPERTY()
 	FString Name;
+
+	UPROPERTY()
+	FString ExtText1;
+
+	UPROPERTY()
+	FString ExtText2;
+
+	UPROPERTY()
+	bool bCanTake = false;
+
+	void Reset() {
+		SandboxObj = nullptr;
+		TerrainMesh = nullptr;
+		ObjType = ESelectedObjectType::None;
+		Name = "";
+		bCanTake = false;
+	}
 };
 
 

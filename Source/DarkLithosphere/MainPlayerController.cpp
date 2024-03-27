@@ -35,6 +35,10 @@
 #include "Objects/TechHelper.h"
 
 
+extern TAutoConsoleVariable<int32> CVarDebugInfo;
+
+
+
 AMainPlayerController::AMainPlayerController() {
 	MainPlayerControllerComponent = CreateDefaultSubobject<UMainPlayerControllerComponent>(TEXT("MainPlayerController"));
 	LastCursorPosition = FVector(0);
@@ -216,6 +220,13 @@ void AMainPlayerController::ServerRpcFindOrCreateCharacter_Implementation() {
 
 void AMainPlayerController::PlayerTick(float DeltaTime) {
 	Super::PlayerTick(DeltaTime);
+
+	if (CVarDebugInfo.GetValueOnGameThread() > 0) {
+		AMainHUD* MainHud = Cast<AMainHUD>(GetHUD());
+		if (MainHud && !MainHud->IsWidgedOpened(TEXT("debug_info"))) {
+			MainHud->OpenWidget(TEXT("debug_info"));
+		}
+	}
 
 	if (bFirstStart) {
 		bFirstStart = false;
@@ -446,6 +457,7 @@ void AMainPlayerController::OnMainInteractionPressed() {
 }
 
 void AMainPlayerController::OnMainActionPressed() {
+
 	ADummyPawn* DummyPawn = Cast<ADummyPawn>(GetPawn());
 	if (DummyPawn) {
 		return;
@@ -646,9 +658,6 @@ void AMainPlayerController::ChangeDummyCameraAltitude(float Val) {
 			//UE_LOG(LogTemp, Warning, TEXT("test2 -> %f - %s"), ObjPos.Z, *Obj->GetName());
 
 			if (ObjZ > Pos.Z) {
-				//UE_LOG(LogTemp, Warning, TEXT("test -> %s"), *Obj->GetName());
-				//UE_LOG(LogTemp, Warning, TEXT("test2 -> %f - %s"), ObjZ, *Obj->GetName());
-
 				TArray<UStaticMeshComponent*> Components;
 				Obj->GetComponents<UStaticMeshComponent>(Components);
 				for (UStaticMeshComponent* StaticMeshComponent : Components) {
@@ -760,9 +769,12 @@ void AMainPlayerController::SetExtMode(int Index) {
 	}
 }
 
-FCraftRecipeData* AMainPlayerController::GetCraftRecipeData(int32 RecipeId) {
-	FCraftRecipeData* D = CraftRecipeMap.Find(RecipeId);
-	return D;
+FCraftRecipe* AMainPlayerController::GetCraftRecipeData(int32 RecipeId) {
+	if (CraftRecipeTable) {
+		return CraftRecipeTable->FindRow<FCraftRecipe>(*FString::FromInt(RecipeId), "", false);
+	}
+
+	return nullptr;
 }
 
 // server only
@@ -1083,6 +1095,10 @@ void AMainPlayerController::SandboxExec(const FString& Cmd, const FString& Param
 		}
 	}
 
+	if (Cmd == "test_inv") {
+		ValidateCraftItems(1);
+	}
+
 }
 
 void AMainPlayerController::ServerRpcSpawnObject_Implementation(uint64 SandboxClassId, const FTransform& Transform, bool bEnablePhysics) {
@@ -1145,4 +1161,137 @@ void AMainPlayerController::ServerRpcForceSave_Implementation() {
 	if (TerrainController) {
 		TerrainController->SaveMapAsync();
 	}
+}
+
+void AMainPlayerController::ServerRpcAddItemOrSpawnObject_Implementation(int ItemId, FTransform Transform) {
+	UContainerComponent* Inventory = GetInventory();
+	if (Inventory && LevelController) {
+		ASandboxObject* Obj = LevelController->GetSandboxObject(ItemId);
+		if (Obj) {
+			if (!Inventory->AddObject(Obj)) {
+				ASandboxObject* NewObj = LevelController->SpawnSandboxObject(ItemId, Transform);
+				if (NewObj) {
+					NewObj->OnPlaceToWorld(); // invoke only if spawn by player. not save/load or other cases
+					NewObj->SandboxRootMesh->SetSimulatePhysics(true);
+				}
+			}
+		}
+	}
+}
+
+bool AMainPlayerController::OnContainerSlotHover(int32 SlotId, FName ContainerName) {
+
+	if (SlotId > -1) {
+
+		auto* Container = GetContainerByName(ContainerName);
+		if (!Container) {
+			if (HasOpenContainer()) {
+				auto* OpObj = GetOpenedObject();
+				if (OpObj) {
+					Container = GetFirstComponentByName<UContainerComponent>(OpObj, ContainerName.ToString());
+				}
+			}
+		}
+
+		if (Container) {
+			auto* Stack = Container->GetSlot(SlotId);
+			if (Stack->SandboxClassId > 0) {
+				auto* Data = GetLevelController()->GetSandboxObjectStaticData(Stack->SandboxClassId);
+				if (Data) {
+					UiHoverObject = *Data;
+					return true;
+				}
+			}
+		}
+	} 
+
+	UiHoverObject = FObjectInfo();
+	return true;
+}
+
+bool AMainPlayerController::ValidateCraftItems(int32 RecipeId) {
+	const FCraftRecipe* CraftRecipe = GetCraftRecipeData(RecipeId);
+	if (!CraftRecipe) {
+		return false;
+	}
+
+	UContainerComponent* Inventory = GetInventory();
+	if (!Inventory) {
+		return false;
+	}
+
+	TMap<uint64, uint32> InventoryStats = Inventory->GetStats();
+	
+	for (auto P : CraftRecipe->Parts) {
+		for (auto Id : P.SandboxIdList) {
+			auto Amount = InventoryStats.FindOrAdd(Id);
+			if (Amount < P.Amount) {
+				return false;
+			}
+		}
+	}
+
+	return true;
+}
+
+bool AMainPlayerController::ValidateCraftItemPart(int32 RecipeId, int PartId) {
+	const FCraftRecipe* CraftRecipe = GetCraftRecipeData(RecipeId);
+	if (!CraftRecipe) {
+		return false;
+	}
+
+	UContainerComponent* Inventory = GetInventory();
+	if (!Inventory) {
+		return false;
+	}
+
+	TMap<uint64, uint32> InventoryStats = Inventory->GetStats();
+
+	if (PartId >= CraftRecipe->Parts.Num()) {
+		return false;
+	}
+
+	for (auto Id : CraftRecipe->Parts[PartId].SandboxIdList) {
+		auto Amount = InventoryStats.FindOrAdd(Id);
+		if (Amount < CraftRecipe->Parts[PartId].Amount) {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+bool AMainPlayerController::SpentCraftRecipeItems(int32 RecipeId) {
+	if (!ValidateCraftItems(RecipeId)) {
+		return false;
+	}
+
+	const FCraftRecipe* CraftRecipe = GetCraftRecipeData(RecipeId);
+	
+	for (const auto& Part : CraftRecipe->Parts) {
+		int Amount = Part.Amount;
+
+		int SlotId = 0;
+		for (const auto& Stack : GetInventory()->GetContent()) {
+			for (const auto SandboxId : Part.SandboxIdList) {
+				if (Stack.SandboxClassId == SandboxId && Stack.Amount > 0 && Amount > 0) {
+					if (Stack.Amount >= Amount) {
+						GetInventory()->DecreaseObjectsInContainer(SlotId, Amount);
+						Amount = 0;
+					} else {
+						GetInventory()->DecreaseObjectsInContainer(SlotId, Stack.Amount);
+						Amount -= Stack.Amount;
+					}
+				}
+			}
+
+			if (Amount == 0) {
+				break;
+			}
+
+			SlotId++;
+		}
+	}
+
+	return true;
 }

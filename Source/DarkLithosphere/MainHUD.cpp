@@ -49,3 +49,7 @@ void AMainHUD::CloseAllWidgets(FString Tag) {
 	ActiveWidgetMap.Empty();
 }
 
+bool AMainHUD::IsWidgedOpened(FString Name) {
+	return ActiveWidgetMap.Contains(Name);
+}
+

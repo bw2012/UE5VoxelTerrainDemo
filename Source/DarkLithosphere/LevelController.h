@@ -8,6 +8,7 @@
 #include "EnvironmentController.h"
 #include "BaseCharacter.h" 
 #include "VoxelIndex.h"
+#include "ObjectInfo.h"
 #include "LevelController.generated.h"
 
 class ATerrainController;
@@ -39,6 +40,9 @@ class DARKLITHOSPHERE_API ALevelController : public ASandboxLevelController
 
 
 public:
+
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	class UDataTable* ObjectStaticData;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	AEnvironmentController* Environment;
@@ -81,6 +85,8 @@ public:
 	virtual bool RemoveSandboxObject(ASandboxObject* Obj) override;
 
 	TArray<ACharacter*> GetNpcList();
+
+	const FObjectInfo* GetSandboxObjectStaticData(uint64 SandboxObjectId) const;
 
 protected:
 
