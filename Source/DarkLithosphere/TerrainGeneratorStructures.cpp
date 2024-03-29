@@ -253,9 +253,8 @@ void MakeLandscapeHollow(TStructuresGenerator* Generator, const FVector& Origin,
 			LandscapeZoneHandler.Function = Function;
 			Generator->AddLandscapeStructure(LandscapeZoneHandler);
 
-
 			AsyncTask(ENamedThreads::GameThread, [=]() {
-				const FVector Pos0 = Generator->GetController()->GetZonePos(LandscapeZoneHandler.ZoneIndex);
+				//const FVector Pos0 = Generator->GetController()->GetZonePos(LandscapeZoneHandler.ZoneIndex);
 				//DrawDebugBox(Generator->GetController()->GetWorld(), Pos0, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
 			});
 		}
@@ -331,7 +330,7 @@ public:
 // =============================================================================================
 
 
-void StructureHotizontalBoxTunnel(TStructuresGenerator* Generator, const FBox TunnelBox) {
+void StructureHotizontalBoxTunnel(TStructuresGenerator* Generator, const FBox TunnelBox, TSet<TVoxelIndex>& Res) {
 
 	const UMainTerrainGeneratorComponent* Generator2 = (UMainTerrainGeneratorComponent*)Generator->GetGeneratorComponent();
 
@@ -350,9 +349,12 @@ void StructureHotizontalBoxTunnel(TStructuresGenerator* Generator, const FBox Tu
 
 	for (auto X = MinIndex.X; X <= MaxIndex.X; X++) {
 		for (auto Y = MinIndex.Y; Y <= MaxIndex.Y; Y++) {
-			Generator->AddZoneStructure(TVoxelIndex(X, Y, MinIndex.Z), Str);
+			const TVoxelIndex Index(X, Y, MinIndex.Z);
+			Generator->AddZoneStructure(Index, Str);
+			Res.Add(Index);
 		}
 	}
+
 }
 
 void StructureVerticalCylinderTunnel(TStructuresGenerator* Generator, const FVector& Origin, const float Radius, const float Top, const float Bottom) {
@@ -360,7 +362,7 @@ void StructureVerticalCylinderTunnel(TStructuresGenerator* Generator, const FVec
 	const UMainTerrainGeneratorComponent* Generator2 = (UMainTerrainGeneratorComponent*)Generator->GetGeneratorComponent();
 
 	const auto Function = [=](const float InDensity, const TMaterialId InMaterialId, const TVoxelIndex& VoxelIndex, const FVector& LocalPos, const FVector& WorldPos) {
-		const float Density = Generator2->FunctionMakeVerticalCylinder(InDensity, WorldPos, Origin, 300.f, 2000.f, -3000.f);
+		const float Density = Generator2->FunctionMakeVerticalCylinder(InDensity, WorldPos, Origin, Radius, Top, Bottom);
 		return std::make_tuple(Density, InMaterialId);
 	};
 
@@ -390,6 +392,7 @@ void StructureVerticalCylinderTunnel(TStructuresGenerator* Generator, const FVec
 
 	for (auto Z = MinIndex.Z; Z <= MaxIndex.Z; Z++) {
 		Generator->AddZoneStructure(TVoxelIndex(MinIndex.X, MinIndex.Y, Z), Str);
+		//AsyncTask(ENamedThreads::GameThread, [=]() { DrawDebugBox(Generator->GetController()->GetWorld(), Generator->GetController()->GetZonePos(TVoxelIndex(MinIndex.X, MinIndex.Y, Z)), FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true); });
 	}
 }
 
@@ -486,7 +489,8 @@ void MakeDungeon1(TStructuresGenerator* Generator) {
 
 	const UMainTerrainGeneratorComponent* Generator2 = (UMainTerrainGeneratorComponent*)Generator->GetGeneratorComponent();
 
-	MakeLandscapeHill(Generator, FVector(StartX + 500, StartY, 0));
+	const FVector HillPos(StartX + 500, StartY, 0);
+	MakeLandscapeHill(Generator, HillPos);
 
 	const TVoxelIndex Index = Generator->GetController()->GetZoneIndex(FVector(StartX, StartY, StartZ));
 	float G = Generator2->GroundLevelFunction(Index, FVector(StartX, StartY, 0));
@@ -497,6 +501,8 @@ void MakeDungeon1(TStructuresGenerator* Generator) {
 
 	StructureDiagonalCylinderTunnel(Generator, FVector(StartX, StartY, StartZ), 200.f, D, -Deep, 0);
 
+	TSet<TVoxelIndex> TA;
+
 	const FVector O(Deep + StartX, StartY, -Deep);
 
 	const int ZoneLen = 25;
@@ -505,7 +511,7 @@ void MakeDungeon1(TStructuresGenerator* Generator) {
 	const FVector Min(O.X + 200, O.Y - W, O.Z - H);
 	const FVector Max(O.X + Len, O.Y + W, O.Z + H);
 	FBox Box(Min, Max);
-	StructureHotizontalBoxTunnel(Generator, Box);
+	StructureHotizontalBoxTunnel(Generator, Box, TA); // вход и длинный центральный тоннель на первом уровне
 
 	{
 		const float Len2 = (8 * 1000) + 620;
@@ -513,16 +519,16 @@ void MakeDungeon1(TStructuresGenerator* Generator) {
 		const FVector Max2(O.X + W, O.Y + Len2 / 2, O.Z + H);
 		FBox Box2(Min2, Max2);
 
-		StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(2000.f, 0.f, 0)));
-		StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(-4000.f, 0.f, 0)));
+		StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(2000.f, 0.f, 0)), TA);
+		StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(-4000.f, 0.f, 0)), TA);
 
 		const float Len3 = (6 * 1000) - 450;
 		const FVector Min3(O.X - Len3 / 2, O.Y - Width / 2, O.Z - Height / 2);
 		const FVector Max3(O.X + Len3 / 2, O.Y + Width / 2, O.Z + Height / 2);
 		FBox Box3(Min3, Max3);
 
-		StructureHotizontalBoxTunnel(Generator, Box3.ShiftBy(FVector(-1000.f, 4000.f, 0)));
-		StructureHotizontalBoxTunnel(Generator, Box3.ShiftBy(FVector(-1000.f, -4000.f, 0)));
+		StructureHotizontalBoxTunnel(Generator, Box3.ShiftBy(FVector(-1000.f, 4000.f, 0)), TA);
+		StructureHotizontalBoxTunnel(Generator, Box3.ShiftBy(FVector(-1000.f, -4000.f, 0)), TA);
 	}
 
 	{
@@ -530,7 +536,7 @@ void MakeDungeon1(TStructuresGenerator* Generator) {
 		const FVector Max1(O.X - 10000, O.Y + Width / 2, O.Z + Height / 2);
 		FBox Box1(Min1, Max1);
 
-		StructureHotizontalBoxTunnel(Generator, Box1);
+		StructureHotizontalBoxTunnel(Generator, Box1, TA);
 	}
 
 	{
@@ -540,15 +546,19 @@ void MakeDungeon1(TStructuresGenerator* Generator) {
 		FBox Box2(Min2, Max2);
 
 		StructureDiagonalCylinderTunnel(Generator, O + FVector(-15000, 0.f, 0), 200.f, 0, -2000, 1);
-		StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(-15000, -3000, -2000)));
+		StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(-15000, -3000, -2000)), TA);
 	}
 
 	const int MaxDungeonLevels = 7;
 
-	//AsyncTask(ENamedThreads::GameThread, [=]() { DrawDebugPoint(Generator->GetWorld(), O, 5.f, FColor(255, 255, 255, 0), true); });
+	TSet<TVoxelIndex> T0;
+
+	//AsyncTask(ENamedThreads::GameThread, [=]() { DrawDebugPoint(Generator->GetController()->GetWorld(), O, 5.f, FColor(255, 255, 255, 0), true); });
 
 	for (int Level = 0; Level < MaxDungeonLevels; ++Level) {
 		float ZOffset = -Level * 2000;
+
+		TSet<TVoxelIndex> T;
 
 		{
 			const float Len1 = (23 * 1000) - 200; //1400
@@ -557,13 +567,13 @@ void MakeDungeon1(TStructuresGenerator* Generator) {
 			const FVector Max2(O.X + Width / 2, O.Y + Len1 / 2, O.Z + Height / 2);
 			FBox Box2(Min2, Max2);
 
-			StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(2000.f, 0.f, ZOffset)));
-			StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(10000.f, 0.f, ZOffset)));
-			StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(20000.f, 0.f, ZOffset)));
+			StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(2000.f, 0.f, ZOffset)), T);
+			StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(10000.f, 0.f, ZOffset)), T);
+			StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(20000.f, 0.f, ZOffset)), T);
 
-			StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(-4000.f, 0.f, ZOffset)));
-			StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(-10000.f, 0.f, ZOffset)));
-			StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(-25000.f, 0.f, ZOffset)));
+			StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(-4000.f, 0.f, ZOffset)), T);
+			StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(-10000.f, 0.f, ZOffset)), T);
+			StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(-25000.f, 0.f, ZOffset)), T);
 		}
 
 		{
@@ -574,7 +584,7 @@ void MakeDungeon1(TStructuresGenerator* Generator) {
 
 
 			if (Level > 0) {
-				StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(0, 0, ZOffset)));
+				StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(0, 0, ZOffset)), T);
 			}
 
 			if (Level == 1) {
@@ -583,14 +593,80 @@ void MakeDungeon1(TStructuresGenerator* Generator) {
 				const FVector Max1(O.X - 10000, O.Y + Width / 2, O.Z + Height / 2);
 				FBox Box1(Min1, Max1);
 
-				StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(0, -4000, ZOffset)));
+				StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(0, -4000, ZOffset)), T);
 			}
 
-			StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(0, 10000, ZOffset)));
-			StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(0, -10000, ZOffset)));
+			StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(0, 10000, ZOffset)), T);
+			StructureHotizontalBoxTunnel(Generator, Box2.ShiftBy(FVector(0, -10000, ZOffset)), T);
 		}
 
+		TA.Append(T);
+
+		if (Level == 0) {
+			T0.Append(T);
+		}
 	}
+
+	for (auto I : T0) {
+		//AsyncTask(ENamedThreads::GameThread, [=]() { DrawDebugBox(Generator->GetController()->GetWorld(), Generator->GetController()->GetZonePos(I), FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true); });
+	}
+
+	TArray<TVoxelIndex> RndList;
+	for (const auto& ZoneIndex : T0) {
+		const FVector ZP = Generator->GetController()->GetZonePos(ZoneIndex);
+		if (FVector::Distance(FVector(ZP.X, ZP.Y, 0), HillPos) > 5000) {
+			RndList.Add(ZoneIndex);
+		}
+	}
+
+	const int32 WorldSeed = 13666;
+
+	FRandomStream Rnd = FRandomStream();
+	Rnd.Initialize(WorldSeed);
+	Rnd.Reset();
+
+	TArray<TVoxelIndex> Used;
+	int MaxVT = Rnd.RandRange(5, 7);
+	int I = 0;
+	while (I < MaxVT) {
+		const int R = Rnd.RandRange(0, RndList.Num() - 1);
+		const TVoxelIndex ZoneIndex = RndList[R];
+		const FVector Pos1 = Generator->GetController()->GetZonePos(ZoneIndex);
+
+		bool bSkip = false;
+		for (auto UsedIndex : Used) {
+			const FVector UP = Generator->GetController()->GetZonePos(UsedIndex);
+			float DDD = FVector::Distance(FVector(Pos1.X, Pos1.Y, 0), FVector(UP.X, UP.Y, 0));
+
+			//UE_LOG(LogTemp, Warning, TEXT("%d %d %d -> %d %d %d -> %f"), ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z, UsedIndex.X, UsedIndex.Y, UsedIndex.Z, DDD);
+
+			if (DDD < 3000) {
+				bSkip = true;
+				continue;
+			}
+		}
+
+		if (bSkip) {
+			continue;
+		}
+
+		Generator->SetChunkTag(ZoneIndex, "pit", "mines");
+		const float GLevel = Generator2->GroundLevelFunction(TVoxelIndex(ZoneIndex.X, ZoneIndex.Y, 0), FVector(Pos1.X, Pos1.Y, 0));
+		const FVector Pos2(Pos1.X, Pos1.Y, GLevel);
+		MakeLandscapeHollow(Generator, FVector(Pos1.X, Pos1.Y, 0));
+		StructureVerticalCylinderTunnel(Generator, Pos1, 300, GLevel - Pos1.Z, 100);
+
+		AsyncTask(ENamedThreads::GameThread, [=]() {
+			//DrawDebugBox(Generator->GetController()->GetWorld(), Pos1, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true); 
+			//DrawDebugBox(Generator->GetController()->GetWorld(), Pos2, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
+			//DrawDebugPoint(Generator->GetController()->GetWorld(), Pos1, 8.f, FColor(255, 255, 255, 0), true);
+			//DrawDebugPoint(Generator->GetController()->GetWorld(), Pos2, 8.f, FColor(255, 255, 255, 0), true);
+		});
+
+		Used.Add(ZoneIndex);
+		I++;
+	}
+
 }
 
 
@@ -653,7 +729,6 @@ void UMainTerrainGeneratorComponent::GenerateStructures() {
 	TVoxelIndex TestIndex(-200, 0, 0);
 	TStructureBigHollow Hollow(TestIndex);
 	Hollow.MakeMetaData(GetStructuresGenerator());
-
 
 	int S = 2;
 

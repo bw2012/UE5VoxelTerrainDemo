@@ -134,6 +134,8 @@ float UMainTerrainGeneratorComponent::FunctionMakeVerticalCylinder(const float I
 };
 
 float UMainTerrainGeneratorComponent::FunctionMakeBox(const float InDensity, const FVector& P, const FBox& InBox) const {
+	static const float E = 50;
+
 	const float ExtendXP = InBox.Max.X;
 	const float ExtendYP = InBox.Max.Y;
 	const float ExtendZP = InBox.Max.Z;
@@ -141,12 +143,12 @@ float UMainTerrainGeneratorComponent::FunctionMakeBox(const float InDensity, con
 	const float ExtendYN = InBox.Min.Y;
 	const float ExtendZN = InBox.Min.Z;
 
-	static const float E = 50;
-	FBox Box = InBox.ExpandBy(E);
+	const FBox Box = InBox.ExpandBy(E);
 
 	static float D = 100;
 	static const float NoisePositionScale = 0.005f;
-	static const float NoiseValueScale = 0.1;
+	static const float NoiseValueScale1 = 0.145;
+	static const float NoiseValueScale2 = 0.08;
 	float R = InDensity;
 
 	if (InDensity < 0.5f) {
@@ -160,7 +162,7 @@ float UMainTerrainGeneratorComponent::FunctionMakeBox(const float InDensity, con
 				const float DensityXP = 1 / (1 + exp((ExtendXP - P.X) / D));
 				const float DensityXN = 1 / (1 + exp((-ExtendXN + P.X) / D));
 				const float DensityX = (DensityXP + DensityXN);
-				const float N = PerlinNoise(P, NoisePositionScale, NoiseValueScale);
+				const float N = PerlinNoise(P, NoisePositionScale, NoiseValueScale1);
 				R = DensityX + N;
 		}
 
@@ -169,17 +171,19 @@ float UMainTerrainGeneratorComponent::FunctionMakeBox(const float InDensity, con
 				const float DensityYP = 1 / (1 + exp((ExtendYP - P.Y) / D));
 				const float DensityYN = 1 / (1 + exp((-ExtendYN + P.Y) / D));
 				const float DensityY = (DensityYP + DensityYN);
-				const float N = PerlinNoise(P, NoisePositionScale, NoiseValueScale);
+				const float N = PerlinNoise(P, NoisePositionScale, NoiseValueScale1);
 				R = DensityY + N;
 			}
 		}
 
-		if (FMath::Abs(P.Z - ExtendZP) < 50 || FMath::Abs(-P.Z + ExtendZN) < 50) {
+		const float NPZ = NormalizedPerlinNoise(FVector(P.X, P.Y, 0), 0.0005f, 400) + NormalizedPerlinNoise(FVector(P.X, P.Y, 0), 0.0005f * 4, 100);
+
+		if (FMath::Abs(P.Z - ExtendZP) < 300 || FMath::Abs(-P.Z + ExtendZN) < 50) {
 			if (R < 0.5f) {
-				const float DensityZP = 1 / (1 + exp((ExtendZP - P.Z) / D));
+				const float DensityZP = 1 / (1 + exp((ExtendZP - NPZ - P.Z) / D));
 				const float DensityZN = 1 / (1 + exp((-ExtendZN + P.Z) / D));
 				const float DensityZ = (DensityZP + DensityZN);
-				const float N = PerlinNoise(P, NoisePositionScale, NoiseValueScale / 2);
+				const float N = PerlinNoise(P, NoisePositionScale, NoiseValueScale2);
 				R = DensityZ + N;
 			}
 		}
@@ -466,10 +470,10 @@ void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxel
 		if (ZoneIndex.Z < -2) {
 			float Chance = Rnd.GetFraction();
 
-			if (Chance < 0.8f) {
+			if (Chance < 0.9f) {
 				static const int RockTypeV[] = { 900, 905, 906, 907, 908, 912, 913 };
 				int I = Rnd.RandRange(0, 6);
-				GenerateRandomInstMesh(ZoneInstanceMeshMap, RockTypeV[I], Rnd, ZoneIndex, Vd, 1, 5);
+				GenerateRandomInstMesh(ZoneInstanceMeshMap, RockTypeV[I], Rnd, ZoneIndex, Vd, 2, 6);
 			}
 
 		}
