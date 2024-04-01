@@ -433,7 +433,6 @@ void ALevelController::PrepareObjectForSave(TArray<FSandboxObjectDescriptor>& Ob
 			const TVoxelIndex& Index = Elem.Key;
 			const FSandboxObjectsByZone& ObjectsByZone = Elem.Value;
 			for (auto& Itm : ObjectsByZone.Stash) {
-				FString ClassName = Itm.Key;
 				const FSandboxObjectDescriptor& ObjDesc = Itm.Value;
 				ObjDescList.Add(ObjDesc);
 			}

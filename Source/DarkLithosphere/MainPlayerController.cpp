@@ -979,17 +979,6 @@ void AMainPlayerController::RemoveTerrainMesh(UTerrainInstancedStaticMesh* Terra
 	}
 }
 
-void AMainPlayerController::ServerRpcDestroyActor_Implementation(int32 X, int32 Y, int32 Z, const FString& Name, FVector Origin, uint32 EffectId) {
-	if (TerrainController) {
-		TVoxelIndex ZoneIndex(X, Y, Z);
-		TerrainController->DestroySandboxObjectByName(TVoxelIndex(X, Y, Z), Name);
-
-		if (EffectId > 0) {
-			((ALevelController*)LevelController)->SpawnEffect(EffectId, FTransform(Origin));
-		}
-	}
-}
-
 void AMainPlayerController::ServerRpcDestroyActorByNetUid_Implementation(uint64 NetUid, FVector EffectOrigin, uint32 EffectId) {
 	if (LevelController) {
 		ASandboxObject* Obj = LevelController->GetObjectByNetUid(NetUid);

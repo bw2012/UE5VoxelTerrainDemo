@@ -268,7 +268,12 @@ void ASandboxLevelController::LoadLevelJson() {
 
 			ObjDesc.ClassId = SandboxObjectPtr->GetIntegerField(TEXT("ClassId"));
 			ObjDesc.TypeId = SandboxObjectPtr->GetIntegerField(TEXT("TypeId"));
-			ObjDesc.NetUid = SandboxObjectPtr->GetIntegerField(TEXT("NetUid"));
+			SandboxObjectPtr->TryGetNumberField(TEXT("NetUid"), ObjDesc.NetUid);
+
+
+			if (ObjDesc.NetUid == 0) {
+				ObjDesc.NetUid = GetNewUid();
+			}
 
 			FVector Location;
 			TArray <TSharedPtr<FJsonValue>> LocationValArray = SandboxObjectPtr->GetArrayField("Location");
@@ -369,6 +374,8 @@ uint64 ASandboxLevelController::GetNewUid() const {
 	do {
 		UID = dis(gen);
 	} while (GlobalObjectMap.Find(UID) != nullptr);
+
+	UE_LOG(LogTemp, Warning, TEXT("new NetUid = %llu"), UID);
 
 	return UID;
 }

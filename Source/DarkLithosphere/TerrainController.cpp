@@ -233,11 +233,11 @@ bool ATerrainController::OnZoneSoftUnload(const TVoxelIndex& ZoneIndex) {
 	auto* ZonePtr = ObjectsByZoneMap.Find(ZoneIndex);
 	if (ZonePtr) {
 		for (auto& Elem : ZonePtr->WorldObjectMap) {
-			FString Name = Elem.Key;
+			uint64 NetUid = Elem.Key;
 			ASandboxObject* Object = Elem.Value;
 
 			FSandboxObjectDescriptor SandboxObjectDescriptor = FSandboxObjectDescriptor::MakeObjDescriptor(Object);
-			ZonePtr->Stash.Add(Name, SandboxObjectDescriptor);
+			ZonePtr->Stash.Add(NetUid, SandboxObjectDescriptor);
 
 			//UE_LOG(LogTemp, Warning, TEXT("DestroyObject -> %s"), *Name);
 			Object->Destroy();
@@ -258,17 +258,17 @@ void ATerrainController::RegisterSandboxObject(ASandboxObject* SandboxObject) {
 		const FVector ObjectPos = SandboxObject->GetActorLocation();
 		const TVoxelIndex ZoneIndex = GetZoneIndex(ObjectPos);
 		auto& ZoneObjects = ObjectsByZoneMap.FindOrAdd(ZoneIndex);
-		FString ObjectName = SandboxObject->GetName();
+		uint64 NetUid = SandboxObject->GetSandboxNetUid();
 
-		if (ZoneObjects.WorldObjectMap.Contains(ObjectName)) {
-			UE_LOG(LogTemp, Warning, TEXT("Duplicate object -> %s"), *ObjectName);
+		if (ZoneObjects.WorldObjectMap.Contains(NetUid)) {
+			UE_LOG(LogTemp, Warning, TEXT("Duplicate object -> %s - %llu"), *SandboxObject->GetName(), NetUid);
 		}
 
-		ZoneObjects.WorldObjectMap.Add(ObjectName, SandboxObject);
+		ZoneObjects.WorldObjectMap.Add(NetUid, SandboxObject);
 
 		ABaseObject* BObj = Cast<ABaseObject>(SandboxObject);
 		if (BObj && BObj->IsZoneAnchor()) {
-			ZoneAnchorsMap.Add(ObjectName, BObj);
+			ZoneAnchorsMap.Add(SandboxObject->GetName(), BObj);
 
 		}
 	}
@@ -276,18 +276,9 @@ void ATerrainController::RegisterSandboxObject(ASandboxObject* SandboxObject) {
 
 void ATerrainController::AddToStash(const FSandboxObjectDescriptor& ObjDesc) {
 	const FVector Pos = ObjDesc.Transform.GetLocation();
-	const FQuat Quat = ObjDesc.Transform.GetRotation();
-	FString Str = FString::FromInt(ObjDesc.ClassId) 
-		+ FString("|") + FString::SanitizeFloat(Pos.X) 
-		+ FString("|") + FString::SanitizeFloat(Pos.Y) 
-		+ FString("|") + FString::SanitizeFloat(Pos.Z)
-		+ FString("|") + FString::SanitizeFloat(Quat.W)
-		+ FString("|") + FString::SanitizeFloat(Quat.X)
-		+ FString("|") + FString::SanitizeFloat(Quat.Y)
-		+ FString("|") + FString::SanitizeFloat(Quat.Z);
 	const TVoxelIndex ZoneIndex = GetZoneIndex(Pos);
 	auto& ZoneObjects = ObjectsByZoneMap.FindOrAdd(ZoneIndex);
-	ZoneObjects.Stash.Add(Str, ObjDesc);
+	ZoneObjects.Stash.Add(ObjDesc.NetUid, ObjDesc);
 }
 
 void ATerrainController::UnRegisterSandboxObject(ASandboxObject* SandboxObject) {
@@ -296,7 +287,7 @@ void ATerrainController::UnRegisterSandboxObject(ASandboxObject* SandboxObject) 
 		const TVoxelIndex ZoneIndex = GetZoneIndex(ObjectPos);
 		auto& ZoneObjects = ObjectsByZoneMap.FindOrAdd(ZoneIndex);
 		FString ObjectName = SandboxObject->GetName();
-		ZoneObjects.WorldObjectMap.Remove(ObjectName);
+		ZoneObjects.WorldObjectMap.Remove(SandboxObject->GetSandboxNetUid());
 
 		ABaseObject* BObj = Cast<ABaseObject>(SandboxObject);
 		if (BObj) {
@@ -306,19 +297,11 @@ void ATerrainController::UnRegisterSandboxObject(ASandboxObject* SandboxObject) 
 	}
 }
 
-void ATerrainController::DestroySandboxObjectByName(const TVoxelIndex& ZoneIndex, const FString& Name) {
-	auto& ZoneObjects = ObjectsByZoneMap.FindOrAdd(ZoneIndex);
-
-	if (ZoneObjects.WorldObjectMap.Contains(Name)) {
-		LevelController->RemoveSandboxObject(ZoneObjects.WorldObjectMap[Name]);		
-	}
-}
-
 ASandboxObject* ATerrainController::SpawnSandboxObject(const int32 ClassId, const FTransform& Transform) {
 	if (IsInGameThread()) {
 		TSubclassOf<ASandboxObject> Obj = LevelController->GetSandboxObjectByClassId(ClassId);
 		if (Obj) {
-			ASandboxObject* Object = (ASandboxObject*)GetWorld()->SpawnActor(Obj->ClassDefaultObject->GetClass(), &Transform);
+			ASandboxObject* Object = LevelController->SpawnSandboxObject(ClassId, Transform);
 			RegisterSandboxObject(Object);
 			return Object;
 		}
@@ -333,7 +316,7 @@ void ATerrainController::SpawnFromStash(const TVoxelIndex& ZoneIndex) {
 	auto* ZonePtr = ObjectsByZoneMap.Find(ZoneIndex);
 	if (ZonePtr) {
 		for (auto& Elem : ZonePtr->Stash) {
-			FString Name = Elem.Key;
+			//uint64 NetUid = Elem.Key;
 			const FSandboxObjectDescriptor& ObjDesc = Elem.Value;
 			if (LevelController) {
 				ASandboxObject* Obj = LevelController->SpawnPreparedObject(ObjDesc);
