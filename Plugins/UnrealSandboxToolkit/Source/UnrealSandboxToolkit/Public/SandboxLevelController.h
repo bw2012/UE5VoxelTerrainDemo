@@ -25,7 +25,10 @@ struct UNREALSANDBOXTOOLKIT_API FSandboxObjectDescriptor {
 	FTransform Transform;
 
 	UPROPERTY()
-	int ClassId;
+	uint64 ClassId;
+
+	UPROPERTY()
+	uint64 NetUid;
 
 	UPROPERTY()
 	int TypeId;
@@ -70,7 +73,7 @@ public:
 
 	void PrepareMetaData();
 
-	virtual ASandboxObject* SpawnSandboxObject(const int ClassId, const FTransform& Transform);
+	virtual ASandboxObject* SpawnSandboxObject(const int ClassId, const FTransform& Transform, uint64 SandboxNetUid = 0);
 
 	virtual bool RemoveSandboxObject(ASandboxObject* Obj);
 
@@ -103,6 +106,8 @@ protected:
 	void SavePreparedObjects(const TArray<FSandboxObjectDescriptor>& ObjDescList);
 
 	virtual void PrepareObjectForSave(TArray<FSandboxObjectDescriptor>& ObjDescList);
+
+	uint64 GetNewUid() const;
 
 private:
 

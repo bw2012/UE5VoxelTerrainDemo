@@ -395,8 +395,8 @@ ACharacter* ALevelController::SpawnCharacterByTypeId(const int TypeId, const FVe
 	return nullptr;
 }
 
-ASandboxObject* ALevelController::SpawnSandboxObject(const int ClassId, const FTransform& Transform) {
-	ASandboxObject* Obj = Super::SpawnSandboxObject(ClassId, Transform);
+ASandboxObject* ALevelController::SpawnSandboxObject(const int ClassId, const FTransform& Transform, uint64 NetUid) {
+	ASandboxObject* Obj = Super::SpawnSandboxObject(ClassId, Transform, NetUid);
 	if (Obj) {
 		if (TerrainController) {
 			TerrainController->RegisterSandboxObject(Obj);

@@ -22,6 +22,15 @@ FString UHoverObjectWidget::GetSandboxHoverObjectTextExt1() {
 	return TEXT("");
 }
 
+FString UHoverObjectWidget::GetSandboxHoverObjectCategory() {
+	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
+	if (MainPlayerController) {
+		return MainPlayerController->UiHoverObject.CategoryName;
+	}
+
+	return TEXT("");
+}
+
 FString UHoverObjectWidget::GetSandboxHoverObjectDescription() {
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
 	if (MainPlayerController) {

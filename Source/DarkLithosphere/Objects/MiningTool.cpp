@@ -112,7 +112,9 @@ void AMiningTool::OnAltAction(const FHitResult& Hit, ABaseCharacter* PlayerChara
 		if (LevelController && LevelController->TerrainController) {
 			FVector Location = Construction->GetActorLocation();
 			TVoxelIndex Index = LevelController->TerrainController->GetZoneIndex(Construction->GetActorLocation());
-			MainController->ServerRpcDestroyActor(Index.X, Index.Y, Index.Z, Construction->GetName(), Hit.Location);
+			//MainController->ServerRpcDestroyActor(Index.X, Index.Y, Index.Z, Construction->GetName(), Hit.Location, 2);
+			MainController->ServerRpcDestroyActorByNetUid(Construction->GetSandboxNetUid(), Hit.Location, 2);
+			return;
 		}
 	}
 
@@ -159,6 +161,22 @@ void AMiningTool::OnAltAction(const FHitResult& Hit, ABaseCharacter* PlayerChara
 
 				FTransform NewTransform(FRotator(0, 0, 33), Hit.Location, FVector(1));
 				SpawnItems(MainController, ObjInfo, NewTransform);
+				return;
+			}
+		}
+	}
+
+	ASandboxObject* Obj = Cast<ASandboxObject>(Hit.GetActor());
+	if (Obj) {
+		if (LevelController && LevelController->TerrainController) {
+			const auto* ObjData = LevelController->GetSandboxObjectStaticData(Obj->GetSandboxClassId());
+
+			if (ObjData && ObjData->bMiningDestroy) {
+				FVector Location = Obj->GetActorLocation();
+				TVoxelIndex Index = LevelController->TerrainController->GetZoneIndex(Obj->GetActorLocation());
+				uint32 EffectId = (ObjData->MiningCrashEffectId > 0) ? ObjData->MiningCrashEffectId : ObjData->CrashEffectId;
+				MainController->ServerRpcDestroyActorByNetUid(Obj->GetSandboxNetUid(), Hit.Location, EffectId);
+				return;
 			}
 		}
 	}

@@ -9,6 +9,8 @@
 
 
 FString USelectedObjectWidget::GetSandboxSelectedObjectText() {
+	MakeTextList();
+
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
 	if (MainPlayerController->HasOpenContainer()) {
 		return TEXT("");
@@ -33,38 +35,62 @@ FString USelectedObjectWidget::GetSandboxSelectedObjectText() {
 	return TEXT("");
 }
 
-// TODO переделать тут все с использованием массива
+void USelectedObjectWidget::MakeTextList() {
+	List.clear();
 
-FString USelectedObjectWidget::GetSandboxKeyText() {
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
 	if (MainPlayerController->HasOpenContainer()) {
-		return TEXT("");
+		return;
 	}
 
 	if (MainPlayerController && MainPlayerController->MainPlayerControllerComponent) {
 		FSelectedObject SelectedObject = MainPlayerController->MainPlayerControllerComponent->SelectedObject;
 
 		if (SelectedObject.ObjType == ESelectedObjectType::InstancedMesh && SelectedObject.bCanTake) {
-			return TEXT("R");
-		}
-
-		if (SelectedObject.ObjType == ESelectedObjectType::SandboxObject) {
+			List.push_back(std::tuple("R", "Pick-up"));
+		} else if (SelectedObject.ObjType == ESelectedObjectType::SandboxObject) {
 			if (SelectedObject.SandboxObj) {
 				if (SelectedObject.SandboxObj->IsInteractive()) {
-					return TEXT("E");
-				} 
-
-				ABaseObject* BaseObj = Cast<ABaseObject>(SelectedObject.SandboxObj);
-				if (BaseObj && BaseObj->IsContainer()) {
-					return TEXT("E");
+					List.push_back(std::tuple("E", "Interact"));
+				} else {
+					ABaseObject* BaseObj = Cast<ABaseObject>(SelectedObject.SandboxObj);
+					if (BaseObj && BaseObj->IsContainer()) {
+						List.push_back(std::tuple("E", "Open"));
+					}
 				}
 
 				if (SelectedObject.SandboxObj->CanTake(nullptr)) {
-					return TEXT("R");
+					List.push_back(std::tuple("R", "Pick-up"));
 				}
 
 			}
 		}
+	}
+
+}
+
+FString  USelectedObjectWidget::GetSandboxKeyDescription() {
+	if (List.size() > 0) {
+		const auto& P = List[0];
+		return FString(std::get<1>(P));
+	}
+
+	return TEXT("");
+}
+
+FString  USelectedObjectWidget::GetSandboxKeyDescription2() {
+	if (List.size() > 1) {
+		const auto& P = List[1];
+		return FString(std::get<1>(P));
+	}
+
+	return TEXT("");
+}
+
+FString USelectedObjectWidget::GetSandboxKeyText() {
+	if (List.size() > 0) {
+		const auto& P = List[0];
+		return FString(std::get<0>(P));
 	}
 
 	return TEXT("");
@@ -72,33 +98,9 @@ FString USelectedObjectWidget::GetSandboxKeyText() {
 
 
 FString USelectedObjectWidget::GetSandboxKeyText2() {
-	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
-	if (MainPlayerController->HasOpenContainer()) {
-		return TEXT("");
-	}
-
-	if (MainPlayerController && MainPlayerController->MainPlayerControllerComponent) {
-		FSelectedObject SelectedObject = MainPlayerController->MainPlayerControllerComponent->SelectedObject;
-
-		if (SelectedObject.ObjType == ESelectedObjectType::SandboxObject) {
-			if (SelectedObject.SandboxObj) {
-				bool bShow = false;
-
-				if (SelectedObject.SandboxObj->IsInteractive()) {
-					bShow = true;
-				}
-
-				ABaseObject* BaseObj = Cast<ABaseObject>(SelectedObject.SandboxObj);
-				if (BaseObj && BaseObj->IsContainer()) {
-					bShow = true;
-				}
-
-				if (bShow && SelectedObject.SandboxObj->CanTake(nullptr)) {
-					return TEXT("R");
-				}
-
-			}
-		}
+	if (List.size() > 1) {
+		const auto& P = List[1];
+		return FString(std::get<0>(P));
 	}
 
 	return TEXT("");

@@ -6,14 +6,14 @@
 void UCraftRecipeItemWidget::SetPlayerControllerExtMode(int Index) {
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
 	if (MainPlayerController) {
-		MainPlayerController->SetExtMode(Index);
+		MainPlayerController->SetExtMode(MainPlayerController->GetSandboxModeExtByPage(Index));
 	}
 }
 
 UTexture2D* UCraftRecipeItemWidget::GetCraftReceipeIcon(int ReceipeIndex) {
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
 	if (MainPlayerController) {
-		auto* CraftRecipeData = MainPlayerController->GetCraftRecipeData(ReceipeIndex);
+		auto* CraftRecipeData = MainPlayerController->GetCraftRecipeData(MainPlayerController->GetSandboxModeExtByPage(ReceipeIndex));
 		if (CraftRecipeData) {
 			return CraftRecipeData->IconTexture;
 		}
@@ -25,7 +25,7 @@ UTexture2D* UCraftRecipeItemWidget::GetCraftReceipeIcon(int ReceipeIndex) {
 FString UCraftRecipeItemWidget::GetCraftReceipeName(int ReceipeIndex) {
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
 	if (MainPlayerController) {
-		auto* CraftRecipeData = MainPlayerController->GetCraftRecipeData(ReceipeIndex);
+		auto* CraftRecipeData = MainPlayerController->GetCraftRecipeData(MainPlayerController->GetSandboxModeExtByPage(ReceipeIndex));
 		if (CraftRecipeData) {
 			return CraftRecipeData->Name;
 		}
@@ -37,7 +37,7 @@ FString UCraftRecipeItemWidget::GetCraftReceipeName(int ReceipeIndex) {
 FString UCraftRecipeItemWidget::GetCraftReceipePart(int ReceipeIndex, int PartId) {
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
 	if (MainPlayerController) {
-		const auto* CraftRecipeData = MainPlayerController->GetCraftRecipeData(ReceipeIndex);
+		const auto* CraftRecipeData = MainPlayerController->GetCraftRecipeData(MainPlayerController->GetSandboxModeExtByPage(ReceipeIndex));
 		if (CraftRecipeData) {
 			if (CraftRecipeData->Parts.Num() > PartId) {
 				const auto Part = CraftRecipeData->Parts[PartId];
@@ -55,7 +55,7 @@ FLinearColor UCraftRecipeItemWidget::GetCraftReceipeColor(int ReceipeIndex) {
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
 	if (MainPlayerController) {
 
-		bool bEnable = MainPlayerController->ValidateCraftItems(ReceipeIndex);
+		bool bEnable = MainPlayerController->ValidateCraftItems(MainPlayerController->GetSandboxModeExtByPage(ReceipeIndex));
 
 		if (bEnable) {
 			return FLinearColor(255, 255, 255, 255);
@@ -69,7 +69,7 @@ FLinearColor UCraftRecipeItemWidget::GetCraftReceipePartColor(int ReceipeIndex, 
 	AMainPlayerController* MainPlayerController = Cast<AMainPlayerController>(GetOwningPlayer());
 	if (MainPlayerController) {
 
-		bool bEnable = MainPlayerController->ValidateCraftItemPart(ReceipeIndex, PartId);
+		bool bEnable = MainPlayerController->ValidateCraftItemPart(MainPlayerController->GetSandboxModeExtByPage(ReceipeIndex), PartId);
 
 		if (bEnable) {
 			return FLinearColor(255, 255, 255, 255);

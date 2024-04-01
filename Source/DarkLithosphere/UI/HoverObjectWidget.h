@@ -28,6 +28,9 @@ protected:
 	FString GetSandboxHoverObjectTextExt1();
 
 	UFUNCTION(BlueprintCallable, Category = "Sandbox widget")
+	FString GetSandboxHoverObjectCategory();
+
+	UFUNCTION(BlueprintCallable, Category = "Sandbox widget")
 	FString GetSandboxHoverObjectDescription();
 
 

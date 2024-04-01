@@ -6,18 +6,17 @@
 
 #include <string>
 #include <vector>
+#include <random>
 
 TMap<int32, TSubclassOf<ASandboxObject>> ASandboxLevelController::ObjectMapById;
 ASandboxLevelController* ASandboxLevelController::StaticSelf;
 
 ASandboxLevelController::ASandboxLevelController() {
 	MapName = TEXT("World 0");
-	ObjectCounter = 1;
 }
 
 void ASandboxLevelController::BeginPlay() {
 	Super::BeginPlay();
-	ObjectCounter = 1;
 	GlobalObjectMap.Empty();
 	PrepareMetaData();
 
@@ -45,6 +44,7 @@ void ASandboxLevelController::SaveObject(TSharedRef <TJsonWriter<TCHAR>> JsonWri
 	//JsonWriter->WriteValue("Class", Name);
 	JsonWriter->WriteValue("ClassId", ObjDesc.ClassId);
 	JsonWriter->WriteValue("TypeId", ObjDesc.TypeId);
+	JsonWriter->WriteValue("NetUid", ObjDesc.NetUid);
 
 	JsonWriter->WriteArrayStart("Location");
 	JsonWriter->WriteValue(ObjDesc.Transform.GetLocation().X);
@@ -146,6 +146,7 @@ FSandboxObjectDescriptor FSandboxObjectDescriptor::MakeObjDescriptor(ASandboxObj
 	ObjDesc.TypeId = SandboxObject->GetSandboxTypeId();
 	ObjDesc.Transform = SandboxObject->GetTransform();
 	ObjDesc.PropertyMap = SandboxObject->PropertyMap;
+	ObjDesc.NetUid = SandboxObject->GetSandboxNetUid();
 
 	UContainerComponent* Container = SandboxObject->GetContainer(TEXT("ObjectContainer"));
 	if (Container) {
@@ -267,6 +268,7 @@ void ASandboxLevelController::LoadLevelJson() {
 
 			ObjDesc.ClassId = SandboxObjectPtr->GetIntegerField(TEXT("ClassId"));
 			ObjDesc.TypeId = SandboxObjectPtr->GetIntegerField(TEXT("TypeId"));
+			ObjDesc.NetUid = SandboxObjectPtr->GetIntegerField(TEXT("NetUid"));
 
 			FVector Location;
 			TArray <TSharedPtr<FJsonValue>> LocationValArray = SandboxObjectPtr->GetArrayField("Location");
@@ -334,7 +336,7 @@ void ASandboxLevelController::LoadLevelJson() {
 }
 
 ASandboxObject* ASandboxLevelController::SpawnPreparedObject(const FSandboxObjectDescriptor& ObjDesc) {
-	ASandboxObject* NewObject = SpawnSandboxObject(ObjDesc.ClassId, ObjDesc.Transform);
+	ASandboxObject* NewObject = SpawnSandboxObject(ObjDesc.ClassId, ObjDesc.Transform, ObjDesc.NetUid);
 	if (NewObject) {
 		NewObject->PropertyMap = ObjDesc.PropertyMap;
 		NewObject->PostLoadProperties();
@@ -356,16 +358,30 @@ void ASandboxLevelController::SpawnPreparedObjects(const TArray<FSandboxObjectDe
 	}
 }
 
-ASandboxObject* ASandboxLevelController::SpawnSandboxObject(const int ClassId, const FTransform& Transform) {
+uint64 ASandboxLevelController::GetNewUid() const {
+
+	std::random_device rd;
+	std::mt19937_64 gen(rd());
+	std::uniform_int_distribution<uint64_t> dis;
+
+	uint64 UID = 0;
+
+	do {
+		UID = dis(gen);
+	} while (GlobalObjectMap.Find(UID) != nullptr);
+
+	return UID;
+}
+
+ASandboxObject* ASandboxLevelController::SpawnSandboxObject(const int ClassId, const FTransform& Transform, uint64 SandboxNetUid) {
 	if (GetNetMode() != NM_Client) {
 		TSubclassOf<ASandboxObject> SandboxObject = GetSandboxObjectByClassId(ClassId);
 		if (SandboxObject) {
 			UClass* SpawnClass = SandboxObject->ClassDefaultObject->GetClass();
 			ASandboxObject* NewObject = (ASandboxObject*)GetWorld()->SpawnActor(SpawnClass, &Transform);
 			if (NewObject) {
-				NewObject->SandboxNetUid = ObjectCounter;
-				GlobalObjectMap.Add(ObjectCounter, NewObject);
-				ObjectCounter++;
+				NewObject->SandboxNetUid = (SandboxNetUid == 0) ? GetNewUid() : SandboxNetUid;
+				GlobalObjectMap.Add(NewObject->SandboxNetUid, NewObject);
 			}
 			return NewObject;
 		}

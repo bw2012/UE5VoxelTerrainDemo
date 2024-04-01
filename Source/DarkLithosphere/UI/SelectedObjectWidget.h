@@ -10,6 +10,9 @@
 
 #include "../TerrainController.h"
 
+#include <vector>
+#include <tuple>
+
 #include "Blueprint/UserWidget.h"
 #include "SelectedObjectWidget.generated.h"
 
@@ -31,8 +34,17 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Sandbox widget")
 	FString GetSandboxKeyText2();
 
+	UFUNCTION(BlueprintCallable, Category = "Sandbox widget")
+	FString GetSandboxKeyDescription();
+
+	UFUNCTION(BlueprintCallable, Category = "Sandbox widget")
+	FString GetSandboxKeyDescription2();
+
 
 private:
 
+	void MakeTextList();
+
+	std::vector<std::tuple<FString, FString>> List;
 	
 };

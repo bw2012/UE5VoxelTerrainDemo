@@ -23,7 +23,5 @@ bool AStorageBox::PlaceToWorldClcPosition(const UWorld* World, const FVector& So
 	}
 
 	return true;
-
-	return true;
 }
 

@@ -34,6 +34,11 @@ struct DARKLITHOSPHERE_API FCoreObjectInfo : public FTableRowBase {
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	uint32 CrashEffectId = 0;
 
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	bool bMiningDestroy = true;
+
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	uint32 MiningCrashEffectId = 0;
 };
 
 USTRUCT(BlueprintType)
@@ -56,12 +61,6 @@ struct DARKLITHOSPHERE_API FTerrainObjectInfo : public FCoreObjectInfo {
 	uint64 SandboxObjectId = 0; 
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	bool bMiningDestroy = true;
-
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	FTerrainObjectMiningMode MiningMode;
-
-	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	uint32 MiningCrashEffectId = 0;
 };
 

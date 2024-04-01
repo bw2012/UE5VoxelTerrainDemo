@@ -325,6 +325,24 @@ void UMainPlayerControllerComponent::SelectActionObject() {
 				//UE_LOG(LogTemp, Warning, TEXT("Obj: %s"), *Obj->GetName());
 				//UE_LOG(LogTemp, Warning, TEXT("Obj - %f %f %f"), Obj->GetActorRotation().Pitch, Obj->GetActorRotation().Yaw, Obj->GetActorRotation().Roll);
 			}
+
+			ABaseObject* BaseObj = Cast<ABaseObject>(Hit.GetActor());
+			if (BaseObj && BaseObj->IsContainer()) {
+				FSelectedObject NewSelectedObject;
+				NewSelectedObject.SandboxObj = Obj;
+				NewSelectedObject.ObjType = ESelectedObjectType::SandboxObject;
+
+				if (LevelController->ObjectMap) {
+					const FObjectInfo* ObjectInfo = LevelController->GetSandboxObjectStaticData(Obj->GetSandboxClassId());
+					if (ObjectInfo) {
+						NewSelectedObject.Name = ObjectInfo->CommonName;
+						NewSelectedObject.ExtText1 = ObjectInfo->ChemicalFormula;
+					}
+				}
+
+				SelectedObject = NewSelectedObject;
+				NotSelected = false;
+			}
 		} 
 	}
 
@@ -639,17 +657,21 @@ bool UMainPlayerControllerComponent::ToggleCraftMode(int ReceiptId) {
 		return false;
 	}
 
+	UContainerComponent* Inventory = MainController->GetInventory();
+	if (Inventory == nullptr) {
+		return false;
+	}
+
 	FCraftRecipe* CraftRecipeData = MainController->GetCraftRecipeData(ReceiptId);
 	if (CraftRecipeData) {
 		if (CraftRecipeData->bToInventory) {
-			UContainerComponent* Inventory = MainController->GetInventory();
-			if (Inventory != nullptr) {
-				for (int Idx = 0; Idx < 10; Idx++) {
+			if (MainController->SpentCraftRecipeItems(ReceiptId)) {
+				for (int Idx = 0; Idx < CraftRecipeData->Qty; Idx++) {
 					MainController->SandboxAddItem(CraftRecipeData->SandboxClassId);
 				}
-
 				return false;
 			}
+						
 		} else {
 			ResetState();
 			CurrentActionType = ECurrentActionType::PlaceCraftToWorld;

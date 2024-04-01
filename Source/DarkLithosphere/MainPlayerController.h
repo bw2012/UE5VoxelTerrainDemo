@@ -49,6 +49,9 @@ struct DARKLITHOSPHERE_API FCraftRecipe : public FTableRowBase {
 
 	UPROPERTY(EditAnywhere)
 	TArray<FCraftRecipePart> Parts;
+
+	UPROPERTY(EditAnywhere)
+	int Qty = 1;
 };
 
 
@@ -113,6 +116,14 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Sandbox")
 	void SetSandboxModeExtId(int Id);
+
+	UFUNCTION(BlueprintCallable, Category = "Sandbox")
+	void SetSandboxExtPage(int Page);
+
+	UFUNCTION(BlueprintCallable, Category = "Sandbox")
+	int GetSandboxExtPage();
+
+	int GetSandboxModeExtByPage(int Id);
 
 	UFUNCTION(BlueprintCallable, Category = "Sandbox")
 	void TestRemoveSandboxObject();
@@ -221,7 +232,10 @@ public:
 	void ServerRpcDigTerrain(int32 Type, FVector DigOrigin, FVector Origin, float Size, int32 X, int32 Y, int32 Z, int32 FaceIndex);
 
 	UFUNCTION(Server, Reliable)
-	void ServerRpcDestroyActor(int32 X, int32 Y, int32 Z, const FString& Name, FVector Origin);
+	void ServerRpcDestroyActor(int32 X, int32 Y, int32 Z, const FString& Name, FVector Origin, uint32 EffectId = 0);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRpcDestroyActorByNetUid(uint64 NetUid, FVector EffectOrigin = FVector(), uint32 EffectId = 0);
 
 	UFUNCTION(Server, Reliable)
 	void ServerRpcRemoveActor(ASandboxObject* Obj);
@@ -332,6 +346,10 @@ private:
 	int SandboxMode = 0;
 
 	int SandboxModeExtId = 0;
+
+	int SandboxExtPage = 0;
+
+	int SandboxMaxPage = 2;
 
 	void ResetAllSelections();
 
