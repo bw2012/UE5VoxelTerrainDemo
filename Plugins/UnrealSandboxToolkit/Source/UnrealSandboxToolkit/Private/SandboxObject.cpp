@@ -63,6 +63,10 @@ void ASandboxObject::ActionInInventoryActive(UWorld* World, const FHitResult& Hi
 }
 
 bool ASandboxObject::CanTake(const AActor* Actor) const {
+
+	if (SandboxRootMesh->IsSimulatingPhysics()) {
+		return false;
+	}
 	
 	TArray<UContainerComponent*> ContainerComponents;
 	GetComponents<UContainerComponent>(ContainerComponents);
