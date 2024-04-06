@@ -24,7 +24,7 @@ public:
 	uint64 SandboxClassId;
 
 	UPROPERTY(Replicated)
-	uint64 SandboxNetUid;
+	FString SandboxNetUid;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	bool bStackable;
@@ -46,7 +46,7 @@ protected:
 
 public:
 
-	uint64 GetSandboxNetUid() const;
+	FString GetSandboxNetUid() const;
 
 	uint64 GetSandboxClassId() const;
 

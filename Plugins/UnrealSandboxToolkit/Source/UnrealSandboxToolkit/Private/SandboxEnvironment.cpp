@@ -33,7 +33,7 @@ float GetSkyLightIntensity(ASkyLight* SkyLight) {
 
 float GetSunLightIntensity(ADirectionalLight* Light) {
 	if (Light) {
-		UDirectionalLightComponent* LightComponent = Light->GetComponent();
+		ULightComponent* LightComponent = Light->GetLightComponent();
 		if (LightComponent) {
 			return LightComponent->Intensity;
 		}

@@ -33,6 +33,18 @@ void AMiningTool::ToggleToolMode() {
 	DiggingToolMode = DiggingToolMode % 2;
 };
 
+void AMiningTool::DigSmall(const FHitResult& Hit, ATerrainController* Terrain, AMainPlayerController* MainController) {
+	TVoxelIndex ZoneIndex = Terrain->GetZoneIndex(Hit.ImpactPoint);
+
+	const float Radius = 60;
+	const float F = 0;
+	const FVector P = Hit.Normal * Radius * F + Hit.Location;
+	const FVector EffectLocation = Hit.Normal * 50 + Hit.Location;
+
+	MainController->ServerRpcDigTerrain(0, P, EffectLocation, Radius, ZoneIndex.X, ZoneIndex.Y, ZoneIndex.Z, Hit.FaceIndex);
+}
+
+
 void AMiningTool::Dig(const FHitResult& Hit, ATerrainController* Terrain, AMainPlayerController* MainController) {
 	TVoxelIndex ZoneIndex = Terrain->GetZoneIndex(Hit.ImpactPoint);
 
@@ -153,7 +165,7 @@ void AMiningTool::OnAltAction(const FHitResult& Hit, ABaseCharacter* PlayerChara
 			const auto* ObjInfo = Terrain->GetInstanceObjStaticInfo(TerrainInstMesh->MeshTypeId);
 			if (ObjInfo && ObjInfo->bMiningDestroy) {
 
-				Dig(Hit, Terrain, MainController);
+				DigSmall(Hit, Terrain, MainController);
 
 				//TODO refactor. create ServerRpcDestroyTerrainMeshAndSpawnObject
 				TVoxelIndex Index = Terrain->GetZoneIndex(TerrainInstMesh->GetComponentLocation());

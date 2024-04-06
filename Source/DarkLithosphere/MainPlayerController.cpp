@@ -979,18 +979,29 @@ void AMainPlayerController::RemoveTerrainMesh(UTerrainInstancedStaticMesh* Terra
 	}
 }
 
-void AMainPlayerController::ServerRpcDestroyActorByNetUid_Implementation(uint64 NetUid, FVector EffectOrigin, uint32 EffectId) {
+void AMainPlayerController::ServerRpcDestroyActor_Implementation(int32 X, int32 Y, int32 Z, const FString& Name, FVector Origin, uint32 EffectId) {
+	if (TerrainController) {
+		TVoxelIndex ZoneIndex(X, Y, Z);
+		TerrainController->DestroySandboxObjectByName(TVoxelIndex(X, Y, Z), Name);
+
+		if (EffectId > 0) {
+			((ALevelController*)LevelController)->SpawnEffect(EffectId, FTransform(Origin));
+		}
+	}
+}
+
+void AMainPlayerController::ServerRpcDestroyActorByNetUid_Implementation(const FString& NetUid, FVector EffectOrigin, uint32 EffectId) {
 	if (LevelController) {
 		ASandboxObject* Obj = LevelController->GetObjectByNetUid(NetUid);
 		if (Obj) {
-			UE_LOG(LogTemp, Warning, TEXT("ServerRpcDestroyActorByNetUid = %llu"), NetUid);
+			UE_LOG(LogTemp, Warning, TEXT("ServerRpcDestroyActorByNetUid = %s"), *NetUid);
 
 			LevelController->RemoveSandboxObject(Obj);
 			if (EffectId > 0) {
 				((ALevelController*)LevelController)->SpawnEffect(EffectId, FTransform(EffectOrigin));
 			}
 		} else {
-			UE_LOG(LogTemp, Warning, TEXT("ServerRpcDestroyActorByNetUid = %llu - NOT FOUND!"), NetUid);
+			UE_LOG(LogTemp, Warning, TEXT("ServerRpcDestroyActorByNetUid = %2 - NOT FOUND!"), *NetUid);
 		}
 
 	}

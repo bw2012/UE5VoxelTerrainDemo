@@ -7,7 +7,7 @@
 
 #define STAMINA_CLC_FACTOR 0.1
 
-#define STAMINA_REDUCTION_FACTOR 2
+#define STAMINA_REDUCTION_FACTOR 0.5
 
 
 UVitalSystemComponent::UVitalSystemComponent() {

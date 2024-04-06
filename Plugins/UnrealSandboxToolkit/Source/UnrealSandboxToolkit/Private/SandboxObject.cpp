@@ -30,7 +30,7 @@ FString ASandboxObject::GetSandboxName() {
 	return DefaultSandboxObjectName;
 }
 
-uint64 ASandboxObject::GetSandboxNetUid() const {
+FString ASandboxObject::GetSandboxNetUid() const {
 	return SandboxNetUid;
 }
 

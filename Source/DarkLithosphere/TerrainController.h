@@ -21,10 +21,10 @@ struct FSandboxObjectsByZone {
 	GENERATED_BODY()
 
 	UPROPERTY()
-	TMap<uint64, ASandboxObject*> WorldObjectMap;
+	TMap<FString, ASandboxObject*> WorldObjectMap;
 
 	UPROPERTY()
-	TMap<uint64, FSandboxObjectDescriptor> Stash;
+	TMap<FString, FSandboxObjectDescriptor> Stash;
 };
 
 /**
@@ -82,6 +82,8 @@ public:
 	void UnRegisterSandboxObject(ASandboxObject* SandboxObject);
 
 	ASandboxObject* SpawnSandboxObject(const int32 ClassId, const FTransform& Transform);
+
+	void DestroySandboxObjectByName(const TVoxelIndex& ZoneIndex, const FString& Name);
 
 	const TMap<TVoxelIndex, FSandboxObjectsByZone>& GetObjectsByZoneMap() const;
 

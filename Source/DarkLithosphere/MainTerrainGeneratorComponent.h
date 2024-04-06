@@ -52,7 +52,13 @@ protected:
 
 	float FunctionMakeCaveLayer1(float Density, const FVector& WorldPos) const;
 
-	float FunctionMakeCaveLayer2(float Density, const FVector& WorldPos) const;
+	float FunctionMakeCaveLayer2Density(float Density, const FVector& WorldPos) const;
+
+	TMaterialId FunctionMakeCaveLayer2Material(const TMaterialId MatId, const FVector& WorldPos) const;
+
+	float FuncCaveLayer2BottomLevel(const FVector& P) const;
+
+	float FuncCaveLayer2Pillar(const FVector& P) const;
 
 public:
 

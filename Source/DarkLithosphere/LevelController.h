@@ -80,7 +80,7 @@ public:
 
 	void CharacterConservation(const FCharacterLoadInfo& TempCharacterInfo);
 
-	virtual ASandboxObject* SpawnSandboxObject(const int ClassId, const FTransform& Transform, uint64 NetUid = 0) override;
+	virtual ASandboxObject* SpawnSandboxObject(const int ClassId, const FTransform& Transform, const FString& NetUid = "") override;
 
 	virtual bool RemoveSandboxObject(ASandboxObject* Obj) override;
 

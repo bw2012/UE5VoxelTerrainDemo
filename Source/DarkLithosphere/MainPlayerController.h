@@ -232,7 +232,10 @@ public:
 	void ServerRpcDigTerrain(int32 Type, FVector DigOrigin, FVector Origin, float Size, int32 X, int32 Y, int32 Z, int32 FaceIndex);
 
 	UFUNCTION(Server, Reliable)
-	void ServerRpcDestroyActorByNetUid(uint64 NetUid, FVector EffectOrigin = FVector(), uint32 EffectId = 0);
+	void ServerRpcDestroyActor(int32 X, int32 Y, int32 Z, const FString& Name, FVector Origin, uint32 EffectId = 0);
+
+	UFUNCTION(Server, Reliable)
+	void ServerRpcDestroyActorByNetUid(const FString& NetUid, FVector EffectOrigin = FVector(), uint32 EffectId = 0);
 
 	UFUNCTION(Server, Reliable)
 	void ServerRpcRemoveActor(ASandboxObject* Obj);

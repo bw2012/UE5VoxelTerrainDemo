@@ -268,12 +268,7 @@ void ASandboxLevelController::LoadLevelJson() {
 
 			ObjDesc.ClassId = SandboxObjectPtr->GetIntegerField(TEXT("ClassId"));
 			ObjDesc.TypeId = SandboxObjectPtr->GetIntegerField(TEXT("TypeId"));
-			SandboxObjectPtr->TryGetNumberField(TEXT("NetUid"), ObjDesc.NetUid);
-
-
-			if (ObjDesc.NetUid == 0) {
-				ObjDesc.NetUid = GetNewUid();
-			}
+			ObjDesc.NetUid = SandboxObjectPtr->GetStringField(TEXT("NetUid"));
 
 			FVector Location;
 			TArray <TSharedPtr<FJsonValue>> LocationValArray = SandboxObjectPtr->GetArrayField("Location");
@@ -363,31 +358,34 @@ void ASandboxLevelController::SpawnPreparedObjects(const TArray<FSandboxObjectDe
 	}
 }
 
-uint64 ASandboxLevelController::GetNewUid() const {
+FString ASandboxLevelController::GetNewUid() const {
 
 	std::random_device rd;
 	std::mt19937_64 gen(rd());
 	std::uniform_int_distribution<uint64_t> dis;
 
-	uint64 UID = 0;
+	FString UID;
 
 	do {
-		UID = dis(gen);
-	} while (GlobalObjectMap.Find(UID) != nullptr);
+		uint64 uid1 = dis(gen);
+		uint64 uid2 = dis(gen);
+		uint64 uid3 = dis(gen);
 
-	UE_LOG(LogTemp, Warning, TEXT("new NetUid = %llu"), UID);
+		UID = FString::Printf(TEXT("%llx-%llx-%llx"), uid1, uid2, uid3);
+
+	} while (GlobalObjectMap.Find(UID) != nullptr);
 
 	return UID;
 }
 
-ASandboxObject* ASandboxLevelController::SpawnSandboxObject(const int ClassId, const FTransform& Transform, uint64 SandboxNetUid) {
+ASandboxObject* ASandboxLevelController::SpawnSandboxObject(const int ClassId, const FTransform& Transform, const FString& SandboxNetUid) {
 	if (GetNetMode() != NM_Client) {
 		TSubclassOf<ASandboxObject> SandboxObject = GetSandboxObjectByClassId(ClassId);
 		if (SandboxObject) {
 			UClass* SpawnClass = SandboxObject->ClassDefaultObject->GetClass();
 			ASandboxObject* NewObject = (ASandboxObject*)GetWorld()->SpawnActor(SpawnClass, &Transform);
 			if (NewObject) {
-				NewObject->SandboxNetUid = (SandboxNetUid == 0) ? GetNewUid() : SandboxNetUid;
+				NewObject->SandboxNetUid = (SandboxNetUid == "") ? GetNewUid() : SandboxNetUid;
 				GlobalObjectMap.Add(NewObject->SandboxNetUid, NewObject);
 			}
 			return NewObject;
@@ -440,7 +438,7 @@ ASandboxObject* ASandboxLevelController::GetSandboxObject(uint64 ClassId) {
 bool ASandboxLevelController::RemoveSandboxObject(ASandboxObject* Obj) {
 	if (GetNetMode() != NM_Client) {
 		if (Obj) {
-			uint64 NetUid = Obj->GetSandboxNetUid();
+			FString NetUid = Obj->GetSandboxNetUid();
 			Obj->Destroy();
 			GlobalObjectMap.Remove(NetUid);
 			return true;
@@ -450,7 +448,7 @@ bool ASandboxLevelController::RemoveSandboxObject(ASandboxObject* Obj) {
 	return false;
 }
 
-ASandboxObject* ASandboxLevelController::GetObjectByNetUid(uint64 NetUid) {
+ASandboxObject* ASandboxLevelController::GetObjectByNetUid(FString NetUid) {
 	if (GlobalObjectMap.Contains(NetUid)) {
 		return GlobalObjectMap[NetUid];
 	}

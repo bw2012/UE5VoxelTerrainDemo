@@ -54,7 +54,7 @@ bool UMainTerrainGeneratorComponent::IsForcedComplexZone(const TVoxelIndex& Zone
 
 	if (IsCaveLayer2Zone(ZoneIndex.Z)) {
 		if (ZoneIndex.X == 0 && ZoneIndex.Y == 0) {
-			//AsyncTask(ENamedThreads::GameThread, [=, this]() { DrawDebugBox(GetWorld(), GetController()->GetZonePos(ZoneIndex), FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true); });
+			AsyncTask(ENamedThreads::GameThread, [=, this]() { DrawDebugBox(GetWorld(), GetController()->GetZonePos(ZoneIndex), FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true); });
 		}
 		return true;
 	}
@@ -317,7 +317,13 @@ float UMainTerrainGeneratorComponent::FunctionMakeCaveLayer1(float Density, cons
 	return ttt3;
 }
 
-float UMainTerrainGeneratorComponent::FunctionMakeCaveLayer2(float Density, const FVector& WorldPos) const {
+#define CLC_CAVE2_BOTTOM(P)  (NormalizedPerlinNoise(FVector(P.X, P.Y, 0), 0.0005f, 1000) + NormalizedPerlinNoise(FVector(P.X, P.Y, 0), 0.0005f * 3, 300))
+
+#define CLC_CAVE2_PILLAR_TOP(F)  (F * 2000)
+
+#define CLC_CAVE2_PILLAR_BOTTOM(F)  (F * 4000)
+
+float UMainTerrainGeneratorComponent::FunctionMakeCaveLayer2Density(float Density, const FVector& WorldPos) const {
 
 	if (Density < 0.5) {
 		return Density;
@@ -338,7 +344,6 @@ float UMainTerrainGeneratorComponent::FunctionMakeCaveLayer2(float Density, cons
 	static const float NoiseValueScale1 = 0.17;
 
 	const float NZN = NormalizedPerlinNoise(FVector(P.X, P.Y, 0), 0.0005f, 1000) + NormalizedPerlinNoise(FVector(P.X, P.Y, 0), 0.0005f * 3, 300);
-
 	const float NZP = NormalizedPerlinNoise(FVector(P.X, P.Y, 0), 0.00061f, 1000);
 
 	//TVoxelIndex I2 = GetController()->GetZoneIndex(WorldPos);
@@ -347,12 +352,28 @@ float UMainTerrainGeneratorComponent::FunctionMakeCaveLayer2(float Density, cons
 		//AsyncTask(ENamedThreads::GameThread, [=, this]() { DrawDebugPoint(GetController()->GetWorld(), VVV, 3.f, FColor(255, 255, 255, 0), true); });
 	//}
 
+	const float Pillar = FuncCaveLayer2Pillar(P);
+
+	TVoxelIndex I2 = GetController()->GetZoneIndex(WorldPos);
+	if (I2.Z == -41 && I2.X < 2 && I2.X > -2 && I2.Y < 2 && I2.Y > -2) {
+		//const float MaxR = 10000000 / 2;
+		//float R = FMath::Sqrt(V.X * V.X + V.Y * V.Y);
+		//float T = 1 - exp(-pow(R, 2) / (MaxR * 100));
+
+		//float T = FuncCaveLayer2BottomLevel(WorldPos);
+
+		//T = T + (NNN * 1000);
+		//FVector VVV(WorldPos.X, WorldPos.Y, T);
+		//AsyncTask(ENamedThreads::GameThread, [=, this]() { DrawDebugPoint(GetController()->GetWorld(), VVV, 3.f, FColor(255, 255, 255, 0), true); });
+	}
+
+
 	if (P.Z < ZUp && P.Z > ZDown) {
 		R = 0;
 
 		//if (FMath::Abs(P.Z - ZUp) < 300 || FMath::Abs(-P.Z + ZDown) < 300) {
-			const float DensityZP = 1 / (1 + exp((ZUp - P.Z - 600 + NZP) / D));
-			const float DensityZN = 1 / (1 + exp((-ZDown + P.Z + 300 - NZN) / D));
+			const float DensityZP = 1 / (1 + exp((ZUp - P.Z - 600 + NZP - CLC_CAVE2_PILLAR_TOP(Pillar)) / D));
+			const float DensityZN = 1 / (1 + exp((-ZDown + P.Z + 300 - NZN - CLC_CAVE2_PILLAR_BOTTOM(Pillar)) / D));
 			const float DensityZ = (DensityZP + DensityZN);
 			R = DensityZ;
 
@@ -365,6 +386,43 @@ float UMainTerrainGeneratorComponent::FunctionMakeCaveLayer2(float Density, cons
 				
 			}
 		//}
+	}
+
+	return R;
+}
+
+FORCEINLINE float UMainTerrainGeneratorComponent::FuncCaveLayer2BottomLevel(const FVector& P) const {
+	return CLC_CAVE2_BOTTOM(P) - CaveLayer2Z - 2000 - 300;
+}
+
+FORCEINLINE float UMainTerrainGeneratorComponent::FuncCaveLayer2Pillar(const FVector& P) const {
+	static const float scale = 0.00009 / 2;
+	float noise_big = NormalizedPerlinNoise(FVector(P.X, P.Y, 0), scale, 1);
+	float ttt = 0;
+	if (noise_big < 0.3) {
+		ttt = 1 - (noise_big * 3.333f);
+	}
+
+
+	return ttt;
+}
+
+TMaterialId UMainTerrainGeneratorComponent::FunctionMakeCaveLayer2Material(const TMaterialId MatId, const FVector& WorldPos) const {
+	TMaterialId R = MatId;
+
+	const float BottomLevel = FuncCaveLayer2BottomLevel(WorldPos);
+
+	if (WorldPos.Z < -CaveLayer2Z + 2000 && WorldPos.Z > BottomLevel - 100) {
+
+	//if (WorldPos.Z < BottomLevel + 100 && WorldPos.Z > BottomLevel - 100) {
+		R = 10; // hardcoded stone moss
+
+		//TVoxelIndex I2 = GetController()->GetZoneIndex(WorldPos);
+		//if (I2.X == 0 && I2.Y == 0) {
+			//FVector VVV(WorldPos.X, WorldPos.Y, BottomLevel);
+			//AsyncTask(ENamedThreads::GameThread, [=, this]() { DrawDebugPoint(GetController()->GetWorld(), VVV, 3.f, FColor(255, 255, 255, 0), true); });
+		//}
+
 	}
 
 	return R;
@@ -391,7 +449,7 @@ float UMainTerrainGeneratorComponent::DensityFunctionExt(float Density, const TV
 	}
 
 	if (IsCaveLayer2Zone(ZoneIndex.Z)) {
-		R = FunctionMakeCaveLayer2(R, WorldPos);
+		R = FunctionMakeCaveLayer2Density(R, WorldPos);
 	}
 
 	return R;
@@ -606,7 +664,8 @@ void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxel
 	if (IsCaveLayer1Zone(ZoneIndex.Z) || CheckZoneTag(ZoneIndex, "cave", "layer2bottom")) {
 		const int Min = 10;
 		const int Max = 30;
-		const int MeshTypeId = 999;
+		const int MeshTypeId = 999; // blue mushroom as terrain instance mesh (not foliage)
+		//TODO refactor
 
 		FVector WorldPos(0);
 		FVector Normal(0);
@@ -647,6 +706,54 @@ void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxel
 			}
 		}
 	}
+
+	if (CheckZoneTag(ZoneIndex, "cave", "layer2bottom")) {
+		const int FoliageType1Id = 201; // cave shrub
+		const int FoliageType2Id = 202; // cave green mushroom nucleus
+		//TODO refactor
+
+		FVector WorldPos(0);
+		FVector Normal(0);
+
+		for (int I = 0; I < 400; I++) {
+			if (SelectRandomSpawnPoint(Rnd, ZoneIndex, Vd, WorldPos, Normal)) {
+				if (Normal.Z > 0.5) {
+					const float NoiseScale = 0.0004f; // medium
+					const FVector V(WorldPos.X * NoiseScale, WorldPos.Y * NoiseScale, 0);
+
+					const float Angle = Rnd.FRandRange(0.f, 360.f);
+					const float Scale = Rnd.FRandRange(0.5f, 1.f);
+					const FVector LocalPos = WorldPos - ZonePos;
+					FTransform NewTransform(FRotator(0, Angle, 0), LocalPos, FVector(Scale, Scale, Scale));
+
+					int MeshVariantId = Rnd.RandRange(0, 14);
+					const auto FoliageType = GetController()->GetFoliageById(FoliageType1Id);
+
+					SpawnFoliageAsInstanceMesh(NewTransform, FoliageType1Id, MeshVariantId, FoliageType, ZoneInstanceMeshMap);
+				}
+			}
+		}
+
+		for (int I = 0; I < 200; I++) {
+			if (SelectRandomSpawnPoint(Rnd, ZoneIndex, Vd, WorldPos, Normal)) {
+				if (Normal.Z > 0.5) {
+					const float NoiseScale = 0.0004f; // medium
+					const FVector V(WorldPos.X * NoiseScale, WorldPos.Y * NoiseScale, 0);
+
+					const float Angle = Rnd.FRandRange(0.f, 360.f);
+					const float Scale = Rnd.FRandRange(0.5f, 1.f);
+					const FVector LocalPos = WorldPos - ZonePos;
+					FTransform NewTransform(FRotator(0, Angle, 0), LocalPos, FVector(Scale, Scale, Scale));
+
+					int MeshVariantId = Rnd.RandRange(0, 3);
+					const auto FoliageType = GetController()->GetFoliageById(FoliageType2Id);
+
+					SpawnFoliageAsInstanceMesh(NewTransform, FoliageType2Id, MeshVariantId, FoliageType, ZoneInstanceMeshMap);
+				}
+			}
+		}
+	}
+
 
 	/*
 	if (ZoneIndex.X == 0 && ZoneIndex.Y == 0 && ZoneIndex.Z == 0) {
@@ -859,6 +966,8 @@ void UMainTerrainGeneratorComponent::ExtVdGenerationData(TGenerateVdTempItm& VdG
 }
 
 TMaterialId UMainTerrainGeneratorComponent::MaterialFuncionExt(const TGenerateVdTempItm* GenItm, const TMaterialId MatId, const FVector& WorldPos) const {
+	TMaterialId R = MatId;
+
 	auto ZoneIndex = GenItm->ZoneIndex;
 	if (GenItm->OreData != nullptr) {
 		const TZoneOreData* ZoneOreData = GenItm->OreData.get();
@@ -872,6 +981,10 @@ TMaterialId UMainTerrainGeneratorComponent::MaterialFuncionExt(const TGenerateVd
 			//}
 		}
 	}
+
+	if (IsCaveLayer2Zone(GenItm->ZoneIndex.Z)) {
+		R = FunctionMakeCaveLayer2Material(R, WorldPos);
+	}
 	
-	return MatId;
+	return R;
 }
