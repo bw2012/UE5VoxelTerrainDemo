@@ -7,6 +7,9 @@
 
 #define STAMINA_CLC_FACTOR 0.1
 
+#define STAMINA_REDUCTION_FACTOR 2
+
+
 UVitalSystemComponent::UVitalSystemComponent() {
 //	bWantsBeginPlay = true;
 	PrimaryComponentTick.bCanEverTick = false;
@@ -114,7 +117,7 @@ void UVitalSystemComponent::PerformTimer() {
 
 		const float D = -SandboxCharacter->GetStaminaTickDelta();
 		if (D < 0) {
-			const float TickStaminaReduction = D * StaminaFactor * STAMINA_CLC_FACTOR;
+			const float TickStaminaReduction = D * StaminaFactor * STAMINA_CLC_FACTOR * STAMINA_REDUCTION_FACTOR;
 			ChangeStamina(TickStaminaReduction);
 		} else {
 			// recover stamina

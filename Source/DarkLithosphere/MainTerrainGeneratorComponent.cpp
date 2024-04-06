@@ -12,12 +12,33 @@ void UMainTerrainGeneratorComponent::BeginPlay() {
 // Terrain density and material generator
 //====================================================================================
 
-static const float CaveLayerZ = 20000.f; //18000
+static const float CaveLayer1Z = 20000.f; //18000
 
-bool IsCaveLayerZone(int Z) {
+static const float CaveLayer2Z = 40000.f; 
+
+
+bool IsCaveLayer1Zone(int Z) {
 	//static constexpr  linux
-	const int ZoneCaveLevel = -(CaveLayerZ / 1000);
-	return Z <= ZoneCaveLevel + 1 && Z >= ZoneCaveLevel - 1;
+	static const int ZoneCave1Level = -(CaveLayer1Z / 1000);
+	return Z <= ZoneCave1Level + 1 && Z >= ZoneCave1Level - 1;
+}
+
+bool IsCaveLayer2Zone(int Z) {
+	static const int H = 2;
+	static const int ZoneCave2Level = -(CaveLayer2Z / 1000);
+	return Z <= ZoneCave2Level + 2 && Z >= ZoneCave2Level - 2;
+}
+
+bool IsCaveLayer2TopZone(int Z) {
+	static const int H = 2;
+	static const int ZoneCave2Level = -(CaveLayer2Z / 1000);
+	return Z == ZoneCave2Level + H || Z == ZoneCave2Level + H - 1;
+}
+
+bool IsCaveLayer2BottomZone(int Z) {
+	static const int H = 2;
+	static const int ZoneCave2Level = -(CaveLayer2Z / 1000);
+	return Z == ZoneCave2Level - H || Z == ZoneCave2Level - H + 1;
 }
 
 void UMainTerrainGeneratorComponent::PrepareMetaData() {
@@ -27,7 +48,14 @@ void UMainTerrainGeneratorComponent::PrepareMetaData() {
 
 // TODO not needed anymore? ZoneGenType override
 bool UMainTerrainGeneratorComponent::IsForcedComplexZone(const TVoxelIndex& ZoneIndex) {
-	if (IsCaveLayerZone(ZoneIndex.Z)) {
+	if (IsCaveLayer1Zone(ZoneIndex.Z)) {
+		//return true;
+	}
+
+	if (IsCaveLayer2Zone(ZoneIndex.Z)) {
+		if (ZoneIndex.X == 0 && ZoneIndex.Y == 0) {
+			//AsyncTask(ENamedThreads::GameThread, [=, this]() { DrawDebugBox(GetWorld(), GetController()->GetZonePos(ZoneIndex), FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true); });
+		}
 		return true;
 	}
 	
@@ -200,12 +228,12 @@ float UMainTerrainGeneratorComponent::FunctionMakeBox(const float InDensity, con
 	return R;
 };
 
-float UMainTerrainGeneratorComponent::FunctionMakeCaveLayer(float Density, const FVector& WorldPos) const {
+float UMainTerrainGeneratorComponent::FunctionMakeCaveLayer1(float Density, const FVector& WorldPos) const {
 	if (Density < 0.5) {
 		return Density;
 	}
 
-	const float BaseCaveLevel = CaveLayerZ;
+	const float BaseCaveLevel = CaveLayer1Z;
 	float Density1 = 1;
 
 	static const float scale0 = 0.005f; // small
@@ -251,8 +279,8 @@ float UMainTerrainGeneratorComponent::FunctionMakeCaveLayer(float Density, const
 	}
 
 	const static float scale300 = 0.00009f; // big
-	const static float scale30 = scale300 / 3; 
-	const static float scale31 = scale300 * 1.1; 
+	const static float scale30 = scale300 / 3;
+	const static float scale31 = scale300 * 1.1;
 
 	const FVector& V = WorldPos;
 	const FVector v00(V.X * scale30, V.Y * scale30, 0);
@@ -289,11 +317,65 @@ float UMainTerrainGeneratorComponent::FunctionMakeCaveLayer(float Density, const
 	return ttt3;
 }
 
+float UMainTerrainGeneratorComponent::FunctionMakeCaveLayer2(float Density, const FVector& WorldPos) const {
+
+	if (Density < 0.5) {
+		return Density;
+	}
+
+	float R = Density;
+
+	const float BaseLevel = -CaveLayer2Z;
+
+	const FVector P = WorldPos;
+
+	const float ZUp = 2000 + BaseLevel;
+	const float ZDown = -2000 + BaseLevel;
+
+	static float D = 100;
+
+	static const float NoisePositionScale = 0.005f * 3;
+	static const float NoiseValueScale1 = 0.17;
+
+	const float NZN = NormalizedPerlinNoise(FVector(P.X, P.Y, 0), 0.0005f, 1000) + NormalizedPerlinNoise(FVector(P.X, P.Y, 0), 0.0005f * 3, 300);
+
+	const float NZP = NormalizedPerlinNoise(FVector(P.X, P.Y, 0), 0.00061f, 1000);
+
+	//TVoxelIndex I2 = GetController()->GetZoneIndex(WorldPos);
+	//if (I2.X == 0 && I2.Y == 0 && I2.Z == -6) {
+		//FVector VVV(WorldPos.X, WorldPos.Y, NZN);
+		//AsyncTask(ENamedThreads::GameThread, [=, this]() { DrawDebugPoint(GetController()->GetWorld(), VVV, 3.f, FColor(255, 255, 255, 0), true); });
+	//}
+
+	if (P.Z < ZUp && P.Z > ZDown) {
+		R = 0;
+
+		//if (FMath::Abs(P.Z - ZUp) < 300 || FMath::Abs(-P.Z + ZDown) < 300) {
+			const float DensityZP = 1 / (1 + exp((ZUp - P.Z - 600 + NZP) / D));
+			const float DensityZN = 1 / (1 + exp((-ZDown + P.Z + 300 - NZN) / D));
+			const float DensityZ = (DensityZP + DensityZN);
+			R = DensityZ;
+
+			TVoxelIndex I = GetController()->GetZoneIndex(WorldPos);
+			if (I.X == 0 && I.Y == 0) {
+				int C = R * 255.f;
+				//if (R > 0.5) {
+					//AsyncTask(ENamedThreads::GameThread, [=, this]() { DrawDebugPoint(GetController()->GetWorld(), WorldPos, 3.f, FColor(C, C, C, 0), true); });
+				//}
+				
+			}
+		//}
+	}
+
+	return R;
+}
+
 float UMainTerrainGeneratorComponent::DensityFunctionExt(float Density, const TVoxelIndex& ZoneIndex, const FVector& WorldPos, const FVector& LocalPos) const {
+
+	float R = Density;
 
 	// test cavern
 	if (ZoneIndex.X == 0 && ZoneIndex.Y == 0 && ZoneIndex.Z == -2) {
-		float Result = Density;
 
 		FVector P = LocalPos;
 		float r = std::sqrt(P.X * P.X + P.Y * P.Y + P.Z * P.Z);
@@ -301,16 +383,18 @@ float UMainTerrainGeneratorComponent::DensityFunctionExt(float Density, const TV
 		float t = 1 - exp(-pow(r, 2) / (MaxR * 100));
 
 		//float D = 1 / (1 + exp((r - MaxR) / 10));
-		Result *= t;
-
-		return Result;
+		R *= t;
 	}
 
-	if (IsCaveLayerZone(ZoneIndex.Z)) {
-		return FunctionMakeCaveLayer(Density, WorldPos);
+	if (IsCaveLayer1Zone(ZoneIndex.Z)) {
+		R = FunctionMakeCaveLayer1(R, WorldPos);
 	}
 
-	return Density;
+	if (IsCaveLayer2Zone(ZoneIndex.Z)) {
+		R = FunctionMakeCaveLayer2(R, WorldPos);
+	}
+
+	return R;
 }
 
 bool TBiome::IsForest() const {
@@ -488,7 +572,7 @@ void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxel
 		}
 	}
 
-	// green crystals
+	// green crystals 
 	if (ZoneIndex.Z <= -8 && ZoneIndex.Z > -20) {
 		FVector Pos(0);
 		FVector Normal(0);
@@ -504,9 +588,22 @@ void UMainTerrainGeneratorComponent::PostGenerateNewInstanceObjects(const TVoxel
 				});
 			}
 		}
+	} else if (CheckZoneTag(ZoneIndex, "cave", "layer2top")) {
+		FVector Pos(0);
+		FVector Normal(0);
+		float Chance = Rnd.GetFraction();
+		if (Chance < 0.2f) {
+			if (SelectRandomSpawnPoint(Rnd, ZoneIndex, Vd, Pos, Normal)) {
+				FVector Scale = FVector(1, 1, 1);
+				FRotator Rotation = Normal.Rotation();
+				Rotation.Pitch -= 90;
+				FTransform NewTransform(Rotation, Pos, Scale);
+				AsyncTask(ENamedThreads::GameThread, [=]() { TerrainController->SpawnSandboxObject(301, NewTransform); });
+			}
+		}
 	}
 
-	if (IsCaveLayerZone(ZoneIndex.Z)) {
+	if (IsCaveLayer1Zone(ZoneIndex.Z) || CheckZoneTag(ZoneIndex, "cave", "layer2bottom")) {
 		const int Min = 10;
 		const int Max = 30;
 		const int MeshTypeId = 999;
@@ -705,6 +802,16 @@ void UMainTerrainGeneratorComponent::ExtVdGenerationData(TGenerateVdTempItm& VdG
 
 		if (ZoneOreData) {
 			VdGenerationData.OreData = ZoneOreData;
+		}
+
+		if (IsCaveLayer2BottomZone(ZoneIndex.Z)) {
+			SetZoneTag(ZoneIndex, "cave", "layer2bottom");
+			//if (ZoneIndex.X == 0 && ZoneIndex.Y == 0) { AsyncTask(ENamedThreads::GameThread, [=, this]() { DrawDebugBox(GetWorld(), GetController()->GetZonePos(ZoneIndex), FVector(USBT_ZONE_SIZE / 2), FColor(0, 255, 0, 0), true); });}
+		}
+
+		if (IsCaveLayer2TopZone(ZoneIndex.Z)) {
+			SetZoneTag(ZoneIndex, "cave", "layer2top");
+			//if (ZoneIndex.X == 0 && ZoneIndex.Y == 0) { AsyncTask(ENamedThreads::GameThread, [=, this]() { DrawDebugBox(GetWorld(), GetController()->GetZonePos(ZoneIndex), FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 0, 0), true); }); }
 		}
 	}
 

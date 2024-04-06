@@ -6,6 +6,4 @@
 [submodule "Plugins/ALS-Community"]
 	path = Plugins/ALS-Community
 	url = https://github.com/UnrealSandbox/ALS-Community.git
-[submodule "Plugins/DazToUnreal"]
-	path = Plugins/DazToUnreal
-	url = https://github.com/UnrealSandbox/DazToUE5.git
+	

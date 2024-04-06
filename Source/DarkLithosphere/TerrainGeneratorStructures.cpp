@@ -682,7 +682,7 @@ void UMainTerrainGeneratorComponent::GenerateStructures() {
 	//TStructureSphereCavern Test2(TVoxelIndex(0, -2, -1), 1400);
 	//Test2.MakeMetaData(this);
 
-	MakeDungeon1(GetStructuresGenerator());
+	//MakeDungeon1(GetStructuresGenerator());
 
 	const int32 WorldSeed = 13666;
 
