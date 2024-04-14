@@ -4,13 +4,31 @@
 
 #include "CoreMinimal.h"
 #include "TerrainGeneratorComponent.h"
+#include <memory>
 #include "MainTerrainGeneratorComponent.generated.h"
 
+// не доделано
 struct TBiome {
 
 	float ValForestMeadow = 0;
 
 	bool IsForest() const;
+
+};
+
+class TMainChunk : public TChunkData {
+
+public:
+
+	std::shared_ptr<TChunkFloatMatrix> CaveLayer2Top = nullptr;
+
+	std::shared_ptr<TChunkFloatMatrix> CaveLayer2Bottom = nullptr;
+
+	std::shared_ptr<TChunkFloatMatrix> CaveLayer2Pillar = nullptr;
+
+public:
+
+	TMainChunk(int Size);
 
 };
 
@@ -26,7 +44,7 @@ public:
 
 	void BeginPlay() override;
 
-	virtual float DensityFunctionExt(float Density, const TVoxelIndex& ZoneIndex, const FVector& WorldPos, const FVector& LocalPos) const override;
+	virtual float DensityFunctionExt(float InDensity, const TFunctionIn& In) const override;
 
 	virtual FSandboxFoliage FoliageExt(const int32 FoliageTypeId, const FSandboxFoliage & FoliageType, const TVoxelIndex & ZoneIndex, const FVector & WorldPos) override;
 
@@ -36,7 +54,7 @@ protected:
 
 	virtual bool IsForcedComplexZone(const TVoxelIndex& ZoneIndex) override;
 
-	void virtual PrepareMetaData() override;
+	virtual void PrepareMetaData() override;
 
 	void GenerateStructures();
 
@@ -44,7 +62,7 @@ protected:
 
 	TBiome ClcBiome(const FVector& WorldPos) const;
 
-	virtual TMaterialId MaterialFuncionExt(const TGenerateVdTempItm* GenItm, const TMaterialId MatId, const FVector& WorldPos) const override;
+	virtual TMaterialId MaterialFuncionExt(const TGenerateVdTempItm* GenItm, const TMaterialId MatId, const FVector& WorldPos, const TVoxelIndex VoxelIndex) const override;
 
 	virtual void ExtVdGenerationData(TGenerateVdTempItm& VdGenerationData) override;
 
@@ -52,23 +70,19 @@ protected:
 
 	float FunctionMakeCaveLayer1(float Density, const FVector& WorldPos) const;
 
-	float FunctionMakeCaveLayer2Density(float Density, const FVector& WorldPos) const;
+	float FunctionMakeCaveLayer2Density(float InDensity, const TFunctionIn& In) const;
 
-	TMaterialId FunctionMakeCaveLayer2Material(const TMaterialId MatId, const FVector& WorldPos) const;
+	TMaterialId FunctionMakeCaveLayer2Material(const TGenerateVdTempItm* GenItm, const TMaterialId MatId, const FVector& WorldPos, const TVoxelIndex& VoxelIndex) const;
 
 	float FuncCaveLayer2BottomLevel(const FVector& P) const;
 
 	float FuncCaveLayer2Pillar(const FVector& P) const;
 
+	virtual TChunkDataPtr NewChunkData() override;
+
+	virtual void GenerateChunkDataExt(TChunkDataPtr ChunkData, const TVoxelIndex& Index, int X, int Y, const FVector& WorldPos) const override;
+
 public:
-
-	float FunctionMakeBox(const float InDensity, const FVector& P, const FBox& InBox) const;
-
-	float FunctionMakeVerticalCylinder(const float InDensity, const FVector& V, const FVector& Origin, const float Radius, const float Top, const float Bottom, const float NoiseFactor = 1.f) const;
-
-	float FunctionMakeSphere(const float InDensity, const FVector& V, const FVector& Origin, const float Radius, const float NoiseFactor) const;
-
-	TGenerationResult FunctionMakeSolidSphere(const float InDensity, const TMaterialId InMaterialId, const FVector& V, const FVector& Origin, const float Radius, const TMaterialId ShellMaterialId) const;
 
 	void GenerateZoneSandboxObject(const TVoxelIndex& Index);
 

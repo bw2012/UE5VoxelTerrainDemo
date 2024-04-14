@@ -38,7 +38,6 @@
 extern TAutoConsoleVariable<int32> CVarDebugInfo;
 
 
-
 AMainPlayerController::AMainPlayerController() {
 	MainPlayerControllerComponent = CreateDefaultSubobject<UMainPlayerControllerComponent>(TEXT("MainPlayerController"));
 	LastCursorPosition = FVector(0);

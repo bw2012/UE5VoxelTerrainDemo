@@ -167,6 +167,10 @@ void ATerrainController::OnFinishBackgroundSaveTerrain() {
 	TNotificationHelper::SendNotification("finish_background_save");
 
 	AsyncTask(ENamedThreads::GameThread, [=, this]() {
+		if (LevelController) {
+			LevelController->SaveMap(); //unsafe
+		}
+
 		EventFinishBackgroundSave();
 	});
 }

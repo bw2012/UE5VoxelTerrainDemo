@@ -4,6 +4,10 @@
 #include "TerrainZoneComponent.h"
 #include "ConstructionObject.h"
 
+
+extern TAutoConsoleVariable<int32> CVarDebugMining;
+
+
 #define Max_Size 3
 
 #define Dig_Cube_Size 110 //60
@@ -82,6 +86,10 @@ void SpawnWoods(AMainPlayerController* MainController, const FVector& Location) 
 
 void SpawnStones(AMainPlayerController* MainController, const FVector& Location, uint16 MatId) {
 	FVector Pos = Location;
+
+	if (CVarDebugMining.GetValueOnGameThread() > 0) {
+		return;
+	}
 
 	UE_LOG(LogTemp, Warning, TEXT("MatId: %d"), MatId);
 
