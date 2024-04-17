@@ -262,6 +262,7 @@ void UMainPlayerControllerComponent::SelectActionObject() {
 			UTerrainInstancedStaticMesh* TerrainMesh = Cast<UTerrainInstancedStaticMesh>(Hit.GetComponent());
 			if (TerrainMesh) {
 				const FTerrainInstancedMeshType* TerrainMeshType = Terrain->GetInstancedMeshType(TerrainMesh->MeshTypeId, TerrainMesh->MeshVariantId);
+				//UE_LOG(LogTemp, Warning, TEXT("MeshTypeId = %d, MeshVariantId = %d"), TerrainMesh->MeshTypeId, TerrainMesh->MeshVariantId);
 				if (TerrainMeshType) {
 					const FTerrainObjectInfo* ObjInfo = Terrain->GetInstanceObjStaticInfo(TerrainMeshType->MeshTypeId);
 
@@ -327,7 +328,7 @@ void UMainPlayerControllerComponent::SelectActionObject() {
 			}
 
 			ABaseObject* BaseObj = Cast<ABaseObject>(Hit.GetActor());
-			if (BaseObj && BaseObj->IsContainer()) {
+			if (BaseObj && (BaseObj->IsContainer() || BaseObj->IsInteractive())) {
 				FSelectedObject NewSelectedObject;
 				NewSelectedObject.SandboxObj = Obj;
 				NewSelectedObject.ObjType = ESelectedObjectType::SandboxObject;

@@ -4,7 +4,14 @@
 #include "Engine.h"
 #include "GameFramework/Actor.h"
 #include "ContainerComponent.h"
+#include "Engine/DamageEvents.h"
 #include "SandboxObject.generated.h"
+
+
+
+#define DAMAGE_ENABLE_PHYS_THRESHOLD 1.f
+
+
 
 UCLASS(BlueprintType, Blueprintable)
 class UNREALSANDBOXTOOLKIT_API ASandboxObject : public AActor {
@@ -38,13 +45,21 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
 	bool bCanPlaceSandboxObject;
 
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	float DamageEnablePhysThreshold = DAMAGE_ENABLE_PHYS_THRESHOLD;
+
 protected:
 	virtual void BeginPlay() override;
 
 	UFUNCTION()
 	void OnSleep(UPrimitiveComponent* SleepingComponent, FName BoneName);
 
+	//UFUNCTION()
+	//void OnTakeRadialDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser);
+
 public:
+
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser);
 
 	FString GetSandboxNetUid() const;
 
@@ -69,6 +84,8 @@ public:
 	virtual bool CanTake(const AActor* Actor = nullptr) const;
 
 	virtual void OnTerrainChange();
+
+	void EnablePhysics();
     
 	UContainerComponent* GetContainer(const FString& Name);
 
@@ -99,7 +116,7 @@ public:
 	virtual const UStaticMeshComponent* GetMarkerMesh() const;
 };
 
-
+//TODO
 class IWearable {
 
 public:
@@ -132,9 +149,9 @@ public:
 	TMap<FString, float> ParentMorphMap;
 
 	UPROPERTY(EditAnywhere, Category = "Sandbox")
-	TMap<FString, float> InfluenceParamMap;
+	TMap<FString, float> AffectParamMap;
 
-	virtual float GetInfluenceParam(const FString& ParamName) const;
+	virtual float GetAffectParam(const FString& ParamName) const;
 
 	int GetSandboxTypeId() const override;
 
@@ -148,4 +165,22 @@ class UNREALSANDBOXTOOLKIT_API ASandboxObjectUtils {
 public:
 
 	static TArray<ASandboxObject*> GetContainerContent(AActor* AnyActor, const FString& Name);
+};
+
+UCLASS()
+class UNREALSANDBOXTOOLKIT_API USandboxDamageType : public UDamageType {
+	GENERATED_UCLASS_BODY()
+
+
+public:
+
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	float FireDamageFactor = 1.f;
+
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	float ExplosionDamageFactor = 1.f;
+
+	UPROPERTY(EditAnywhere, Category = "Sandbox")
+	float HitDamageFactor = 1.f;
+
 };

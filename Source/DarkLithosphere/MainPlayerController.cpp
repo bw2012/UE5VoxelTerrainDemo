@@ -1025,6 +1025,8 @@ void AMainPlayerController::ServerRpcAddItem_Implementation(int ItemId) {
 		ASandboxObject* Obj = LevelController->GetSandboxObject(ItemId);
 		if (Obj) {
 			Inventory->AddObject(Obj);
+			MainPlayerControllerComponent->ResetState();
+			MainPlayerControllerComponent->OnSelectCurrentInventorySlot(CurrentInventorySlot);
 		}
 	}
 }
@@ -1106,7 +1108,7 @@ void AMainPlayerController::SandboxExec(const FString& Cmd, const FString& Param
 		FHitResult H = TracePlayerActionPoint();
 		if (H.bBlockingHit && GetLevelController()) {
 			FCharacterLoadInfo Info;
-			Info.TypeId = 3;
+			Info.TypeId = 2;
 			Info.Location = H.Location;
 			Info.Rotation = FRotator(0);
 			GetLevelController()->SpawnCharacter(Info);
@@ -1126,7 +1128,7 @@ void AMainPlayerController::ServerRpcSpawnObject_Implementation(uint64 SandboxCl
 			Obj->OnPlaceToWorld(); // invoke only if spawn by player. not save/load or other cases
 
 			if (bEnablePhysics) {
-				Obj->SandboxRootMesh->SetSimulatePhysics(true);
+				Obj->EnablePhysics();
 			}
 		}
 	}
@@ -1190,7 +1192,7 @@ void AMainPlayerController::ServerRpcAddItemOrSpawnObject_Implementation(int Ite
 				ASandboxObject* NewObj = LevelController->SpawnSandboxObject(ItemId, Transform);
 				if (NewObj) {
 					NewObj->OnPlaceToWorld(); // invoke only if spawn by player. not save/load or other cases
-					NewObj->SandboxRootMesh->SetSimulatePhysics(true);
+					NewObj->EnablePhysics();
 				}
 			}
 		}

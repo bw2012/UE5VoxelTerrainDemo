@@ -410,6 +410,7 @@ void StructureDiagonalCylinderTunnel(TStructuresGenerator* Generator, const FVec
 		const static float Sqrt2 = 1.414213;
 
 		const float Density = Generator2->FunctionMakeVerticalCylinder(InDensity, Tmp, Origin, Radius, Top, Bottom * Sqrt2 - 350, 0.66);
+
 		return std::make_tuple(Density, InMaterialId);
 	};
 
@@ -463,9 +464,9 @@ void StructureDiagonalCylinderTunnel(TStructuresGenerator* Generator, const FVec
 			const FVector Pos1 = Generator->GetController()->GetZonePos(Index1);
 			const FVector Pos2 = Generator->GetController()->GetZonePos(Index2);
 
-			//DrawDebugBox(Generator->GetWorld(), Pos0, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
-			//DrawDebugBox(Generator->GetWorld(), Pos1, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
-			//DrawDebugBox(Generator->GetWorld(), Pos2, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
+			//DrawDebugBox(Generator->GetController()->GetWorld(), Pos0, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
+			//DrawDebugBox(Generator->GetController()->GetWorld(), Pos1, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
+			//DrawDebugBox(Generator->GetController()->GetWorld(), Pos2, FVector(USBT_ZONE_SIZE / 2), FColor(255, 255, 255, 0), true);
 		});
 
 		T++;

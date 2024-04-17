@@ -51,7 +51,7 @@ void UVitalSystemComponent::DamageFromFall(float Velocity) {
 	for (auto* Item : EquipmentList) {
 		ASandboxSkeletalModule* Skm = Cast<ASandboxSkeletalModule>(Item);
 		if (Skm) {
-			DamageFallFactor *= Skm->GetInfluenceParam(TEXT("damage_fall_factor"));
+			DamageFallFactor *= Skm->GetAffectParam(TEXT("damage_fall_factor"));
 		}
 	}
 
@@ -110,8 +110,8 @@ void UVitalSystemComponent::PerformTimer() {
 		for (auto* Item : EquipmentList) {
 			ASandboxSkeletalModule* Skm = Cast<ASandboxSkeletalModule>(Item);
 			if (Skm) {
-				StaminaFactor *= Skm->GetInfluenceParam(TEXT("stamina_factor"));
-				RecoverStaminaFactor *= Skm->GetInfluenceParam(TEXT("recover_stamina_factor"));
+				StaminaFactor *= Skm->GetAffectParam(TEXT("stamina_factor"));
+				RecoverStaminaFactor *= Skm->GetAffectParam(TEXT("recover_stamina_factor"));
 			}
 		}
 

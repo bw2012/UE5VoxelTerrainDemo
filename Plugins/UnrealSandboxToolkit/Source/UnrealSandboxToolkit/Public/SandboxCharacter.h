@@ -43,11 +43,21 @@ public:
 
 	virtual bool IsDead() { return false; }
 
+	FString GetParam(const FString& Param) { return (BaseParamMap.Contains(Param)) ? BaseParamMap[Param] : TEXT(""); }
+
+	void SetParam(const FString& Param, const FString& Val) { BaseParamMap.Add(Param, Val); OnSetSandboxBaseParam(); }
+
+	virtual void OnSetSandboxBaseParam() { }
+
 	int GetState() { return State; }
 
 protected:
 
 	int State = 0;
+
+private:
+
+	TMap<FString, FString> BaseParamMap;
 
 };
 
@@ -67,8 +77,13 @@ public:
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* InputComponent) override;
 
-	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Character")
+	//UPROPERTY(EditAnywhere, Category = "UnrealSandbox Core Character")
+	//int SandboxTypeId = 0;
+
+	UPROPERTY(EditAnywhere, Category = "UnrealSandbox Core Character")
 	int SandboxTypeId = 0;
+
+
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;

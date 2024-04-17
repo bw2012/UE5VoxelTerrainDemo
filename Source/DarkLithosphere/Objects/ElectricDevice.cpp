@@ -104,6 +104,10 @@ bool AElectricDevice::PlaceToWorldClcPosition(const UWorld* World, const FVector
 }
 
 bool AElectricDevice::CanTake(const AActor* Actor) const {
+	if (!Super::CanTake(Actor)) {
+		return false;
+	}
+
 	const auto& Param = GetProperty(TEXT("Enabled"));
 	if (Param == "Y") {
 		//return false;

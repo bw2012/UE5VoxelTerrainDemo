@@ -81,7 +81,7 @@ public:
 
 	ASandboxObject* SpawnPreparedObject(const FSandboxObjectDescriptor& ObjDesc);
 
-	void SpawnEffect(const int32 EffectId, const FTransform& Transform);
+	ASandboxEffect* SpawnEffect(const int32 EffectId, const FTransform& Transform);
 
 protected:
 
@@ -90,8 +90,6 @@ protected:
 	//TMap<uint64, TSubclassOf<ASandboxObject>> ObjectMapById;
 
 	virtual void SaveLevelJson();
-
-	void SaveLevelYaml();
 
 	virtual void SaveLevelJsonExt(TSharedRef<TJsonWriter<TCHAR>> JsonWriter);
 

@@ -456,14 +456,16 @@ ASandboxObject* ASandboxLevelController::GetObjectByNetUid(FString NetUid) {
 	return nullptr;
 }
 
-void ASandboxLevelController::SpawnEffect(const int32 EffectId, const FTransform& Transform) {
+ASandboxEffect* ASandboxLevelController::SpawnEffect(const int32 EffectId, const FTransform& Transform) {
 	if (GetNetMode() != NM_Client) {
 		if (ObjectMap->Effects.Contains(EffectId)) {
 			TSubclassOf<ASandboxEffect> Effect = ObjectMap->Effects[EffectId];
 			if (Effect) {
 				UClass* SpawnClass = Effect->ClassDefaultObject->GetClass();
-				GetWorld()->SpawnActor(SpawnClass, &Transform);
+				return (ASandboxEffect*)GetWorld()->SpawnActor(SpawnClass, &Transform);
 			}
 		}
 	}
+
+	return nullptr;
 }
