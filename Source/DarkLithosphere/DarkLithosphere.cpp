@@ -13,6 +13,14 @@ TAutoConsoleVariable<int32> CVarDebugInfo(
 	TEXT(" 1 = On \n"),
 	ECVF_SetBySystemSettingsIni);
 
+TAutoConsoleVariable<int32> CVarDebugMining(
+	TEXT("dl.DebugMining"),
+	0,
+	TEXT("Debug mining mode\n")
+	TEXT(" 0 = Off \n")
+	TEXT(" 1 = Dasable spawn stones \n"),
+	ECVF_SetBySystemSettingsIni);
+
 
 FString GetVersionString();
 
@@ -40,7 +48,7 @@ void FDarkLithosphereGameModule::ShutdownModule() {
 }
 
 FString GetVersionString() {
-	return TEXT("v0.0.39m-2-pre-alpha-L");
+	return TEXT("v0.0.39n-3-pre-alpha-L");
 }
 
 FString GlobalSandboxPlayerId;

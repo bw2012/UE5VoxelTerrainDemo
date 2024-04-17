@@ -1,3 +1,4 @@
+
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "BaseCharacter.h"
@@ -580,6 +581,23 @@ void ABaseCharacter::Kill() {
 	SandboxPlayerUid = TEXT("");
 	State = -1;
 	OnDeath();
+}
+
+float ABaseCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	UE_LOG(LogTemp, Warning, TEXT("TakeDamage: %s %f"), *GetName(), ActualDamage);
+
+	USandboxDamageType* SandboxDamageType = Cast<USandboxDamageType>(DamageEvent.DamageTypeClass->GetDefaultObject());
+
+	if (SandboxDamageType) {
+		float ExplosionDamage = ActualDamage * SandboxDamageType->ExplosionDamageFactor;
+		if (ExplosionDamage > 50) {
+			Kill();
+		}
+		
+	}
+
+	return DamageAmount;
 }
 
 

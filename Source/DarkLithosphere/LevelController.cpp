@@ -395,7 +395,7 @@ ACharacter* ALevelController::SpawnCharacterByTypeId(const int TypeId, const FVe
 	return nullptr;
 }
 
-ASandboxObject* ALevelController::SpawnSandboxObject(const int ClassId, const FTransform& Transform, uint64 NetUid) {
+ASandboxObject* ALevelController::SpawnSandboxObject(const int ClassId, const FTransform& Transform, const FString& NetUid) {
 	ASandboxObject* Obj = Super::SpawnSandboxObject(ClassId, Transform, NetUid);
 	if (Obj) {
 		if (TerrainController) {
@@ -433,6 +433,7 @@ void ALevelController::PrepareObjectForSave(TArray<FSandboxObjectDescriptor>& Ob
 			const TVoxelIndex& Index = Elem.Key;
 			const FSandboxObjectsByZone& ObjectsByZone = Elem.Value;
 			for (auto& Itm : ObjectsByZone.Stash) {
+				FString ClassName = Itm.Key;
 				const FSandboxObjectDescriptor& ObjDesc = Itm.Value;
 				ObjDescList.Add(ObjDesc);
 			}

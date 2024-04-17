@@ -38,7 +38,6 @@
 extern TAutoConsoleVariable<int32> CVarDebugInfo;
 
 
-
 AMainPlayerController::AMainPlayerController() {
 	MainPlayerControllerComponent = CreateDefaultSubobject<UMainPlayerControllerComponent>(TEXT("MainPlayerController"));
 	LastCursorPosition = FVector(0);
@@ -979,18 +978,29 @@ void AMainPlayerController::RemoveTerrainMesh(UTerrainInstancedStaticMesh* Terra
 	}
 }
 
-void AMainPlayerController::ServerRpcDestroyActorByNetUid_Implementation(uint64 NetUid, FVector EffectOrigin, uint32 EffectId) {
+void AMainPlayerController::ServerRpcDestroyActor_Implementation(int32 X, int32 Y, int32 Z, const FString& Name, FVector Origin, uint32 EffectId) {
+	if (TerrainController) {
+		TVoxelIndex ZoneIndex(X, Y, Z);
+		TerrainController->DestroySandboxObjectByName(TVoxelIndex(X, Y, Z), Name);
+
+		if (EffectId > 0) {
+			((ALevelController*)LevelController)->SpawnEffect(EffectId, FTransform(Origin));
+		}
+	}
+}
+
+void AMainPlayerController::ServerRpcDestroyActorByNetUid_Implementation(const FString& NetUid, FVector EffectOrigin, uint32 EffectId) {
 	if (LevelController) {
 		ASandboxObject* Obj = LevelController->GetObjectByNetUid(NetUid);
 		if (Obj) {
-			UE_LOG(LogTemp, Warning, TEXT("ServerRpcDestroyActorByNetUid = %llu"), NetUid);
+			UE_LOG(LogTemp, Warning, TEXT("ServerRpcDestroyActorByNetUid = %s"), *NetUid);
 
 			LevelController->RemoveSandboxObject(Obj);
 			if (EffectId > 0) {
 				((ALevelController*)LevelController)->SpawnEffect(EffectId, FTransform(EffectOrigin));
 			}
 		} else {
-			UE_LOG(LogTemp, Warning, TEXT("ServerRpcDestroyActorByNetUid = %llu - NOT FOUND!"), NetUid);
+			UE_LOG(LogTemp, Warning, TEXT("ServerRpcDestroyActorByNetUid = %2 - NOT FOUND!"), *NetUid);
 		}
 
 	}
@@ -1015,6 +1025,8 @@ void AMainPlayerController::ServerRpcAddItem_Implementation(int ItemId) {
 		ASandboxObject* Obj = LevelController->GetSandboxObject(ItemId);
 		if (Obj) {
 			Inventory->AddObject(Obj);
+			MainPlayerControllerComponent->ResetState();
+			MainPlayerControllerComponent->OnSelectCurrentInventorySlot(CurrentInventorySlot);
 		}
 	}
 }
@@ -1096,7 +1108,7 @@ void AMainPlayerController::SandboxExec(const FString& Cmd, const FString& Param
 		FHitResult H = TracePlayerActionPoint();
 		if (H.bBlockingHit && GetLevelController()) {
 			FCharacterLoadInfo Info;
-			Info.TypeId = 3;
+			Info.TypeId = 2;
 			Info.Location = H.Location;
 			Info.Rotation = FRotator(0);
 			GetLevelController()->SpawnCharacter(Info);
@@ -1116,7 +1128,7 @@ void AMainPlayerController::ServerRpcSpawnObject_Implementation(uint64 SandboxCl
 			Obj->OnPlaceToWorld(); // invoke only if spawn by player. not save/load or other cases
 
 			if (bEnablePhysics) {
-				Obj->SandboxRootMesh->SetSimulatePhysics(true);
+				Obj->EnablePhysics();
 			}
 		}
 	}
@@ -1180,7 +1192,7 @@ void AMainPlayerController::ServerRpcAddItemOrSpawnObject_Implementation(int Ite
 				ASandboxObject* NewObj = LevelController->SpawnSandboxObject(ItemId, Transform);
 				if (NewObj) {
 					NewObj->OnPlaceToWorld(); // invoke only if spawn by player. not save/load or other cases
-					NewObj->SandboxRootMesh->SetSimulatePhysics(true);
+					NewObj->EnablePhysics();
 				}
 			}
 		}

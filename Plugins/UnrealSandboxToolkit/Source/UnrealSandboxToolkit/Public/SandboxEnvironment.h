@@ -150,5 +150,7 @@ private:
 	FVector PlayerPos;
 
 	float InitialSkyIntensity;
+
+	float InitialSunIntensity;
 	
 };

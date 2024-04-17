@@ -4,6 +4,7 @@
 #include "SandboxLevelController.h"
 #include "Net/UnrealNetwork.h"
 
+
 ASandboxObject::ASandboxObject() {
 	PrimaryActorTick.bCanEverTick = true;
 	SandboxRootMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("SandboxRootMesh"));
@@ -13,6 +14,9 @@ ASandboxObject::ASandboxObject() {
 	bReplicates = true;
 	SandboxNetUid = 0;
 	bCanPlaceSandboxObject = true;
+	SandboxRootMesh->SetLinearDamping(1.f);
+	SandboxRootMesh->SetAngularDamping(10.f);
+	SandboxRootMesh->BodyInstance.bGenerateWakeEvents = true;
 }
 
 static const FString DefaultSandboxObjectName = FString(TEXT("Sandbox object"));
@@ -20,17 +24,34 @@ static const FString DefaultSandboxObjectName = FString(TEXT("Sandbox object"));
 void ASandboxObject::BeginPlay() {
 	Super::BeginPlay();
 	SandboxRootMesh->OnComponentSleep.AddDynamic(this, &ASandboxObject::OnSleep);
+	//SandboxRootMesh->OnTakeRadialDamage.AddDynamic(this, &ASandboxObject::OnTakeRadialDamage);
+	//SandboxRootMesh->OnTakeAnyDamage.AddDynamic(this, &ASandboxObject::OnTakeRadialDamage);
+	//SandboxRootMesh->OnTakeAnyDamage.AddDynamic(this, &ASandboxObject::OnTakeRadialDamage);
 }
 
 void ASandboxObject::OnSleep(UPrimitiveComponent* SleepingComponent, FName BoneName) {
+	//UE_LOG(LogTemp, Warning, TEXT("OnSleep"));
 	SandboxRootMesh->SetSimulatePhysics(false);
 }
+
+float ASandboxObject::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) {
+	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	
+	if (DamageEnablePhysThreshold > 0 && ActualDamage > DamageEnablePhysThreshold) {
+		EnablePhysics();
+	}
+
+	return ActualDamage;
+}
+
+//void ASandboxObject::OnTakeRadialDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatedBy, AActor* DamageCauser) {
+//}
 
 FString ASandboxObject::GetSandboxName() {
 	return DefaultSandboxObjectName;
 }
 
-uint64 ASandboxObject::GetSandboxNetUid() const {
+FString ASandboxObject::GetSandboxNetUid() const {
 	return SandboxNetUid;
 }
 
@@ -133,6 +154,12 @@ const UStaticMeshComponent* ASandboxObject::GetMarkerMesh() const {
 	return SandboxRootMesh;
 }
 
+void ASandboxObject::EnablePhysics() {
+	if (SandboxRootMesh) {
+		SandboxRootMesh->SetSimulatePhysics(true);
+	}
+}
+
 int ASandboxSkeletalModule::GetSandboxTypeId() const {
 	return 500;
 }
@@ -143,9 +170,9 @@ void ASandboxSkeletalModule::GetFootPose(FRotator& LeftFootRotator, FRotator& Ri
 }
 
 
-float ASandboxSkeletalModule::GetInfluenceParam(const FString& ParamName) const {
-	if (InfluenceParamMap.Contains(ParamName)) {
-		return InfluenceParamMap[ParamName];
+float ASandboxSkeletalModule::GetAffectParam(const FString& ParamName) const {
+	if (AffectParamMap.Contains(ParamName)) {
+		return AffectParamMap[ParamName];
 	}
 
 	return 1;
@@ -179,4 +206,9 @@ TArray<ASandboxObject*> ASandboxObjectUtils::GetContainerContent(AActor* AnyActo
 	}
 
 	return Result;
+}
+
+
+USandboxDamageType::USandboxDamageType(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer) {
+
 }

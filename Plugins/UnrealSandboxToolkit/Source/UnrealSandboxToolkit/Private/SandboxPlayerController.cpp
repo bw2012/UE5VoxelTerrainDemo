@@ -417,7 +417,7 @@ bool ASandboxPlayerController::OnContainerDropCheck(int32 SlotId, FName Containe
 	return true;
 }
 
-void ASandboxPlayerController::TransferContainerStack_Implementation(uint64 ObjectNetUid, const FString& ContainerName, const FContainerStack& Stack, const int SlotId) {
+void ASandboxPlayerController::TransferContainerStack_Implementation(const FString& ObjectNetUid, const FString& ContainerName, const FContainerStack& Stack, const int SlotId) {
 	if (LevelController) {
 		ASandboxObject* Obj = LevelController->GetObjectByNetUid(ObjectNetUid);
 		if (Obj) {

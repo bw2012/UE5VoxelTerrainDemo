@@ -55,5 +55,7 @@ private:
 
 	void Dig(const FHitResult& Hit, ATerrainController* Terrain, AMainPlayerController* MainController);
 
+	void DigSmall(const FHitResult& Hit, ATerrainController* Terrain, AMainPlayerController* MainController);
+
 
 };

@@ -28,7 +28,7 @@ struct UNREALSANDBOXTOOLKIT_API FSandboxObjectDescriptor {
 	uint64 ClassId;
 
 	UPROPERTY()
-	uint64 NetUid;
+	FString NetUid;
 
 	UPROPERTY()
 	int TypeId;
@@ -73,15 +73,15 @@ public:
 
 	void PrepareMetaData();
 
-	virtual ASandboxObject* SpawnSandboxObject(const int ClassId, const FTransform& Transform, uint64 SandboxNetUid = 0);
+	virtual ASandboxObject* SpawnSandboxObject(const int ClassId, const FTransform& Transform, const FString& SandboxNetUid = "");
 
 	virtual bool RemoveSandboxObject(ASandboxObject* Obj);
 
-	ASandboxObject* GetObjectByNetUid(uint64 NetUid);
+	ASandboxObject* GetObjectByNetUid(FString NetUid);
 
 	ASandboxObject* SpawnPreparedObject(const FSandboxObjectDescriptor& ObjDesc);
 
-	void SpawnEffect(const int32 EffectId, const FTransform& Transform);
+	ASandboxEffect* SpawnEffect(const int32 EffectId, const FTransform& Transform);
 
 protected:
 
@@ -90,8 +90,6 @@ protected:
 	//TMap<uint64, TSubclassOf<ASandboxObject>> ObjectMapById;
 
 	virtual void SaveLevelJson();
-
-	void SaveLevelYaml();
 
 	virtual void SaveLevelJsonExt(TSharedRef<TJsonWriter<TCHAR>> JsonWriter);
 
@@ -107,7 +105,7 @@ protected:
 
 	virtual void PrepareObjectForSave(TArray<FSandboxObjectDescriptor>& ObjDescList);
 
-	uint64 GetNewUid() const;
+	FString GetNewUid() const;
 
 private:
 
@@ -117,7 +115,7 @@ private:
 
 	uint64 ObjectCounter;
 
-	TMap<uint64, ASandboxObject*> GlobalObjectMap;
+	TMap<FString, ASandboxObject*> GlobalObjectMap;
 
 	static ASandboxLevelController* StaticSelf;
 

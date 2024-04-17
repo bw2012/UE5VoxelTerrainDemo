@@ -31,11 +31,24 @@ float GetSkyLightIntensity(ASkyLight* SkyLight) {
 	return -1;
 }
 
+float GetSunLightIntensity(ADirectionalLight* Light) {
+	if (Light) {
+		ULightComponent* LightComponent = Light->GetLightComponent();
+		if (LightComponent) {
+			return LightComponent->Intensity;
+		}
+	}
+
+	return 10.f;
+}
+
+
 void ASandboxEnvironment::BeginPlay() {
 	Super::BeginPlay();
 
 	if (DirectionalLightSource){
 		DirectionalLightSource->SetActorRotation(FRotator(-90.0f, 0.0f, 0.0f));
+		InitialSunIntensity = GetSunLightIntensity(DirectionalLightSource);
 	}
 
 	if (CaveSphere) {
@@ -126,7 +139,7 @@ void ASandboxEnvironment::PerformDayNightCycle() {
 
 		if (CaveSunLightCurve) {
 			float SunIntensity = CaveSunLightCurve->GetFloatValue(HeightFactor);
-			DirectionalLightSource->GetLightComponent()->SetIntensity(SunIntensity);
+			DirectionalLightSource->GetLightComponent()->SetIntensity(InitialSunIntensity * SunIntensity);
 		}
 
 

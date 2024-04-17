@@ -79,7 +79,7 @@ public:
 	void TraceAndSelectActionObject();
 
 	UFUNCTION(Server, Reliable)
-	void TransferContainerStack(uint64 ObjectNetUid, const FString& ContainerName, const FContainerStack& Stack, const int SlotId);
+	void TransferContainerStack(const FString& ObjectNetUid, const FString& ContainerName, const FContainerStack& Stack, const int SlotId);
 
 	UFUNCTION(Server, Reliable)
 	void TransferInventoryStack(const FString& ContainerName, const FContainerStack& Stack, const int SlotId);
