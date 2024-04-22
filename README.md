@@ -30,3 +30,7 @@ This project provides tools to generate, visualize and in-game change volume ter
 4. Download [Content.rar](https://drive.google.com/file/d/1M5g3yNBzTpMd4YA3FUJi72maObA_pDXE/view?usp=sharing) (~2Gb) and unzip it to ```Content``` folder
 5. Open project file with Unreal Engine 5
 6. Wait for compile UE5 KiteDemo shaders (first run may take long time)
+
+# Links
+
+[Telegram (RU)](https://t.me/darklithosphere)
