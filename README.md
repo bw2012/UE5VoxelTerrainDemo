@@ -11,9 +11,9 @@ This project provides tools to generate, visualize and in-game change volume ter
 
 
 # Download playable demo
-[UE5-Windows](https://cutt.ly/z2yhLnA) 
+[UE5-Windows](https://drive.google.com/file/d/1s6FRtKYhyXROCsA0Ga8atbiszyskr82A/view) 
 
-[UE5-Linux](https://cutt.ly/2wg9WiIT) 
+[UE5-Linux](https://drive.google.com/file/d/1VnsI3jswhqTNYM_dQ2qHLa78wgQDE0g8/view) 
 
 
 # Features
