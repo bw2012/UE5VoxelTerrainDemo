@@ -23,10 +23,6 @@
 			"TargetAllowList": [
 				"Editor"
 			]
-		},
-		{
-			"Name": "DazToUnreal",
-			"Enabled": true
 		}
 	]
 }
