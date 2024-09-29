@@ -25,7 +25,7 @@ This project provides tools to generate, visualize and in-game change volume ter
 
 # Usage
 1. Install MS Visual Studio 2022
-2. Download last stable project or clone repository ```git clone https://github.com/bw2012/UE5VoxelTerrainDemo.git```
+2. Download last stable project or clone repository ```git clone --recursive https://github.com/bw2012/UE5VoxelTerrainDemo.git```
 3. Open project directory 
 4. Download [Content.rar](https://drive.google.com/file/d/1M5g3yNBzTpMd4YA3FUJi72maObA_pDXE/view?usp=sharing) (~2Gb) and unzip it to ```Content``` folder
 5. Open project file with Unreal Engine 5
