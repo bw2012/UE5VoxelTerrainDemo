@@ -34,3 +34,5 @@ This project provides tools to generate, visualize and in-game change volume ter
 # Links
 
 [Telegram (RU)](https://t.me/darklithosphere)
+
+[VK](https://vk.com/darklithosphere)
