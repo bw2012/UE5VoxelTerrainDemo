@@ -1,6 +1,6 @@
 [submodule "Plugins/UnrealSandboxTerrain"]
 	path = Plugins/UnrealSandboxTerrain
-	url = https://github.com/bw2012/UnrealSandboxTerrain.git
+	url = https://github.com/JSungMin/JSM_UnrealSandboxTerrain.git
 	
 
 [submodule "Plugins/ALS-Community"]
